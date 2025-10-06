@@ -140,5 +140,6 @@
 
     // エディタ基本設定
     "editor.tabSize": 4,
-    "editor.insertSpaces": true
+    "editor.insertSpaces": true,
+    "containers.composeBuild": false
 }

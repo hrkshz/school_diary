@@ -269,9 +269,12 @@ tags
 dump.rdb
 
 ### Project template
-labapp/media/
+school_diary/media/
 
 .pytest_cache/
 .ipython/
 .env
 .envs/*
+
+# 開発管理ドキュメント（プライベート・Git管理外）
+/docs-private/
