@@ -86,8 +86,8 @@ THIRD_PARTY_APPS = [
 ]
 
 LOCAL_APPS = [
-    "school_diary.users",
     # Your stuff: custom apps go here
+    "school_diary.diary.apps.DiaryConfig",
     # KITS: Common reusable components
     "kits.demos.apps.DemosConfig",
     "kits.accounts.apps.AccountsConfig",
@@ -96,7 +96,6 @@ LOCAL_APPS = [
     "kits.notifications.apps.NotificationsConfig",
     "kits.reports",
     "kits.io",
-    "school_diary.utils",
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -114,9 +113,9 @@ AUTHENTICATION_BACKENDS = [
     "allauth.account.auth_backends.AuthenticationBackend",
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#auth-user-model
-AUTH_USER_MODEL = "users.User"
+# AUTH_USER_MODEL = "users.User"  # Using default auth.User for now
 # https://docs.djangoproject.com/en/dev/ref/settings/#login-redirect-url
-LOGIN_REDIRECT_URL = "users:redirect"
+LOGIN_REDIRECT_URL = "/"
 # https://docs.djangoproject.com/en/dev/ref/settings/#login-url
 LOGIN_URL = "account_login"
 
@@ -155,7 +154,6 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "allauth.account.middleware.AccountMiddleware",
     "simple_history.middleware.HistoryRequestMiddleware",
-    "school_diary.utils.middleware.HistoryRequestMiddleware",
 ]
 
 # STATIC
@@ -201,7 +199,6 @@ TEMPLATES = [
                 "django.template.context_processors.static",
                 "django.template.context_processors.tz",
                 "django.contrib.messages.context_processors.messages",
-                "school_diary.users.context_processors.allauth_settings",
             ],
         },
     },
@@ -332,15 +329,9 @@ ACCOUNT_USER_MODEL_USERNAME_FIELD = None
 # https://docs.allauth.org/en/latest/account/configuration.html
 ACCOUNT_EMAIL_VERIFICATION = "mandatory"
 # https://docs.allauth.org/en/latest/account/configuration.html
-ACCOUNT_ADAPTER = "school_diary.users.adapters.AccountAdapter"
 # https://docs.allauth.org/en/latest/account/forms.html
-ACCOUNT_FORMS = {"signup": "school_diary.users.forms.UserSignupForm"}
 # https://docs.allauth.org/en/latest/socialaccount/configuration.html
-SOCIALACCOUNT_ADAPTER = "school_diary.users.adapters.SocialAccountAdapter"
 # https://docs.allauth.org/en/latest/socialaccount/configuration.html
-SOCIALACCOUNT_FORMS = {"signup": "school_diary.users.forms.UserSocialSignupForm"}
-
-
 # Your stuff...
 # ------------------------------------------------------------------------------
 # 💡 動作確認のため、一時的に設定の上書きを試す (後で削除しても良い)
