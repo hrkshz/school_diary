@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.contrib import messages
 from django.utils import timezone
+from django.utils.html import format_html
 
 from .models import ClassRoom
 from .models import DiaryEntry
@@ -14,8 +15,8 @@ class DiaryEntryAdmin(admin.ModelAdmin):
     list_display = (
         "student",
         "entry_date",
-        "health_condition",
-        "mental_condition",
+        "health_display",
+        "mental_display",
         "is_read",
         "read_by",
         "submission_date",
@@ -57,6 +58,26 @@ class DiaryEntryAdmin(admin.ModelAdmin):
             },
         ),
     )
+
+    @admin.display(description='体調')
+    def health_display(self, obj):
+        """体調を色分けして表示"""
+        colors = {1: 'red', 2: 'orange', 3: 'gray', 4: 'lightgreen', 5: 'green'}
+        return format_html(
+            '<span style="color: {}; font-weight: bold;">{}</span>',
+            colors.get(obj.health_condition, 'black'),
+            obj.get_health_condition_display()
+        )
+
+    @admin.display(description='メンタル')
+    def mental_display(self, obj):
+        """メンタルを色分けして表示"""
+        colors = {1: 'red', 2: 'orange', 3: 'gray', 4: 'lightgreen', 5: 'green'}
+        return format_html(
+            '<span style="color: {}; font-weight: bold;">{}</span>',
+            colors.get(obj.mental_condition, 'black'),
+            obj.get_mental_condition_display()
+        )
 
     @admin.action(description="選択した連絡帳を既読にする")
     def mark_as_read_bulk(self, request, queryset):
