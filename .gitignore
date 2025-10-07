@@ -280,3 +280,8 @@ school_diary/media/
 
 # 開発管理ドキュメント（プライベート・Git管理外）
 /docs-private/
+
+# 個人のClaude Code設定（Git管理外）
+CLAUDE.md
+CLAUDE.local.md
+.claude/CLAUDE.md
