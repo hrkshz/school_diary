@@ -98,7 +98,7 @@ LOCAL_APPS = [
     "kits.io",
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
-INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
+INSTALLED_APPS = ["jazzmin"] + DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
 # MIGRATIONS
 # ------------------------------------------------------------------------------
@@ -394,4 +394,15 @@ IO_CONFIG = {
     "CHUNK_SIZE": 1000,  # チャンク処理のサイズ（行数）
     "VALIDATION_ENABLED": True,  # バリデーション有効化
     "DUPLICATE_STRATEGY": "skip",  # skip, update, renumber, error
+}
+
+# ======================
+# Jazzmin Settings
+# ======================
+JAZZMIN_SETTINGS = {
+    "site_title": "連絡帳管理",
+    "site_header": "連絡帳管理システム",
+    "site_brand": "連絡帳",
+    "welcome_sign": "ようこそ 連絡帳管理システムへ",
+    "copyright": "連絡帳管理システム 2025",
 }
