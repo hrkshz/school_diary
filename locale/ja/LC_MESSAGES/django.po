@@ -1,0 +1,70 @@
+# Japanese translations for school_diary project.
+# Copyright (C) 2025
+# This file is distributed under the same license as the school_diary package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: school_diary\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-10-08 00:00+0900\n"
+"PO-Revision-Date: 2025-10-08 00:00+0900\n"
+"Last-Translator: school_diary team\n"
+"Language: ja\n"
+"Language-Team: Japanese\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+# django_celery_beat translations
+msgid "Clocked"
+msgstr "定刻タスク"
+
+msgid "clocked"
+msgstr "定刻タスク"
+
+msgid "Crontabs"
+msgstr "Cron設定"
+
+msgid "crontab"
+msgstr "Cron設定"
+
+msgid "crontabs"
+msgstr "Cron設定"
+
+msgid "Intervals"
+msgstr "間隔タスク"
+
+msgid "interval"
+msgstr "間隔タスク"
+
+msgid "intervals"
+msgstr "間隔タスク"
+
+msgid "Periodic tasks"
+msgstr "定期タスク"
+
+msgid "periodic task"
+msgstr "定期タスク"
+
+msgid "periodic tasks"
+msgstr "定期タスク"
+
+msgid "Solar events"
+msgstr "太陽イベント"
+
+msgid "solar event"
+msgstr "太陽イベント"
+
+msgid "solar events"
+msgstr "太陽イベント"
+
+# allauth.mfa translations
+msgid "Authenticators"
+msgstr "認証デバイス"
+
+msgid "authenticator"
+msgstr "認証デバイス"
+
+msgid "Authenticator"
+msgstr "認証デバイス"

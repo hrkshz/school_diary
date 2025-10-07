@@ -26,7 +26,7 @@ DEBUG: bool = env.bool("DJANGO_DEBUG", default=False)  # type: ignore[arg-type]
 # In Windows, this must be set to your system time zone.
 TIME_ZONE = "Asia/Tokyo"
 # https://docs.djangoproject.com/en/dev/ref/settings/#language-code
-LANGUAGE_CODE = "en-us"
+LANGUAGE_CODE = "ja"
 # https://docs.djangoproject.com/en/dev/ref/settings/#languages
 # from django.utils.translation import gettext_lazy as _
 # LANGUAGES = [
@@ -400,9 +400,57 @@ IO_CONFIG = {
 # Jazzmin Settings
 # ======================
 JAZZMIN_SETTINGS = {
+    # 基本情報
     "site_title": "連絡帳管理",
     "site_header": "連絡帳管理システム",
     "site_brand": "連絡帳",
+    "site_logo": None,
     "welcome_sign": "ようこそ 連絡帳管理システムへ",
     "copyright": "連絡帳管理システム 2025",
+
+    # 検索設定
+    "search_model": ["auth.User", "diary.DiaryEntry"],
+
+    # サイドバー設定
+    "show_sidebar": True,
+    "navigation_expanded": True,
+
+    # メニュー順序（使用頻度と業務フローに基づく）
+    "order_with_respect_to": [
+        "auth",  # ユーザー・グループ
+        "diary",  # 連絡帳関連
+        "reports",  # レポート
+        "approvals",  # 承認フロー
+        "notifications",  # 通知
+        "io",  # データ入出力
+        "audit",  # 監査ログ
+        "account",  # アカウント
+        "socialaccount",  # 外部アカウント
+        "mfa",  # 多要素認証
+        "sites",  # サイト
+        "django_celery_beat",  # 定期タスク
+        "demos",  # デモ・参考実装
+    ],
+
+    # アイコン設定（Font Awesome）
+    "icons": {
+        "auth": "fas fa-users-cog",
+        "auth.user": "fas fa-user",
+        "auth.Group": "fas fa-users",
+        "diary.DiaryEntry": "fas fa-book",
+        "diary.ClassRoom": "fas fa-school",
+        "diary.TeacherNote": "fas fa-sticky-note",
+        "reports": "fas fa-chart-bar",
+        "approvals": "fas fa-check-circle",
+        "notifications": "fas fa-bell",
+        "io": "fas fa-file-import",
+        "audit": "fas fa-history",
+        "account": "fas fa-user-circle",
+        "mfa": "fas fa-shield-alt",
+        "django_celery_beat": "fas fa-clock",
+        "demos": "fas fa-flask",
+    },
+
+    # UI設定
+    "show_ui_builder": False,
 }
