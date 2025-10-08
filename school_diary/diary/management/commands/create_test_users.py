@@ -34,7 +34,7 @@ class Command(BaseCommand):
                     teacher = User.objects.get(username=username)
                     teachers.append(teacher)
                     self.stdout.write(
-                        self.style.WARNING(f"⚠️  {username}は既に存在します")
+                        self.style.WARNING(f"⚠️  {username}は既に存在します"),
                     )
 
         # クラス作成（各学年2クラス = 6クラス）
@@ -55,7 +55,7 @@ class Command(BaseCommand):
                     self.stdout.write(self.style.SUCCESS(f"✅ {classroom}を作成"))
                 else:
                     self.stdout.write(
-                        self.style.WARNING(f"⚠️  {classroom}は既に存在します")
+                        self.style.WARNING(f"⚠️  {classroom}は既に存在します"),
                     )
 
         # 生徒作成（各クラス5名 = 30名）
@@ -73,7 +73,7 @@ class Command(BaseCommand):
                     self.stdout.write(
                         self.style.SUCCESS(
                             f"✅ {username}を作成し{classroom}に追加",
-                        )
+                        ),
                     )
                 else:
                     student = User.objects.get(username=username)
@@ -82,32 +82,32 @@ class Command(BaseCommand):
                         self.stdout.write(
                             self.style.WARNING(
                                 f"⚠️  {username}は既に存在しますが、{classroom}に追加しました",
-                            )
+                            ),
                         )
                     else:
                         self.stdout.write(
                             self.style.WARNING(
                                 f"⚠️  {username}は既に{classroom}に存在します",
-                            )
+                            ),
                         )
 
         self.stdout.write(self.style.SUCCESS("=" * 50))
         self.stdout.write(self.style.SUCCESS("✅ テストデータ作成完了"))
         self.stdout.write(
             self.style.SUCCESS(
-                f"管理者: {User.objects.filter(is_superuser=True).count()}名"
-            )
+                f"管理者: {User.objects.filter(is_superuser=True).count()}名",
+            ),
         )
         self.stdout.write(
             self.style.SUCCESS(
-                f"担任: {User.objects.filter(username__startswith='teacher_').count()}名"
-            )
+                f"担任: {User.objects.filter(username__startswith='teacher_').count()}名",
+            ),
         )
         self.stdout.write(
-            self.style.SUCCESS(f"クラス: {ClassRoom.objects.count()}クラス")
+            self.style.SUCCESS(f"クラス: {ClassRoom.objects.count()}クラス"),
         )
         self.stdout.write(
             self.style.SUCCESS(
-                f"生徒: {User.objects.filter(username__startswith='student_').count()}名"
-            )
+                f"生徒: {User.objects.filter(username__startswith='student_').count()}名",
+            ),
         )
