@@ -66,16 +66,16 @@ docker compose -f docker-compose.local.yml run --rm django python manage.py crea
 ## テストアカウント
 
 ### 管理者
-- ユーザー名: `admin`
+- メールアドレス: `admin@example.com`
 - パスワード: `admin123`
 
 ### 担任
-- ユーザー名: `teacher_1_A` ～ `teacher_3_B`（6名）
+- メールアドレス: `teacher_1_A@example.com` ～ `teacher_3_B@example.com`（6名）
 - パスワード: `password123`
 - 担当クラス: 1年A組 ～ 3年B組
 
 ### 生徒
-- ユーザー名: `student_001` ～ `student_030`（30名）
+- メールアドレス: `student_001@example.com` ～ `student_030@example.com`（30名）
 - パスワード: `password123`
 - 各クラス5名ずつ配置済み
 
@@ -92,6 +92,17 @@ docker compose -f docker-compose.local.yml run --rm django python manage.py crea
 ## 開発環境
 
 本プロジェクトはClaude Code（AIペアプログラミングツール）を使用して開発されました。AIはコード生成補助、デバッグ支援を担当し、設計・実装・テストの最終判断は開発者が実施しています。
+
+### インフラ構成
+
+**開発環境**:
+- Docker Compose による多コンテナ構成
+- PostgreSQL 16、Redis 7、Celery ワーカー
+
+**本番環境（予定）**:
+- AWS（Amazon Web Services）
+- Infrastructure as Code: Terraform
+- 主要サービス: EC2/ECS、RDS（PostgreSQL）、ElastiCache（Redis）
 
 ### 使用コマンド
 
