@@ -1,0 +1,22 @@
+{# djlint:off #}
+{% extends "admin/change_form.html" %}
+{% load i18n %}
+
+{% block object-tools-items %}
+  {{ block.super }}
+
+  {% if available_transitions %}
+    {% for transition in available_transitions %}
+      {% if transition.name in "submit,approve,deny,return_to_draft" %}
+        <li>
+          <form method="POST" action="../{{ transition.name }}/" style="display: inline;">
+            {% csrf_token %}
+            <button type="submit" class="button {% if transition.name == 'deny' or transition.name == 'return_to_draft' %}deletelink{% elif transition.name == 'approve' %}default{% endif %}">
+              {{ transition.verbose }}
+            </button>
+          </form>
+        </li>
+      {% endif %}
+    {% endfor %}
+  {% endif %}
+{% endblock %}
