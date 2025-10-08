@@ -285,3 +285,18 @@ school_diary/media/
 CLAUDE.md
 CLAUDE.local.md
 .claude/CLAUDE.md
+
+# 個人IDE設定（ローカルでのみ使用）
+.claude_project_config.json
+.cursorignore
+.cursorrules
+.mcp.json
+.vscode/settings.json
+
+# 汎用ドキュメント（プロジェクト固有でない）
+docs/kits/
+docs/past-challenges/
+docs/MCPサーバー推奨設定.md
+docs/VS_Code_拡張機能ガイド.md
+docs/kits*.md
+docs/通知機能テスト手順書.md

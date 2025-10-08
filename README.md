@@ -1,135 +1,114 @@
-# LabApp
+# 連絡帳管理システム
 
-業務 Web アプリ共通土台の検証用プロジェクト
+中学校向け生徒・担任間連絡管理システム。生徒が日々の振り返りを記録し、担任が確認・フィードバックを行うWebアプリケーション。
 
-[![Built with Cookiecutter Django](https://img.shields.io/badge/built%20with-Cookiecutter%20Django-ff69b4.svg?logo=cookiecutter)](https://github.com/cookiecutter/cookiecutter-django/)
-[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+## 技術スタック
 
-License: MIT
+- **Backend**: Python 3.12 / Django 5.1
+- **Database**: PostgreSQL 16
+- **Cache/Queue**: Redis 7
+- **Task Queue**: Celery 5.4
+- **Infrastructure**: Docker / Docker Compose
+- **Admin UI**: django-jazzmin
+- **Forms**: django-crispy-forms (Bootstrap 5)
 
----
+## 主要機能
 
-## 🚀 クイックスタート（5 分で起動）
+### 生徒向け機能
+- 連絡帳の作成・提出
+- 体調・メンタル状態の記録
+- 過去の連絡帳閲覧
 
-```bash
-# 1. エイリアスを設定（初回のみ）
-echo "alias dc='docker compose'" >> ~/.bashrc
-echo "alias dj='docker compose run --rm django python manage.py'" >> ~/.bashrc
-source ~/.bashrc
+### 担任向け機能
+- 連絡帳の確認・既読管理
+- 担任メモの作成・共有
+- クラス単位での一覧表示
 
-# 2. 環境を起動
-dc up -d
+### 管理者機能
+- ユーザー・クラス管理
+- データの一括管理
+- 検索・フィルタ機能
 
-# 3. データベース初期化
-dj migrate
-dj setup_dev  # テストユーザー・グループを作成
+## セットアップ
 
-# 4. 管理画面にアクセス
-# http://localhost:8000/admin
-# ユーザー: admin@example.com / パスワード: password123
-```
+### 前提条件
+- Docker Desktop インストール済み
+- Git インストール済み
 
-**詳細は [オンボーディングガイド](docs/ONBOARDING.md) へ** 👉
-
-## Settings
-
-Moved to [settings](https://cookiecutter-django.readthedocs.io/en/latest/1-getting-started/settings.html).
-
-## Basic Commands
-
-### Setting Up Your Users
-
-- To create a **normal user account**, just go to Sign Up and fill out the form. Once you submit it, you'll see a "Verify Your E-mail Address" page. Go to your console to see a simulated email verification message. Copy the link into your browser. Now the user's email should be verified and ready to go.
-
-- To create a **superuser account**, use this command:
-
-      uv run python manage.py createsuperuser
-
-For convenience, you can keep your normal user logged in on Chrome and your superuser logged in on Firefox (or similar), so that you can see how the site behaves for both kinds of users.
-
-### Type checks
-
-Running type checks with mypy:
-
-    uv run mypy school_diary
-
-### Test coverage
-
-To run the tests, check your test coverage, and generate an HTML coverage report:
-
-    uv run coverage run -m pytest
-    uv run coverage html
-    uv run open htmlcov/index.html
-
-#### Running tests with pytest
-
-    uv run pytest
-
-### Live reloading and Sass CSS compilation
-
-Moved to [Live reloading and SASS compilation](https://cookiecutter-django.readthedocs.io/en/latest/2-local-development/developing-locally.html#using-webpack-or-gulp).
-
-### Celery
-
-This app comes with Celery.
-
-To run a celery worker:
+### 環境構築手順
 
 ```bash
+# 1. リポジトリクローン
+git clone [repository-url]
 cd school_diary
-uv run celery -A config.celery_app worker -l info
+
+# 2. 環境変数設定
+cp .envs/.local/.django.example .envs/.local/.django
+cp .envs/.local/.postgres.example .envs/.local/.postgres
+
+# 3. Docker環境起動
+docker compose -f docker-compose.local.yml build
+docker compose -f docker-compose.local.yml up -d
+
+# 4. マイグレーション実行
+docker compose -f docker-compose.local.yml run --rm django python manage.py migrate
+
+# 5. テストユーザー・データ作成
+docker compose -f docker-compose.local.yml run --rm django python manage.py create_test_users
+docker compose -f docker-compose.local.yml run --rm django python manage.py create_sample_diaries
 ```
 
-Please note: For Celery's import magic to work, it is important _where_ the celery commands are run. If you are in the same folder with _manage.py_, you should be right.
+### アクセスURL
+- **開発サーバー**: http://localhost:8000
+- **管理画面**: http://localhost:8000/admin
+- **Mailpit（メール確認）**: http://localhost:8025
 
-To run [periodic tasks](https://docs.celeryq.dev/en/stable/userguide/periodic-tasks.html), you'll need to start the celery beat scheduler service. You can start it as a standalone process:
+## テストアカウント
+
+### 管理者
+- ユーザー名: `admin`
+- パスワード: `admin123`
+
+### 担任
+- ユーザー名: `teacher_1_A` ～ `teacher_3_B`（6名）
+- パスワード: `password123`
+- 担当クラス: 1年A組 ～ 3年B組
+
+### 生徒
+- ユーザー名: `student_001` ～ `student_030`（30名）
+- パスワード: `password123`
+- 各クラス5名ずつ配置済み
+
+## ドキュメント
+
+プロジェクトの設計・仕様に関するドキュメントは `docs/` ディレクトリに格納されています。
+
+- [要件定義書](docs/要件定義書.md)
+- [データモデル設計書](docs/データモデル設計書.md)
+- [機能仕様書](docs/機能仕様書.md)
+- [システムアーキテクチャ設計書](docs/システムアーキテクチャ設計書.md)
+- [テスト計画書](docs/テスト計画書.md)
+
+## 開発環境
+
+本プロジェクトはClaude Code（AIペアプログラミングツール）を使用して開発されました。AIはコード生成補助、デバッグ支援を担当し、設計・実装・テストの最終判断は開発者が実施しています。
+
+### 使用コマンド
 
 ```bash
-cd school_diary
-uv run celery -A config.celery_app beat
+# Dockerコンテナ起動
+docker compose -f docker-compose.local.yml up -d
+
+# Djangoコマンド実行
+docker compose -f docker-compose.local.yml run --rm django python manage.py [command]
+
+# ログ確認
+docker compose -f docker-compose.local.yml logs -f django
+
+# 環境停止
+docker compose -f docker-compose.local.yml down
 ```
 
-or you can embed the beat service inside a worker with the `-B` option (not recommended for production use):
+## ライセンス
 
-```bash
-cd school_diary
-uv run celery -A config.celery_app worker -B -l info
-```
-
-### Email Server
-
-In development, it is often nice to be able to see emails that are being sent from your application. For that reason local SMTP server [Mailpit](https://github.com/axllent/mailpit) with a web interface is available as docker container.
-
-Container mailpit will start automatically when you will run all docker containers.
-Please check [cookiecutter-django Docker documentation](https://cookiecutter-django.readthedocs.io/en/latest/2-local-development/developing-locally-docker.html) for more details how to start all containers.
-
-With Mailpit running, to view messages that are sent by your application, open your browser and go to `http://127.0.0.1:8025`
-
-## Deployment
-
-The following details how to deploy this application.
-
-### Docker
-
-See detailed [cookiecutter-django Docker documentation](https://cookiecutter-django.readthedocs.io/en/latest/3-deployment/deployment-with-docker.html).
-
----
-
-## 📚 プロジェクトドキュメント
-
-### 新メンバー向け
-
-- **[オンボーディングガイド](docs/ONBOARDING.md)** - プロジェクトに初めて参加する方は、まずこちらをお読みください
-- **[Cursor 最適化設定ガイド](docs/CURSOR_SETUP.md)** - Cursor を AI メンターとして最大限活用する方法
-- **[過去の課題一覧](docs/past-challenges/README.md)** - インターンシップで出題された課題とLabAppでの実装アプローチ
-
-### 重要な設定ファイル
-
-- **[.cursorrules](.cursorrules)** - Cursor に常に理解させるプロジェクトのルール
-- **[.cursorignore](.cursorignore)** - AI に読ませない不要なファイルの定義
-- **[.vscode/settings.json](.vscode/settings.json)** - プロジェクト固有のエディタ設定
-
-### 開発のルール
-
-- **プロジェクト憲章**: 30 分で「動く・再現できる・説明できる」業務 Web アプリを完成させる
-- **二本の柱**: ① 準備の軸（必勝パターンの錬成） / ② 実践の軸（価値提供の高速化）
+MIT
