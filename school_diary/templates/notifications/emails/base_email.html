@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ subject }}{% endblock %}</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #4F46E5;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 5px 5px 0 0;
+        }
+        .content {
+            background-color: #f9fafb;
+            padding: 30px;
+            border-left: 1px solid #e5e7eb;
+            border-right: 1px solid #e5e7eb;
+        }
+        .footer {
+            background-color: #f3f4f6;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #6b7280;
+            border-radius: 0 0 5px 5px;
+            border: 1px solid #e5e7eb;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #4F46E5;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .button:hover {
+            background-color: #4338CA;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>{% block header %}{{ site_name }}{% endblock %}</h1>
+    </div>
+
+    <div class="content">
+        {% block content %}
+        <p>{{ body }}</p>
+        {% endblock %}
+    </div>
+
+    <div class="footer">
+        {% block footer %}
+        <p>このメールは {{ site_name }} から自動送信されています。</p>
+        <p>心当たりがない場合は、このメールを削除してください。</p>
+        {% endblock %}
+    </div>
+</body>
+</html>
