@@ -1,0 +1,37 @@
+{
+    // 開発コンテナの名前
+    "name": "school_diary (Django)",
+
+    // 使用するDocker Composeファイルを指定
+    "dockerComposeFile": [
+        "../docker-compose.local.yml"
+    ],
+
+    // 接続するサービス名を指定
+    "service": "django",
+
+    // コンテナ内の作業フォルダを指定
+    "workspaceFolder": "/app",
+
+    // コンテナ作成後に自動実行するコマンド
+    // これにより、コンテナ作成時に自動でライブラリがインストールされます
+    "postCreateCommand": "uv sync",
+
+    // コンテナ内でVS Codeを実行するユーザーを指定
+    "remoteUser": "dev-user",
+
+    // VS Code のカスタマイズ設定
+    "customizations": {
+        "vscode": {
+            // VS Code のユーザー設定
+            "settings": {
+                // 必要ならここに editor 設定など追加可能
+            },
+            // 有効にする VS Code 拡張機能
+            "extensions": [
+                "ms-python.python",
+                "charliermarsh.ruff"
+            ]
+        }
+    }
+}

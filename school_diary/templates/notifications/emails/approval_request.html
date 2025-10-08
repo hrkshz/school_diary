@@ -1,0 +1,20 @@
+{% extends "notifications/emails/base_email.html" %}
+
+{% block content %}
+<p>{{ user.name }} 様</p>
+
+<p>新しい承認依頼が届いています。</p>
+
+<div style="background-color: white; padding: 20px; border-radius: 5px; margin: 20px 0;">
+    <h3>{{ request_title }}</h3>
+    <p><strong>申請者:</strong> {{ requester_name }}</p>
+    <p><strong>申請日:</strong> {{ request_date }}</p>
+    <p><strong>内容:</strong> {{ request_description }}</p>
+</div>
+
+<p style="text-align: center;">
+    <a href="{{ approval_url }}" class="button">承認画面を開く</a>
+</p>
+
+<p>承認期限: {{ deadline }}</p>
+{% endblock %}
