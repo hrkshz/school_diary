@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+
+{% block title %}生徒ダッシュボード{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 mb-4">
+        <h2>📝 連絡帳システム</h2>
+        <p class="lead">{{ user.username }}さん、おはようございます！</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6 mb-4">
+        {% if not today_submitted %}
+        <div class="card border-primary shadow">
+            <div class="card-body text-center p-4">
+                <h3 class="card-title mb-3">✍️ 今日の連絡帳を書く</h3>
+                <p class="card-text text-muted">昨日の記録をまだ提出していません</p>
+                <a href="{% url 'diary:diary_create' %}" class="btn btn-primary btn-lg mt-3">連絡帳を書く</a>
+            </div>
+        </div>
+        {% else %}
+        <div class="card border-success shadow">
+            <div class="card-body text-center p-4">
+                <h3 class="card-title mb-3">✅ 提出済み</h3>
+                <p class="card-text text-muted">今日の連絡帳は提出済みです</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="col-md-6 mb-4">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">📊 あなたの記録</h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-3">総提出数: <strong>{{ recent_entries|length }}</strong>件</p>
+                <a href="{% url 'diary:diary_history' %}" class="btn btn-outline-primary">過去の記録を見る</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <h3 class="mb-3">📚 最近の記録</h3>
+        {% for entry in recent_entries %}
+        <div class="card mb-3 shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><strong>{{ entry.entry_date }}</strong></span>
+                {% if entry.is_read %}
+                <span class="badge bg-success">✅ 既読</span>
+                {% else %}
+                <span class="badge bg-secondary">未読</span>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                <div class="row mb-2">
+                    <div class="col-md-6">
+                        <strong>体調:</strong> {{ entry.get_health_condition_display }}
+                    </div>
+                    <div class="col-md-6">
+                        <strong>メンタル:</strong> {{ entry.get_mental_condition_display }}
+                    </div>
+                </div>
+                <p class="mb-0 text-muted">{{ entry.reflection|truncatewords:30 }}</p>
+            </div>
+        </div>
+        {% empty %}
+        <div class="alert alert-info">
+            まだ連絡帳を提出していません。
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

@@ -20,7 +20,7 @@ class Command(BaseCommand):
 
         if not students.exists():
             self.stdout.write(
-                self.style.ERROR("❌ 先に create_test_users を実行してください")
+                self.style.ERROR("❌ 先に create_test_users を実行してください"),
             )
             return
 
@@ -96,7 +96,7 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS("=" * 50))
         self.stdout.write(
-            self.style.SUCCESS(f"✅ {len(entries)}件の連絡帳データを作成しました")
+            self.style.SUCCESS(f"✅ {len(entries)}件の連絡帳データを作成しました"),
         )
         self.stdout.write(self.style.SUCCESS("期間: 過去30日分"))
         self.stdout.write(self.style.SUCCESS(f"生徒数: {students.count()}名"))
@@ -111,11 +111,11 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(f"総エントリ数: {total_entries}件"))
         self.stdout.write(
             self.style.SUCCESS(
-                f"既読: {read_entries}件（{read_entries / total_entries * 100:.1f}%）"
-            )
+                f"既読: {read_entries}件（{read_entries / total_entries * 100:.1f}%）",
+            ),
         )
         self.stdout.write(
             self.style.SUCCESS(
-                f"未読: {unread_entries}件（{unread_entries / total_entries * 100:.1f}%）"
-            )
+                f"未読: {unread_entries}件（{unread_entries / total_entries * 100:.1f}%）",
+            ),
         )

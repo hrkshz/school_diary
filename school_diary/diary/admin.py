@@ -59,24 +59,24 @@ class DiaryEntryAdmin(admin.ModelAdmin):
         ),
     )
 
-    @admin.display(description='体調')
+    @admin.display(description="体調")
     def health_display(self, obj):
         """体調を色分けして表示"""
-        colors = {1: 'red', 2: 'orange', 3: 'gray', 4: 'lightgreen', 5: 'green'}
+        colors = {1: "red", 2: "orange", 3: "gray", 4: "lightgreen", 5: "green"}
         return format_html(
             '<span style="color: {}; font-weight: bold;">{}</span>',
-            colors.get(obj.health_condition, 'black'),
-            obj.get_health_condition_display()
+            colors.get(obj.health_condition, "black"),
+            obj.get_health_condition_display(),
         )
 
-    @admin.display(description='メンタル')
+    @admin.display(description="メンタル")
     def mental_display(self, obj):
         """メンタルを色分けして表示"""
-        colors = {1: 'red', 2: 'orange', 3: 'gray', 4: 'lightgreen', 5: 'green'}
+        colors = {1: "red", 2: "orange", 3: "gray", 4: "lightgreen", 5: "green"}
         return format_html(
             '<span style="color: {}; font-weight: bold;">{}</span>',
-            colors.get(obj.mental_condition, 'black'),
-            obj.get_mental_condition_display()
+            colors.get(obj.mental_condition, "black"),
+            obj.get_mental_condition_display(),
         )
 
     @admin.action(description="選択した連絡帳を既読にする")

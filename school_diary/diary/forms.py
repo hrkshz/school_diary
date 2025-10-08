@@ -22,14 +22,14 @@ class DiaryEntryForm(forms.ModelForm):
         fields = ["entry_date", "health_condition", "mental_condition", "reflection"]
         widgets = {
             "entry_date": forms.DateInput(
-                attrs={"type": "date", "class": "form-control"}
+                attrs={"type": "date", "class": "form-control"},
             ),
             "reflection": forms.Textarea(
                 attrs={
                     "rows": 5,
                     "class": "form-control",
                     "placeholder": "今日はどんな1日でしたか？\n\n例：\n- 授業で学んだこと\n- 部活での出来事\n- 友達との交流",
-                }
+                },
             ),
         }
 
