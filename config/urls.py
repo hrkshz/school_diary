@@ -26,6 +26,7 @@ urlpatterns = [
     # path("users/", include("school_diary.users.urls", namespace="users")),  # Commented out - users app removed
     path("accounts/", include("allauth.urls")),
     # Your stuff: custom urls includes go here
+    path("diary/", include("school_diary.diary.urls")),
     # ...
     # Media files
     *static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT),
