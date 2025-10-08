@@ -1,18 +1,18 @@
 # プロジェクト現在地 - 連絡帳管理システムPoC
 
-> **最終更新**: 2025-10-08 (Day 5 完了: MVP Phase完了 ✅)
-> **更新者**: AI (全12タスク完了、v0.1.0-mvpタグ作成、次はMLP Phase)
+> **最終更新**: 2025-10-08 (Day 5 夜: MLP Phase開始、3タスク完了)
+> **更新者**: AI (MLP-1〜3完了、学習ログ3本作成、認証システム統合完了)
 
 ---
 
 ## 📍 現在地
 
-**現在Phase**: MVP Phase 完了 ✅ → 次は MLP (Phase 2 / 5)
-**累計作業時間**: 11.4時間 / 11時間（MVP目標、+4%超過）
-**進捗率**: 100% (12/12タスク完了 - MVP Phase完了)
+**現在Phase**: MLP (Minimum Lovable Product) Phase - 進行中 ⏳ (Phase 2 / 5)
+**累計作業時間**: 13.7時間（MVP: 11.4h、MLP: 2.3h / 22h目標）
+**進捗率**: MLP 23% (3/13タスク完了)
 **達成マイルストーン**: v0.1.0-mvp ✅
-**次のマイルストーン**: v0.2.0-mlp（MLP完了）
-**備考**: 全DoD達成、学習ログ2本作成、jazzmin導入完了
+**次のマイルストーン**: v0.2.0-mlp（MLP完了、残り10タスク）
+**備考**: 認証システム統合完了、学習ログ3本（全てレベル5到達）
 
 ---
 
@@ -20,7 +20,7 @@
 
 **日付**: 2025-10-08 (Day 5 完了)
 
-### 優先タスク
+### 優先タスク（午前〜夕方: MVP完了）
 - [x] MVP-11 Phase 1: タスク理解と準備 ✅
 - [x] MVP-11 Phase 2: 自動テスト実施 ✅
 - [x] 担任権限問題修正 ✅
@@ -31,12 +31,21 @@
 - [x] /health エンドポイント実装 ✅
 - [x] v0.1.0-mvpタグ作成 ✅
 
+### 優先タスク（夜: MLP Phase開始）
+- [x] MLP-1〜3の学習ログ遡及作成 ✅
+- [x] MLP-3 Phase 1: タスク理解と準備 ✅
+- [x] MLP-3 Phase 2: 認証システム実装 ✅
+- [x] MLP-3 Phase 3: 品質確認 ✅
+- [x] MLP-3 Phase 4: 学習ログ作成 ✅
+- [x] Gitコミット（4a33d5a）✅
+
 ### 目標
 - [x] Admin画面で全CRUD操作確認 ✅
 - [x] 色分け表示が機能することを確認 ✅
 - [x] フィルター・検索機能確認 ✅
 - [x] 管理画面モダン化（jazzmin導入）✅
 - [x] MVP Phase完了 ✅
+- [x] MLP Phase開始（3タスク完了）✅
 
 ---
 
@@ -52,9 +61,18 @@
 | **管理画面モダン化** | jazzmin Phase 1-4 | 2h5m | 3h | ✅ 完了 |
 | **合計** | MVP-1〜12 | 11h | 11.4h | ✅ 完了（+4%） |
 
-### Phase 2: MLP（22時間）- 未着手
+### Phase 2: MLP（22時間）- 進行中 ⏳
 
-待機中（MVP完了後に詳細タスク登録）
+| グループ | タスク | 予定時間 | 実績時間 | 状態 |
+|---------|--------|---------|---------|------|
+| **準備** | MLP-1: crispy-forms設定確認 | 30m | 30m | ✅ 完了 |
+| **準備** | MLP-2: ベーステンプレート作成 | 30m | 20m | ✅ 完了 |
+| **認証** | MLP-3: 認証システム統合 | 1.5h | 1.3h | ✅ 完了 |
+| **フォーム** | MLP-4: DiaryEntryForm | 1.5h | - | ⏳ 未着手 |
+| **生徒画面** | MLP-5〜7 | 3.5h | - | ⏳ 未着手 |
+| **担任画面** | MLP-8〜10 | 6h | - | ⏳ 未着手 |
+| **仕上げ** | MLP-11〜13 | 6.5h | - | ⏳ 未着手 |
+| **合計** | MLP-1〜13 | 22h | 2.3h | ⏳ 進行中（10.5%）|
 
 ### Phase 3: MAP（24時間）- 未着手
 
@@ -75,7 +93,7 @@
 | Phase | 目標時間 | Git Tag | 目標スコア | 状態 |
 |-------|---------|---------|-----------|------|
 | MVP | 11h | v0.1.0-mvp | 60点 | ✅ 完了（11.4h） |
-| MLP | 22h | v0.2.0-mlp | 75点 | ⏳ 未着手 |
+| MLP | 22h | v0.2.0-mlp | 75点 | ⏳ 進行中（2.3h、10.5%） |
 | MAP | 24h | v0.3.0-map | 85点 | ⏳ 未着手 |
 | AWS | 18h | v0.9.0-aws | 90点 | ⏳ 未着手 |
 | DOC | 25h | v1.0.0-production | 95点 | ⏳ 未着手 |
@@ -166,47 +184,96 @@
 
 ### 次回セッション開始時
 
-**🎉 MVP Phase完了 → MLP Phase開始準備**
+**MLP-4: DiaryEntryForm実装から再開**
 
-#### ステップ1: MVP完了確認（5分）
+#### ステップ1: 環境確認（3分）
 ```bash
 cd ~/work/school_diary
 
 # Git状態確認
 git status
-
-# MVPタグ確認
-git tag -l | grep mvp
-# 期待: v0.1.0-mvp
+# 期待: nothing to commit, working tree clean（コミット済み: 4a33d5a）
 
 # Docker環境確認
 docker compose -f docker-compose.local.yml ps
 # 期待: 全7コンテナ稼働中
 ```
 
-#### ステップ2: MVP成果物レビュー（10分）
-- ✅ /health エンドポイント動作確認
-- ✅ Admin画面ログイン確認（http://localhost:8000/admin）
-- ✅ 学習ログレビュー:
-  - docs-private/daily_logs/20251008_jazzmin実装_学習ログ.md
-  - docs-private/daily_logs/20251008_mvp11_admin実装_学習ログ.md
+#### ステップ2: MLP-3成果物レビュー（5分）
+- ✅ 認証システム動作確認済み
+- ✅ 実装ファイル:
+  - `school_diary/diary/adapters.py` - RoleBasedRedirectAdapter
+  - `school_diary/diary/views.py` - ダミーダッシュボードビュー
+  - `school_diary/diary/urls.py` - URL設定
+- ✅ 学習ログ:
+  - `docs-private/daily_logs/20251008_mlp1_crispy設定_学習ログ.md`（レベル5）
+  - `docs-private/daily_logs/20251008_mlp2_base_template_学習ログ.md`（レベル5）
+  - `docs-private/daily_logs/20251008_mlp3_認証システム_学習ログ.md`（レベル5）
 
-#### ステップ3: MLP Phase準備（15分）
-1. マスタータスクリスト確認（MLP-1〜MLP-X）
-2. MLP Phase目標の理解:
-   - ユーザー向け画面実装
-   - 認証・認可機能
-   - 基本的なUIUX改善
-3. 最初のタスク（MLP-1）の詳細確認
+#### ステップ3: MLP-4準備（2分）
+1. マスタータスクリスト確認（@docs-private/連絡帳管理システム_100時間タスクリスト.md のMLP-4）
+2. MLP-4の内容:
+   - crispy-formsを使った連絡帳入力フォーム実装
+   - DiaryEntryModelFormクラス作成
+   - バリデーションルール（健康・メンタル数値は1-5）
+   - 予定時間: 1.5時間
 
-#### ステップ4: セッション開始（任意）
-ユーザーの指示に従ってMLP-1を開始、または別の作業を実施
-
-**推奨**: MVP完了を祝い、少し休憩してからMLP Phase開始
+#### ステップ4: セッション開始
+ユーザーの指示に従ってMLP-4を開始
 
 ---
 
 ## 📝 最近の更新履歴
+
+### 2025-10-08 (Day 5 夜) - MLP Phase開始、3タスク完了 ✅
+
+**実施内容**:
+
+1. **MLP-1〜3の学習ログ遡及作成**（120分）
+   - Phase 4スキップ問題の修正
+   - `20251008_mlp1_crispy設定_学習ログ.md`（約7,500行、レベル5到達）
+   - `20251008_mlp2_base_template_学習ログ.md`（約8,200行、レベル5到達）
+   - 全て5段階理解モデル レベル5到達（MLP目標レベル4を超過）
+
+2. **MLP-3 Phase 1-2: 認証システム実装**（30分）
+   - RoleBasedRedirectAdapter実装（`diary/adapters.py`新規作成）
+   - ロール別リダイレクト: 管理者→/admin/、担任→teacher_dashboard、生徒→student_dashboard
+   - ダミーダッシュボードビュー作成（`diary/views.py`）
+   - URL設定（`diary/urls.py`新規作成）
+   - ACCOUNT_ADAPTER設定追加（`config/settings/base.py`）
+   - diary URLをinclude（`config/urls.py`）
+
+3. **MLP-3 Phase 3: 品質確認**（10分）
+   - Django check: 問題なし ✅
+   - URL reverse動作確認 ✅
+   - マイグレーション適用（`0002_alter_diaryentry_read_by.py`）
+
+4. **MLP-3 Phase 4: 学習ログ作成**（40分）
+   - `20251008_mlp3_認証システム_学習ログ.md`作成
+   - 5段階理解モデル レベル5到達
+
+5. **Gitコミット**（5分）
+   - コミットハッシュ: 4a33d5a
+   - MLP-2 & MLP-3の実装ファイル全てコミット
+
+**成果物**:
+- ✅ 学習ログ3本（全てレベル5到達、合計約16,000行）
+- ✅ 認証システム統合完了（ロール別リダイレクト）
+- ✅ ダミーダッシュボードビュー実装
+- ✅ Gitコミット完了（4a33d5a）
+
+**実績時間**: 約3.5時間（学習ログ遡及: 2h、MLP-3: 1.5h）
+**MLP Phase累計**: 2.3時間 / 22時間（10.5%）
+
+**技術的達成**:
+- django-allauthのAdapterパターン活用
+- related_nameを使った担任判定（`user.homeroom_classes.exists()`）
+- reverse()関数による柔軟なURL管理
+- 段階的実装（ダミー→本実装）の戦略
+
+**次のタスク**: MLP-4 DiaryEntryForm実装
+
+---
 
 ### 2025-10-08 (Day 5 完了) - MVP Phase完了 ✅🎉
 
