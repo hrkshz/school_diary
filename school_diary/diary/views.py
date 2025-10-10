@@ -1,9 +1,14 @@
 """Views for diary app."""
 
+from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.shortcuts import redirect
+from django.urls import reverse_lazy
 from django.utils import timezone
+from django.views.generic import CreateView
 from django.views.generic import TemplateView
 
+from .forms import DiaryEntryForm
 from .models import DiaryEntry
 
 
@@ -45,11 +50,42 @@ class TeacherDashboardView(TemplateView):
     template_name = "diary/teacher_dashboard.html"
 
 
-# 以下はダミー実装（MLP-6, MLP-7で本実装予定）
-class DiaryCreateView(LoginRequiredMixin, TemplateView):
-    """連絡帳作成ページ（ダミー）"""
+class DiaryCreateView(LoginRequiredMixin, CreateView):
+    """連絡帳作成ページ
 
+    生徒が連絡帳を新規作成するページ。
+    一日一件の制約をチェックし、重複を防ぐ。
+    """
+
+    model = DiaryEntry
+    form_class = DiaryEntryForm
     template_name = "diary/diary_create.html"
+    success_url = reverse_lazy("diary:student_dashboard")
+
+    def form_valid(self, form):
+        """フォーム送信時の処理
+
+        生徒を設定し、一日一件制約をチェック。
+        重複がある場合はエラーメッセージを表示してリダイレクト。
+        """
+        # 生徒を設定
+        form.instance.student = self.request.user
+
+        # 一日一件制約チェック
+        entry_date = form.cleaned_data["entry_date"]
+        if DiaryEntry.objects.filter(
+            student=self.request.user,
+            entry_date=entry_date,
+        ).exists():
+            messages.error(
+                self.request,
+                f"{entry_date}の連絡帳は既に作成済みです。",
+            )
+            return redirect("diary:student_dashboard")
+
+        # 保存成功メッセージ
+        messages.success(self.request, "連絡帳を作成しました。")
+        return super().form_valid(form)
 
 
 class DiaryHistoryView(LoginRequiredMixin, TemplateView):
