@@ -6,6 +6,7 @@ from django.shortcuts import redirect
 from django.urls import reverse_lazy
 from django.utils import timezone
 from django.views.generic import CreateView
+from django.views.generic import ListView
 from django.views.generic import TemplateView
 
 from .forms import DiaryEntryForm
@@ -88,7 +89,22 @@ class DiaryCreateView(LoginRequiredMixin, CreateView):
         return super().form_valid(form)
 
 
-class DiaryHistoryView(LoginRequiredMixin, TemplateView):
-    """過去記録閲覧ページ（ダミー）"""
+class DiaryHistoryView(LoginRequiredMixin, ListView):
+    """過去記録閲覧ページ
 
+    生徒の過去の連絡帳を一覧表示。
+    ページネーションと月別フィルタリングに対応。
+    """
+
+    model = DiaryEntry
     template_name = "diary/diary_history.html"
+    context_object_name = "entries"
+    paginate_by = 10
+
+    def get_queryset(self):
+        """ログイン中の生徒の連絡帳のみ取得"""
+        return (
+            DiaryEntry.objects.filter(student=self.request.user)
+            .select_related("read_by")
+            .order_by("-entry_date")
+        )
