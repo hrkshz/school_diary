@@ -19,12 +19,12 @@ urlpatterns = [
     ),
     # 以下はダミー実装（MLP-6, MLP-7で本実装予定）
     path(
-        "diary/create/",
+        "create/",
         views.DiaryCreateView.as_view(),
         name="diary_create",
     ),
     path(
-        "diary/history/",
+        "history/",
         views.DiaryHistoryView.as_view(),
         name="diary_history",
     ),

@@ -182,3 +182,9 @@ force-single-line = true
 
 [tool.setuptools]
 packages = ["school_diary", "kits"]
+
+[dependency-groups]
+dev = [
+    "beautifulsoup4>=4.14.2",
+    "pytest-cov>=7.0.0",
+]
