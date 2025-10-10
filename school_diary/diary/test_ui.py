@@ -534,3 +534,35 @@ class TestDiaryHistoryViewUI:
             "ページネーション（<ul class='pagination'>）が見つかりません。"
             "11件以上のデータでページネーションが表示されるか確認してください。"
         )
+
+
+@pytest.mark.django_db
+class TestRootURLRedirect:
+    """ルートURL（/）のリダイレクトテスト
+
+    ルートURLにアクセスした際に、ログインページへ自動リダイレクトされることを確認します。
+    """
+
+    def test_root_url_redirects_to_login(self):
+        """
+        【テスト1】ルートURLがログインページにリダイレクトする
+
+        期待される動作:
+        - / にアクセスすると HTTP 302 (Found) が返る
+        - Location ヘッダーが /accounts/login/ を指している
+        """
+        # Arrange: 未認証クライアントを作成
+        client = Client()
+
+        # Act: ルートURLにアクセス
+        response = client.get("/", follow=False)
+
+        # Assert: リダイレクトが発生する
+        assert response.status_code == 302, (
+            f"ルートURLのステータスコードが302ではありません。"
+            f"実際: {response.status_code}"
+        )
+        assert response.url == "/accounts/login/", (
+            f"リダイレクト先が正しくありません。"
+            f"期待: /accounts/login/, 実際: {response.url}"
+        )
