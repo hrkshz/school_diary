@@ -540,12 +540,12 @@ class TestDiaryHistoryViewUI:
 class TestRootURLRedirect:
     """ルートURL（/）のリダイレクトテスト
 
-    ルートURLにアクセスした際に、ログインページへ自動リダイレクトされることを確認します。
+    ルートURLにアクセスした際に、認証状態と役割に応じて適切にリダイレクトされることを確認します。
     """
 
-    def test_root_url_redirects_to_login(self):
+    def test_root_url_redirects_to_login_when_unauthenticated(self):
         """
-        【テスト1】ルートURLがログインページにリダイレクトする
+        【テスト1】未認証ユーザーがルートURLにアクセスするとログインページにリダイレクト
 
         期待される動作:
         - / にアクセスすると HTTP 302 (Found) が返る
@@ -565,4 +565,63 @@ class TestRootURLRedirect:
         assert response.url == "/accounts/login/", (
             f"リダイレクト先が正しくありません。"
             f"期待: /accounts/login/, 実際: {response.url}"
+        )
+
+    def test_root_url_redirects_to_admin_for_staff(self):
+        """
+        【テスト2】管理者がルートURLにアクセスすると管理画面にリダイレクト
+
+        期待される動作:
+        - / にアクセスすると HTTP 302 (Found) が返る
+        - Location ヘッダーが /admin/ を指している
+        """
+        # Arrange: 管理者ユーザーを作成
+        admin_user = User.objects.create_user(
+            username="admin",
+            email="admin@example.com",
+            password="admin123",
+            is_staff=True,
+        )
+        client = Client()
+        client.force_login(admin_user)
+
+        # Act: ルートURLにアクセス
+        response = client.get("/", follow=False)
+
+        # Assert: 管理画面にリダイレクト
+        assert response.status_code == 302, (
+            f"ステータスコードが302ではありません。実際: {response.status_code}"
+        )
+        assert response.url == "/admin/", (
+            f"リダイレクト先が正しくありません。期待: /admin/, 実際: {response.url}"
+        )
+
+    def test_root_url_redirects_to_student_dashboard(self):
+        """
+        【テスト3】生徒がルートURLにアクセスすると生徒ダッシュボードにリダイレクト
+
+        期待される動作:
+        - / にアクセスすると HTTP 302 (Found) が返る
+        - Location ヘッダーが /diary/dashboard/ を指している
+        """
+        # Arrange: 生徒ユーザーを作成
+        student_user = User.objects.create_user(
+            username="student",
+            email="student@example.com",
+            password="student123",
+        )
+        client = Client()
+        client.force_login(student_user)
+
+        # Act: ルートURLにアクセス
+        response = client.get("/", follow=False)
+
+        # Assert: 生徒ダッシュボードにリダイレクト
+        assert response.status_code == 302, (
+            f"ステータスコードが302ではありません。実際: {response.status_code}"
+        )
+        from django.urls import reverse
+        expected_url = reverse("diary:student_dashboard")
+        assert response.url == expected_url, (
+            f"リダイレクト先が正しくありません。期待: {expected_url}, 実際: {response.url}"
         )

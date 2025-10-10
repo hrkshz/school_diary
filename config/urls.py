@@ -4,9 +4,10 @@ from django.contrib import admin
 from django.urls import include
 from django.urls import path
 from django.views import defaults as default_views
-from django.views.generic import RedirectView
 from django.views.generic import TemplateView
 from django.http import JsonResponse
+
+from school_diary.diary.views import home_redirect_view
 
 
 def health_check(request):
@@ -15,7 +16,7 @@ def health_check(request):
 
 urlpatterns = [
     path("health/", health_check, name="health"),
-    path("", RedirectView.as_view(url="/accounts/login/", permanent=False), name="home"),
+    path("", home_redirect_view, name="home"),
     path(
         "about/",
         TemplateView.as_view(template_name="pages/about.html"),
