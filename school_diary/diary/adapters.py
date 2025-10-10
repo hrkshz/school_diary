@@ -24,7 +24,7 @@ class RoleBasedRedirectAdapter(DefaultAccountAdapter):
 
         # 担任（homeroom_teacherとして登録されている）
         if user.homeroom_classes.exists():
-            return reverse("teacher_dashboard")
+            return reverse("diary:teacher_dashboard")
 
         # 生徒
-        return reverse("student_dashboard")
+        return reverse("diary:student_dashboard")

@@ -108,3 +108,22 @@ class DiaryHistoryView(LoginRequiredMixin, ListView):
             .select_related("read_by")
             .order_by("-entry_date")
         )
+
+
+def home_redirect_view(request):
+    """ホームページのリダイレクト処理
+
+    認証状態に応じて適切なページにリダイレクト:
+    - 未認証ユーザー → ログインページ
+    - ログイン済みユーザー → 役割別ダッシュボード（管理者/担任/生徒）
+    """
+    # 未認証ユーザー → ログインページ
+    if not request.user.is_authenticated:
+        return redirect("/accounts/login/")
+
+    # ログイン済みユーザー → RoleBasedRedirectAdapterのロジックを再利用
+    from .adapters import RoleBasedRedirectAdapter
+
+    adapter = RoleBasedRedirectAdapter()
+    redirect_url = adapter.get_login_redirect_url(request)
+    return redirect(redirect_url)
