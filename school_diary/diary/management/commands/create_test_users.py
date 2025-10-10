@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
+from allauth.account.models import EmailAddress
 
 from school_diary.diary.models import ClassRoom
 
@@ -12,7 +13,13 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         # 管理者作成
         if not User.objects.filter(username="admin").exists():
-            User.objects.create_superuser("admin", "admin@example.com", "admin123")
+            admin = User.objects.create_superuser("admin", "admin@example.com", "admin123")
+            # EmailAddress レコードを作成
+            EmailAddress.objects.get_or_create(
+                user=admin,
+                email=admin.email.lower(),
+                defaults={"verified": True, "primary": True},
+            )
             self.stdout.write(self.style.SUCCESS("✅ 管理者を作成しました"))
         else:
             self.stdout.write(self.style.WARNING("⚠️  管理者は既に存在します"))
@@ -27,6 +34,12 @@ class Command(BaseCommand):
                         username,
                         f"{username}@example.com",
                         "password123",
+                    )
+                    # EmailAddress レコードを作成
+                    EmailAddress.objects.get_or_create(
+                        user=teacher,
+                        email=teacher.email.lower(),
+                        defaults={"verified": True, "primary": True},
                     )
                     teachers.append(teacher)
                     self.stdout.write(self.style.SUCCESS(f"✅ {username}を作成"))
@@ -68,6 +81,12 @@ class Command(BaseCommand):
                         username,
                         f"{username}@example.com",
                         "password123",
+                    )
+                    # EmailAddress レコードを作成
+                    EmailAddress.objects.get_or_create(
+                        user=student,
+                        email=student.email.lower(),
+                        defaults={"verified": True, "primary": True},
                     )
                     classroom.students.add(student)
                     self.stdout.write(
