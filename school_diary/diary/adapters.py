@@ -10,6 +10,8 @@ class RoleBasedRedirectAdapter(DefaultAccountAdapter):
     ログイン後、ユーザーの役割に応じて適切なページにリダイレクトします。
 
     - 管理者（is_staff=True）: Django Admin画面
+    - 校長/教頭（role='school_leader'）: 学校全体ダッシュボード
+    - 学年主任（role='grade_leader'）: 学年ダッシュボード
     - 担任（ClassRoom.homeroom_teacherとして登録）: 担任ダッシュボード
     - 生徒: 生徒ダッシュボード
     """
@@ -48,6 +50,14 @@ class RoleBasedRedirectAdapter(DefaultAccountAdapter):
         # 管理者
         if user.is_staff:
             return "/admin/"
+
+        # 校長/教頭
+        if user.profile.role == 'school_leader':
+            return reverse("diary:school_overview")
+
+        # 学年主任（担任と兼任の場合もこちら優先）
+        if user.profile.role == 'grade_leader':
+            return reverse("diary:grade_overview")
 
         # 担任（homeroom_teacherとして登録されている）
         if user.homeroom_classes.exists():

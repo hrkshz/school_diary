@@ -385,3 +385,94 @@ class TeacherNote(models.Model):
         teacher_name = self.teacher.get_full_name() or self.teacher.username
         student_name = self.student.get_full_name() or self.student.username
         return f"{teacher_name} → {student_name}"
+
+
+class AttendanceStatus(models.TextChoices):
+    """出席状況"""
+
+    PRESENT = "present", "出席"
+    ABSENT = "absent", "欠席"
+    LATE = "late", "遅刻"
+    EARLY_LEAVE = "early_leave", "早退"
+
+
+class AbsenceReason(models.TextChoices):
+    """欠席理由"""
+
+    ILLNESS = "illness", "病気"
+    FAMILY = "family", "家庭の都合"
+    OTHER = "other", "その他"
+
+
+class DailyAttendance(models.Model):
+    """出席記録（学級閉鎖判断の基礎データ）"""
+
+    student = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="attendance_records",
+        verbose_name="生徒",
+    )
+    classroom = models.ForeignKey(
+        "ClassRoom",
+        on_delete=models.PROTECT,
+        related_name="attendance_records",
+        verbose_name="クラス",
+    )
+    date = models.DateField("日付")
+    status = models.CharField(
+        "出席状況",
+        max_length=20,
+        choices=AttendanceStatus.choices,
+        default=AttendanceStatus.PRESENT,
+    )
+    absence_reason = models.CharField(
+        "欠席理由",
+        max_length=20,
+        choices=AbsenceReason.choices,
+        null=True,
+        blank=True,
+        help_text="欠席の場合のみ必須",
+    )
+    noted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name="recorded_attendance",
+        null=True,
+        blank=True,
+        verbose_name="記録者（担任）",
+    )
+    noted_at = models.DateTimeField("記録日時", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "出席記録"
+        verbose_name_plural = "出席記録"
+        unique_together = ["student", "date"]
+        ordering = ["-date", "student__last_name", "student__first_name"]
+        indexes = [
+            models.Index(fields=["date"]),
+            models.Index(fields=["status"]),
+            models.Index(fields=["absence_reason"]),
+        ]
+
+    def __str__(self):
+        student_name = self.student.get_full_name() or self.student.username
+        return f"{student_name} - {self.date} ({self.get_status_display()})"
+
+    @classmethod
+    def get_or_create_for_date(cls, classroom, date, teacher):
+        """指定日の出席記録を取得または作成（全生徒分）"""
+        students = classroom.students.all()
+        records = []
+        for student in students:
+            record, created = cls.objects.get_or_create(
+                student=student,
+                date=date,
+                defaults={
+                    "classroom": classroom,
+                    "status": AttendanceStatus.PRESENT,
+                    "noted_by": teacher,
+                },
+            )
+            records.append(record)
+        return records
