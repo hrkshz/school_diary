@@ -77,10 +77,28 @@ class UserProfileAdminForm(forms.ModelForm):
         required=False,
         empty_value=None,
         widget=forms.Select,
-        label="管理学年",
-        help_text="学年主任の場合、管理する学年（1, 2, 3）",
+        label="管理学年（学年主任のみ）",
+        help_text="学年主任を選択した場合のみ入力してください",
     )
 
     class Meta:
         model = UserProfile
         fields = "__all__"
+
+    def clean(self):
+        cleaned_data = super().clean()
+        role = cleaned_data.get('role')
+        managed_grade = cleaned_data.get('managed_grade')
+
+        # 学年主任以外の場合、managed_gradeを自動的にNoneにクリア
+        if role != 'grade_leader':
+            cleaned_data['managed_grade'] = None
+
+        # 学年主任の場合、managed_gradeが必須
+        elif role == 'grade_leader' and not managed_grade:
+            self.add_error(
+                'managed_grade',
+                '学年主任の場合、管理学年の入力が必須です'
+            )
+
+        return cleaned_data
