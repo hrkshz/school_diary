@@ -9,6 +9,7 @@ from django.utils.html import format_html
 
 from .forms import UserProfileAdminForm
 from .models import ClassRoom
+from .models import DailyAttendance
 from .models import DiaryEntry
 from .models import TeacherNote
 from .models import UserProfile
@@ -245,6 +246,50 @@ class TeacherNoteAdmin(admin.ModelAdmin):
             "メモ内容",
             {
                 "fields": ("note", "is_shared"),
+            },
+        ),
+    )
+
+
+@admin.register(DailyAttendance)
+class DailyAttendanceAdmin(admin.ModelAdmin):
+    """出席記録の管理画面"""
+
+    list_display = (
+        "student",
+        "classroom",
+        "date",
+        "status",
+        "absence_reason",
+        "noted_by",
+        "noted_at",
+    )
+    list_filter = ("date", "status", "absence_reason", "classroom")
+    search_fields = (
+        "student__username",
+        "student__first_name",
+        "student__last_name",
+    )
+    readonly_fields = ("noted_at",)
+    date_hierarchy = "date"
+
+    fieldsets = (
+        (
+            "基本情報",
+            {
+                "fields": ("student", "classroom", "date"),
+            },
+        ),
+        (
+            "出席状況",
+            {
+                "fields": ("status", "absence_reason"),
+            },
+        ),
+        (
+            "記録者",
+            {
+                "fields": ("noted_by", "noted_at"),
             },
         ),
     )

@@ -122,14 +122,15 @@
     <div class="col-12">
         <h5 class="mb-3">📊 サマリー統計（過去{{ days }}日間）</h5>
         <div class="row g-3">
-            <!-- 提出率 -->
+            <!-- 本日の欠席者 -->
             <div class="col-lg-3 col-md-6">
-                <div class="card border-{% if summary.submission_rate >= 90 %}success{% elif summary.submission_rate >= 70 %}warning{% else %}danger{% endif %} shadow-sm h-100">
+                <div class="card border-{% if absence_summary.total_absent >= 5 %}danger{% elif absence_summary.total_absent >= 3 %}warning{% else %}success{% endif %} shadow-sm h-100">
                     <div class="card-body text-center">
-                        <div class="display-4 text-{% if summary.submission_rate >= 90 %}success{% elif summary.submission_rate >= 70 %}warning{% else %}danger{% endif %} fw-bold">
-                            {{ summary.submission_rate }}%
+                        <div class="display-4 text-{% if absence_summary.total_absent >= 5 %}danger{% elif absence_summary.total_absent >= 3 %}warning{% else %}success{% endif %} fw-bold">
+                            {{ absence_summary.total_absent }}
                         </div>
-                        <div class="text-muted small mt-2">📝 提出率</div>
+                        <div class="text-muted small mt-2">🏠 本日の欠席者</div>
+                        <small class="text-muted">（うち病気: {{ absence_summary.absent_illness }}名）</small>
                     </div>
                 </div>
             </div>
@@ -165,6 +166,38 @@
         </div>
     </div>
 </div>
+
+<!-- 学年全体統計（参考）-->
+{% if grade_summary %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-info shadow">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">📊 学年全体（参考）</h5>
+            </div>
+            <div class="card-body">
+                <p class="lead mb-3">
+                    {{ classroom.grade }}年生全体（{{ grade_summary.class_count }}クラス、計{{ grade_summary.total_students }}名）
+                </p>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted">🔴 体調不良:</span>
+                            <strong>平均 {{ grade_summary.avg_poor_health }} 名/クラス</strong>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted">💙 メンタル低下:</span>
+                            <strong>平均 {{ grade_summary.avg_poor_mental }} 名/クラス</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
 
 <!-- アラート -->
 {% if alerts %}

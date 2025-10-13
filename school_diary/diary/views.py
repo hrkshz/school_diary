@@ -19,7 +19,11 @@ from django.views.generic import ListView
 from django.views.generic import TemplateView
 
 from .forms import DiaryEntryForm
+from .models import AbsenceReason
 from .models import ActionStatus
+from .models import AttendanceStatus
+from .models import ClassRoom
+from .models import DailyAttendance
 from .models import DiaryEntry
 from .models import InternalAction
 from .models import TeacherNote
@@ -256,6 +260,7 @@ class TeacherDashboardView(LoginRequiredMixin, TemplateView):
 
         context["classroom"] = classroom
         context["students"] = student_data
+        context["today"] = today
         context["summary"] = {
             "unread_total": summary_stats["unread_total"],
             "pending_action_count": summary_stats["pending_action_count"],
@@ -292,6 +297,32 @@ class TeacherDashboardView(LoginRequiredMixin, TemplateView):
             note.is_own_class_student = note.student.id in own_student_ids
 
         context["recent_shared_notes"] = recent_shared_notes
+
+        # 本日の欠席者情報を集計
+        today_attendance = DailyAttendance.objects.filter(
+            classroom=classroom,
+            date=today,
+        )
+        absent_students = []
+        for attendance in today_attendance.filter(status=AttendanceStatus.ABSENT).select_related("student"):
+            absent_students.append({
+                "student": attendance.student,
+                "absence_reason": attendance.get_absence_reason_display() if attendance.absence_reason else "未設定",
+                "absence_reason_code": attendance.absence_reason,
+            })
+
+        absence_data = {
+            "total_absent": len(absent_students),
+            "absent_illness": today_attendance.filter(
+                status=AttendanceStatus.ABSENT,
+                absence_reason=AbsenceReason.ILLNESS,
+            ).count(),
+            "absent_students": absent_students,
+        }
+        context["absence_data"] = absence_data
+
+        # 全生徒リスト（出席入力モーダル用）
+        context["all_students"] = classroom.students.all().order_by("last_name", "first_name")
 
         return context
 
@@ -759,13 +790,78 @@ class ClassHealthDashboardView(LoginRequiredMixin, TemplateView):
             "days": days,
         }
 
-        # アラート生成
+        # 学年全体統計を計算（担任が学年平均と比較できるように）
+        grade_classrooms = ClassRoom.objects.filter(
+            grade=classroom.grade,
+            academic_year=classroom.academic_year,
+        ).exclude(id=classroom.id).prefetch_related('students')
+
+        if grade_classrooms.exists():
+            # 学年全体（自分のクラスを除く）の統計
+            grade_total_students = 0
+            grade_total_entries = 0
+            grade_total_expected = 0
+            grade_poor_health_students = set()
+            grade_poor_mental_students = set()
+
+            for other_classroom in grade_classrooms:
+                other_students = other_classroom.students.all()
+                grade_total_students += other_students.count()
+
+                # この他クラスの連絡帳
+                other_entries = DiaryEntry.objects.filter(
+                    student__in=other_students,
+                    entry_date__gte=start_date,
+                    entry_date__lte=end_date,
+                )
+                grade_total_entries += other_entries.count()
+                grade_total_expected += other_students.count() * days
+
+                # 体調・メンタル低下者
+                for entry in other_entries:
+                    if entry.health_condition <= 2:
+                        grade_poor_health_students.add(entry.student_id)
+                    if entry.mental_condition <= 2:
+                        grade_poor_mental_students.add(entry.student_id)
+
+            # 学年平均を計算（自分のクラスを含む全体）
+            all_classrooms_count = grade_classrooms.count() + 1  # 自分のクラス含む
+            grade_avg_poor_health = round(len(grade_poor_health_students) / grade_classrooms.count(), 1)
+            grade_avg_poor_mental = round(len(grade_poor_mental_students) / grade_classrooms.count(), 1)
+
+            grade_summary = {
+                "total_students": grade_total_students + summary["total_students"],
+                "class_count": all_classrooms_count,
+                "avg_poor_health": grade_avg_poor_health,
+                "avg_poor_mental": grade_avg_poor_mental,
+            }
+        else:
+            grade_summary = None
+
+        # 本日の欠席者情報を集計
+        today = timezone.now().date()
+        today_attendance = DailyAttendance.objects.filter(
+            classroom=classroom,
+            date=today,
+        )
+        total_absent = today_attendance.filter(status=AttendanceStatus.ABSENT).count()
+        absent_illness = today_attendance.filter(
+            status=AttendanceStatus.ABSENT,
+            absence_reason=AbsenceReason.ILLNESS,
+        ).count()
+
+        absence_summary = {
+            "total_absent": total_absent,
+            "absent_illness": absent_illness,
+        }
+
+        # アラート生成（閾値を5名に変更: MAP-2Aの2段階アラートと整合）
         alerts = []
-        if summary["poor_health_count"] >= 3:
+        if summary["poor_health_count"] >= 5:
             alerts.append(
                 f"⚠️ 体調不良者が{summary['poor_health_count']}名います。クラス全体の健康状態に注意が必要です。",
             )
-        if summary["poor_mental_count"] >= 3:
+        if summary["poor_mental_count"] >= 5:
             alerts.append(
                 f"💙 メンタル低下者が{summary['poor_mental_count']}名います。声かけやフォローを検討してください。",
             )
@@ -775,11 +871,306 @@ class ClassHealthDashboardView(LoginRequiredMixin, TemplateView):
             )
 
         context["classroom"] = classroom
+        context["absence_summary"] = absence_summary
         context["students_matrix"] = students_matrix
         context["date_list"] = date_list
         context["daily_summary"] = daily_summary
         context["summary"] = summary
+        context["grade_summary"] = grade_summary
         context["alerts"] = alerts
         context["days"] = days
 
         return context
+
+
+class GradeOverviewView(LoginRequiredMixin, TemplateView):
+    """学年主任用ダッシュボード（学年全体の比較）"""
+
+    template_name = "diary/grade_overview.html"
+
+    def dispatch(self, request, *args, **kwargs):
+        # grade_leaderのみアクセス可能
+        if request.user.profile.role != "grade_leader":
+            return redirect("home")
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        managed_grade = user.profile.managed_grade
+
+        # 同じ学年の全クラスを取得
+        classrooms = ClassRoom.objects.filter(
+            grade=managed_grade,
+            academic_year=2025,
+        ).prefetch_related("students")
+
+        today = timezone.now().date()
+        week_ago = today - timedelta(days=7)
+
+        # クラスごとの統計
+        classroom_stats = []
+        for classroom in classrooms:
+            students = classroom.students.all()
+            student_count = students.count()
+
+            # 過去7日間の連絡帳
+            entries = DiaryEntry.objects.filter(
+                student__in=students,
+                entry_date__gte=week_ago,
+                entry_date__lte=today,
+            )
+
+            # 本日の出席記録
+            today_attendance = DailyAttendance.objects.filter(
+                classroom=classroom,
+                date=today,
+            )
+            absent_count = today_attendance.filter(
+                status=AttendanceStatus.ABSENT,
+            ).count()
+            absent_illness = today_attendance.filter(
+                status=AttendanceStatus.ABSENT,
+                absence_reason=AbsenceReason.ILLNESS,
+            ).count()
+
+            # 統計計算
+            total_entries = entries.count()
+            expected_entries = student_count * 7
+            submission_rate = (
+                round((total_entries / expected_entries * 100), 1)
+                if expected_entries > 0
+                else 0
+            )
+
+            poor_health_count = (
+                entries.filter(health_condition__lte=2).values("student").distinct().count()
+            )
+            poor_mental_count = (
+                entries.filter(mental_condition__lte=2).values("student").distinct().count()
+            )
+
+            # 警告レベル判定
+            alert_level = "success"  # 緑
+            if absent_illness >= 5 or poor_health_count >= 5:
+                alert_level = "danger"  # 赤
+            elif absent_illness >= 3 or poor_health_count >= 3:
+                alert_level = "warning"  # 黄
+
+            classroom_stats.append(
+                {
+                    "classroom": classroom,
+                    "student_count": student_count,
+                    "submission_rate": submission_rate,
+                    "absent_count": absent_count,
+                    "absent_illness": absent_illness,
+                    "poor_health_count": poor_health_count,
+                    "poor_mental_count": poor_mental_count,
+                    "alert_level": alert_level,
+                },
+            )
+
+        # 学年全体サマリー
+        total_students = sum(s["student_count"] for s in classroom_stats)
+        avg_submission_rate = (
+            round(sum(s["submission_rate"] for s in classroom_stats) / len(classroom_stats), 1)
+            if classroom_stats
+            else 0
+        )
+        total_absent = sum(s["absent_count"] for s in classroom_stats)
+        total_absent_illness = sum(s["absent_illness"] for s in classroom_stats)
+        total_poor_health = sum(s["poor_health_count"] for s in classroom_stats)
+        total_poor_mental = sum(s["poor_mental_count"] for s in classroom_stats)
+
+        context["managed_grade"] = managed_grade
+        context["classroom_stats"] = classroom_stats
+        context["summary"] = {
+            "total_students": total_students,
+            "class_count": len(classroom_stats),
+            "avg_submission_rate": avg_submission_rate,
+            "total_absent": total_absent,
+            "total_absent_illness": total_absent_illness,
+            "total_poor_health": total_poor_health,
+            "total_poor_mental": total_poor_mental,
+        }
+
+        return context
+
+
+class SchoolOverviewView(LoginRequiredMixin, TemplateView):
+    """校長/教頭用ダッシュボード（学校全体の把握）"""
+
+    template_name = "diary/school_overview.html"
+
+    def dispatch(self, request, *args, **kwargs):
+        # school_leaderのみアクセス可能
+        if request.user.profile.role != "school_leader":
+            return redirect("home")
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        # 全学年の統計
+        grade_stats = []
+        for grade in [1, 2, 3]:
+            classrooms = ClassRoom.objects.filter(
+                grade=grade,
+                academic_year=2025,
+            ).prefetch_related("students")
+
+            all_students = []
+            for classroom in classrooms:
+                all_students.extend(list(classroom.students.all()))
+
+            student_count = len(all_students)
+
+            today = timezone.now().date()
+            week_ago = today - timedelta(days=7)
+
+            # 過去7日間の連絡帳
+            entries = DiaryEntry.objects.filter(
+                student__in=all_students,
+                entry_date__gte=week_ago,
+                entry_date__lte=today,
+            )
+
+            # 本日の出席記録
+            today_attendance = DailyAttendance.objects.filter(
+                classroom__in=classrooms,
+                date=today,
+            )
+            absent_count = today_attendance.filter(
+                status=AttendanceStatus.ABSENT,
+            ).count()
+            absent_illness = today_attendance.filter(
+                status=AttendanceStatus.ABSENT,
+                absence_reason=AbsenceReason.ILLNESS,
+            ).count()
+
+            # 欠席率計算
+            absence_rate = (
+                round((absent_count / student_count * 100), 1) if student_count > 0 else 0
+            )
+
+            # 統計計算
+            total_entries = entries.count()
+            expected_entries = student_count * 7
+            submission_rate = (
+                round((total_entries / expected_entries * 100), 1)
+                if expected_entries > 0
+                else 0
+            )
+
+            poor_health_count = (
+                entries.filter(health_condition__lte=2).values("student").distinct().count()
+            )
+            poor_mental_count = (
+                entries.filter(mental_condition__lte=2).values("student").distinct().count()
+            )
+
+            # 警告レベル判定（学級閉鎖基準: 20%）
+            alert_level = "success"  # 緑
+            if absence_rate >= 15:  # 15%以上
+                alert_level = "danger"  # 赤
+            elif absence_rate >= 10:  # 10%以上
+                alert_level = "warning"  # 黄
+
+            grade_stats.append(
+                {
+                    "grade": grade,
+                    "grade_display": f"{grade}年",
+                    "class_count": classrooms.count(),
+                    "student_count": student_count,
+                    "submission_rate": submission_rate,
+                    "absent_count": absent_count,
+                    "absent_illness": absent_illness,
+                    "absence_rate": absence_rate,
+                    "poor_health_count": poor_health_count,
+                    "poor_mental_count": poor_mental_count,
+                    "alert_level": alert_level,
+                },
+            )
+
+        # 学校全体サマリー
+        total_students = sum(s["student_count"] for s in grade_stats)
+        total_absent = sum(s["absent_count"] for s in grade_stats)
+        total_absent_illness = sum(s["absent_illness"] for s in grade_stats)
+        total_poor_health = sum(s["poor_health_count"] for s in grade_stats)
+        total_poor_mental = sum(s["poor_mental_count"] for s in grade_stats)
+        avg_submission_rate = (
+            round(sum(s["submission_rate"] for s in grade_stats) / 3, 1)
+            if grade_stats
+            else 0
+        )
+
+        # 全体の警告レベル
+        school_alert_level = "success"
+        if any(s["alert_level"] == "danger" for s in grade_stats):
+            school_alert_level = "danger"
+        elif any(s["alert_level"] == "warning" for s in grade_stats):
+            school_alert_level = "warning"
+
+        context["grade_stats"] = grade_stats
+        context["summary"] = {
+            "total_students": total_students,
+            "avg_submission_rate": avg_submission_rate,
+            "total_absent": total_absent,
+            "total_absent_illness": total_absent_illness,
+            "total_poor_health": total_poor_health,
+            "total_poor_mental": total_poor_mental,
+            "school_alert_level": school_alert_level,
+        }
+
+        return context
+
+
+@login_required
+def teacher_save_attendance(request):
+    """担任が本日の出席データを保存"""
+    if request.method != "POST":
+        return redirect("diary:teacher_dashboard")
+
+    # 担任のクラスルームを取得
+    classroom = request.user.homeroom_classes.first()
+    if not classroom:
+        messages.error(request, "担任権限がありません")
+        return redirect("diary:teacher_dashboard")
+
+    today = timezone.now().date()
+
+    # POSTデータから出席状況を取得（student_id_status, student_id_reason形式）
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+
+    for key, value in request.POST.items():
+        if key.startswith("student_") and key.endswith("_status"):
+            student_id = int(key.replace("student_", "").replace("_status", ""))
+
+            # 生徒が自分のクラスに所属しているか確認
+            if not classroom.students.filter(id=student_id).exists():
+                continue
+
+            student = User.objects.get(id=student_id)
+            status = value
+
+            # 欠席理由を取得（欠席の場合のみ）
+            absence_reason = None
+            if status == AttendanceStatus.ABSENT:
+                reason_key = f"student_{student_id}_reason"
+                absence_reason = request.POST.get(reason_key)
+
+            # DailyAttendanceレコードを更新または作成
+            DailyAttendance.objects.update_or_create(
+                student=student,
+                classroom=classroom,
+                date=today,
+                defaults={
+                    "status": status,
+                    "absence_reason": absence_reason,
+                    "noted_by": request.user,
+                },
+            )
+
+    messages.success(request, f"{today.strftime('%Y年%m月%d日')}の出席データを保存しました")
+    return redirect("diary:teacher_dashboard")

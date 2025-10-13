@@ -65,4 +65,21 @@ urlpatterns = [
         views.teacher_delete_note,
         name="teacher_delete_note",
     ),
+    # 出席管理
+    path(
+        "teacher/attendance/save/",
+        views.teacher_save_attendance,
+        name="teacher_save_attendance",
+    ),
+    # 管理職画面
+    path(
+        "grade-overview/",
+        views.GradeOverviewView.as_view(),
+        name="grade_overview",
+    ),
+    path(
+        "school-overview/",
+        views.SchoolOverviewView.as_view(),
+        name="school_overview",
+    ),
 ]

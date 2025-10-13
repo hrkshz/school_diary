@@ -71,13 +71,55 @@
         <a class="navbar-brand" href="{% url 'home' %}">📝 連絡帳システム</a>
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
           <ul class="navbar-nav mr-auto">
-            <li class="nav-item active">
-              <a class="nav-link" href="{% url 'home' %}">Home <span class="visually-hidden">(current)</span></a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="{% url 'about' %}">About</a>
-            </li>
+            <!-- Home/About: 未認証ユーザー or システム管理者のみ表示 -->
+            {% if not request.user.is_authenticated or request.user.is_superuser %}
+              <li class="nav-item active">
+                <a class="nav-link" href="{% url 'home' %}">Home <span class="visually-hidden">(current)</span></a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="{% url 'about' %}">About</a>
+              </li>
+            {% endif %}
+
             {% if request.user.is_authenticated %}
+              <!-- システム管理者（is_superuser）には業務メニューを表示しない -->
+              {% if not request.user.is_superuser %}
+                <!-- 生徒用メニュー -->
+                {% if request.user.profile.role == 'student' %}
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'diary:diary_create' %}">📝 連絡帳作成</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'diary:diary_history' %}">📚 過去記録</a>
+                </li>
+              {% endif %}
+
+              <!-- 担任用メニュー（兼任可能） -->
+              {% if request.user.homeroom_classes.exists %}
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'diary:teacher_dashboard' %}">👨‍🏫 担任ダッシュボード</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'diary:class_health_dashboard' %}">🩺 クラス健康状態</a>
+                </li>
+              {% endif %}
+
+              <!-- 学年主任用メニュー（兼任可能） -->
+              {% if request.user.profile.role == 'grade_leader' %}
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'diary:grade_overview' %}">📊 学年ダッシュボード</a>
+                </li>
+              {% endif %}
+
+              <!-- 校長/教頭用メニュー -->
+              {% if request.user.profile.role == 'school_leader' %}
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'diary:school_overview' %}">🏫 学校全体</a>
+                </li>
+              {% endif %}
+              {% endif %}
+              <!-- /not is_superuser -->
+
               <li class="nav-item">
                 {# URL provided by django-allauth/account/urls.py #}
                 <a class="nav-link" href="{% url 'account_logout' %}">{% translate "Sign Out" %}</a>

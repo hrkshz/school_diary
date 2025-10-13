@@ -1,0 +1,188 @@
+{% extends 'base.html' %}
+
+{% block title %}学年ダッシュボード{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 mb-3">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}">ホーム</a></li>
+                <li class="breadcrumb-item active" aria-current="page">📊 学年ダッシュボード</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12 mb-4">
+        <h2>📊 学年ダッシュボード</h2>
+        <p class="lead">{{ managed_grade }}年生全体（{{ summary.class_count }}クラス、計{{ summary.total_students }}名）</p>
+    </div>
+</div>
+
+<!-- 学年全体サマリーカード -->
+<div class="row mb-4">
+    <div class="col-12">
+        <h5 class="mb-3">📊 学年全体サマリー（過去7日間）</h5>
+        <div class="row g-3">
+            <!-- 提出率 -->
+            <div class="col-lg-3 col-md-6">
+                <div class="card border-{% if summary.avg_submission_rate >= 90 %}success{% elif summary.avg_submission_rate >= 70 %}warning{% else %}danger{% endif %} shadow-sm h-100">
+                    <div class="card-body text-center">
+                        <div class="display-4 text-{% if summary.avg_submission_rate >= 90 %}success{% elif summary.avg_submission_rate >= 70 %}warning{% else %}danger{% endif %} fw-bold">
+                            {{ summary.avg_submission_rate }}%
+                        </div>
+                        <div class="text-muted small mt-2">📝 平均提出率</div>
+                    </div>
+                </div>
+            </div>
+            <!-- 本日の欠席者 -->
+            <div class="col-lg-3 col-md-6">
+                <div class="card border-{% if summary.total_absent >= 10 %}danger{% elif summary.total_absent >= 5 %}warning{% else %}success{% endif %} shadow-sm h-100">
+                    <div class="card-body text-center">
+                        <div class="display-4 text-{% if summary.total_absent >= 10 %}danger{% elif summary.total_absent >= 5 %}warning{% else %}success{% endif %} fw-bold">
+                            {{ summary.total_absent }}
+                        </div>
+                        <div class="text-muted small mt-2">🏠 本日の欠席者</div>
+                        <small class="text-muted">（うち病気: {{ summary.total_absent_illness }}名）</small>
+                    </div>
+                </div>
+            </div>
+            <!-- 体調不良者数 -->
+            <div class="col-lg-3 col-md-6">
+                <div class="card border-danger shadow-sm h-100">
+                    <div class="card-body text-center">
+                        <div class="display-4 text-danger fw-bold">{{ summary.total_poor_health }}</div>
+                        <div class="text-muted small mt-2">🔴 体調不良者</div>
+                        <small class="text-muted">（過去7日間、体調1-2の生徒数）</small>
+                    </div>
+                </div>
+            </div>
+            <!-- メンタル低下者数 -->
+            <div class="col-lg-3 col-md-6">
+                <div class="card border-info shadow-sm h-100">
+                    <div class="card-body text-center">
+                        <div class="display-4 text-info fw-bold">{{ summary.total_poor_mental }}</div>
+                        <div class="text-muted small mt-2">💙 メンタル低下者</div>
+                        <small class="text-muted">（過去7日間、メンタル1-2の生徒数）</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- クラス別統計テーブル -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">📋 クラス別統計</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>クラス</th>
+                                <th class="text-center">生徒数</th>
+                                <th class="text-center">提出率</th>
+                                <th class="text-center">本日欠席</th>
+                                <th class="text-center">体調不良</th>
+                                <th class="text-center">メンタル低下</th>
+                                <th class="text-center">警告レベル</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for stat in classroom_stats %}
+                            <tr class="{% if stat.alert_level == 'danger' %}table-danger{% elif stat.alert_level == 'warning' %}table-warning{% endif %}">
+                                <td><strong>{{ stat.classroom }}</strong></td>
+                                <td class="text-center">{{ stat.student_count }}名</td>
+                                <td class="text-center">
+                                    <span class="badge bg-{% if stat.submission_rate >= 90 %}success{% elif stat.submission_rate >= 70 %}warning{% else %}danger{% endif %}">
+                                        {{ stat.submission_rate }}%
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    {{ stat.absent_count }}名
+                                    {% if stat.absent_illness > 0 %}
+                                    <br><small class="text-muted">(病気: {{ stat.absent_illness }})</small>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-{% if stat.poor_health_count >= 5 %}danger{% elif stat.poor_health_count >= 3 %}warning{% else %}success{% endif %}">
+                                        {{ stat.poor_health_count }}名
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-{% if stat.poor_mental_count >= 5 %}info{% elif stat.poor_mental_count >= 3 %}secondary{% else %}success{% endif %}">
+                                        {{ stat.poor_mental_count }}名
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    {% if stat.alert_level == 'danger' %}
+                                    <span class="badge bg-danger">🔴 要注意</span>
+                                    {% elif stat.alert_level == 'warning' %}
+                                    <span class="badge bg-warning text-dark">🟡 注意</span>
+                                    {% else %}
+                                    <span class="badge bg-success">🟢 良好</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-4">
+                                    クラスデータがありません
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card-footer text-muted">
+                <div class="row">
+                    <div class="col-md-6">
+                        <strong>警告レベル判定基準:</strong>
+                        <span class="ms-2">🔴 要注意: 病気欠席5名以上 or 体調不良5名以上</span>
+                        <br>
+                        <span class="ms-5">🟡 注意: 病気欠席3名以上 or 体調不良3名以上</span>
+                        <br>
+                        <span class="ms-5">🟢 良好: 上記未満</span>
+                    </div>
+                    <div class="col-md-6 text-md-end mt-2 mt-md-0">
+                        <strong>💡 ヒント:</strong> 赤色のクラスは早急な対応が必要です
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 使い方 -->
+<div class="row">
+    <div class="col-12">
+        <div class="card bg-light">
+            <div class="card-body">
+                <h6 class="card-title">💡 使い方</h6>
+                <ul class="mb-0">
+                    <li><strong>学年全体サマリー</strong>: 全クラスの平均値を表示</li>
+                    <li><strong>クラス別統計</strong>: 各クラスの状況を比較できます</li>
+                    <li><strong>警告レベル</strong>:
+                        <ul>
+                            <li>🔴 要注意（赤）: 病気欠席5名以上 or 体調不良5名以上 → 学級閉鎖の可能性を検討</li>
+                            <li>🟡 注意（黄）: 病気欠席3名以上 or 体調不良3名以上 → 担任と連携して状況確認</li>
+                            <li>🟢 良好（緑）: 健康状態良好</li>
+                        </ul>
+                    </li>
+                    <li><strong>本日の欠席者</strong>: 「病気」による欠席者数が学級閉鎖判断の重要指標です</li>
+                    <li><strong>体調不良・メンタル低下</strong>: 過去7日間で体調1-2またはメンタル1-2を記録した生徒の延べ人数</li>
+                    <li><strong>学年会議</strong>: このダッシュボードを使って学年全体の傾向を共有し、クラス間で対応を協議できます</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

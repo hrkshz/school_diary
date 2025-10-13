@@ -26,10 +26,13 @@
                 <p class="lead mb-0">{{ user.username }}さん、こんにちは</p>
                 {% endif %}
             </div>
-            <div>
+            <div class="d-flex gap-2">
                 <a href="{% url 'diary:class_health_dashboard' %}" class="btn btn-primary btn-lg">
                     🩺 クラス健康状態<br><small class="text-white-50">ヒートマップで全体把握</small>
                 </a>
+                <button type="button" class="btn btn-success btn-lg" data-bs-toggle="modal" data-bs-target="#attendanceModal">
+                    📝 出席入力<br><small class="text-white-50">今日の出席を記録</small>
+                </button>
             </div>
         </div>
     </div>
@@ -143,6 +146,39 @@
                             {% else %}
                             <small class="text-success">✅ 健康状態良好</small>
                             {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3行目: 本日の欠席者 -->
+        <div class="row g-3 mt-2">
+            <div class="col-12">
+                <div class="card border-{% if absence_data.total_absent >= 5 %}danger{% elif absence_data.total_absent >= 3 %}warning{% else %}success{% endif %} shadow-sm h-100">
+                    <div class="card-body">
+                        <h6 class="text-muted mb-3">🏠 本日の欠席者</h6>
+                        <div class="row">
+                            <div class="col-md-4 text-center">
+                                <div class="h2 {% if absence_data.total_absent >= 5 %}text-danger{% elif absence_data.total_absent >= 3 %}text-warning{% else %}text-success{% endif %} mb-0">
+                                    {{ absence_data.total_absent }}名
+                                </div>
+                                <small class="text-muted">合計欠席</small>
+                            </div>
+                            <div class="col-md-4 text-center">
+                                <div class="h3 text-danger mb-0">{{ absence_data.absent_illness }}名</div>
+                                <small class="text-muted">うち病気</small>
+                            </div>
+                            <div class="col-md-4">
+                                {% if absence_data.absent_students %}
+                                <small class="text-muted d-block mb-1"><strong>欠席者:</strong></small>
+                                {% for abs in absence_data.absent_students %}
+                                <span class="badge bg-secondary me-1">{{ abs.student.get_full_name }}({{ abs.absence_reason }})</span>
+                                {% endfor %}
+                                {% else %}
+                                <small class="text-success">🎉 全員出席</small>
+                                {% endif %}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -428,4 +464,83 @@
     担当クラスがありません。管理者に連絡して担任設定を行ってください。
 </div>
 {% endif %}
+
+<!-- 出席入力モーダル -->
+<div class="modal fade" id="attendanceModal" tabindex="-1" aria-labelledby="attendanceModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="attendanceModalLabel">📝 出席入力 - {{ classroom }}</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="attendanceForm" method="post" action="{% url 'diary:teacher_save_attendance' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <p class="text-muted">本日（{{ today }}）の出席状況を入力してください。</p>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-sm">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 30%">生徒名</th>
+                                    <th style="width: 40%">出席状況</th>
+                                    <th style="width: 30%">欠席理由</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for student in all_students %}
+                                <tr>
+                                    <td>{{ student.get_full_name }}</td>
+                                    <td>
+                                        <select name="student_{{ student.id }}_status" class="form-select form-select-sm attendance-status" data-student-id="{{ student.id }}">
+                                            <option value="present">出席</option>
+                                            <option value="absent">欠席</option>
+                                            <option value="late">遅刻</option>
+                                            <option value="early_leave">早退</option>
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <select name="student_{{ student.id }}_reason" class="form-select form-select-sm absence-reason" id="reason_{{ student.id }}" disabled>
+                                            <option value="">-</option>
+                                            <option value="illness">病気</option>
+                                            <option value="family">家庭の都合</option>
+                                            <option value="other">その他</option>
+                                        </select>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                    <button type="submit" class="btn btn-success">💾 保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// 出席状況が「欠席」の時のみ欠席理由を有効化
+document.addEventListener('DOMContentLoaded', function() {
+    const statusSelects = document.querySelectorAll('.attendance-status');
+
+    statusSelects.forEach(select => {
+        select.addEventListener('change', function() {
+            const studentId = this.dataset.studentId;
+            const reasonSelect = document.getElementById('reason_' + studentId);
+
+            if (this.value === 'absent') {
+                reasonSelect.disabled = false;
+                reasonSelect.value = 'illness';  // デフォルトで「病気」を選択
+            } else {
+                reasonSelect.disabled = true;
+                reasonSelect.value = '';
+            }
+        });
+    });
+});
+</script>
+
 {% endblock %}
