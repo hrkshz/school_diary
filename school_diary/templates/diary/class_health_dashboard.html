@@ -1,0 +1,280 @@
+{% extends 'base.html' %}
+{% load diary_extras %}
+
+{% block title %}クラス健康状態ダッシュボード{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ヒートマップセル（Bootstrap方式: ユーティリティクラスに任せる） */
+.heatmap-cell {
+    border: 1px solid #dee2e6;
+    cursor: pointer;
+    background-color: white;
+}
+
+/* 7日間（全体表示幅: 65%） */
+.days-7 .heatmap-cell {
+    width: 80px;
+    height: 50px;
+    font-size: calc(80px * 0.26); /* 20.8px */
+}
+
+/* 14日間（全体表示幅: 65%） */
+.days-14 .heatmap-cell {
+    width: 60px;
+    height: 45px;
+    font-size: calc(60px * 0.26); /* 15.6px */
+}
+
+/* 30日間スタイル削除: UI/UX改善のため30日間表示を廃止 */
+
+.heatmap-cell:hover {
+    transform: scale(1.05);
+    z-index: 10;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* 生徒名セル */
+.student-name-cell {
+    min-width: 120px;
+    font-weight: 500;
+    position: sticky;
+    left: 0;
+    background-color: white;
+    z-index: 5;
+}
+
+/* 日付ヘッダー */
+.date-header {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    min-height: 100px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+/* テーブルスクロール */
+.table-wrapper {
+    overflow-x: auto;
+    max-width: 100%;
+}
+
+/* アラートボックス */
+.alert-box {
+    border-left: 4px solid;
+}
+
+.alert-box.alert-danger {
+    border-left-color: #dc3545;
+}
+
+.alert-box.alert-info {
+    border-left-color: #17a2b8;
+}
+
+.alert-box.alert-warning {
+    border-left-color: #ffc107;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 mb-3">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'diary:teacher_dashboard' %}">👨‍🏫 担任ダッシュボード</a></li>
+                <li class="breadcrumb-item active" aria-current="page">🩺 クラス健康状態</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12 mb-4">
+        <h2>🩺 クラス健康状態ダッシュボード</h2>
+        {% if classroom %}
+        <p class="lead">{{ classroom }} - 全体の体調・メンタル状況を一目で把握</p>
+        {% else %}
+        <p class="lead">担当クラスがありません</p>
+        {% endif %}
+    </div>
+</div>
+
+{% if classroom %}
+<!-- 期間選択 -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="btn-group" role="group" aria-label="期間選択">
+            <a href="?days=7" class="btn {% if days == 7 %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                過去7日間
+            </a>
+            <a href="?days=14" class="btn {% if days == 14 %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                過去14日間
+            </a>
+            <!-- 30日間オプション削除: ヒートマップセルが小さすぎてUI破綻のため -->
+        </div>
+    </div>
+</div>
+
+<!-- サマリーカード -->
+<div class="row mb-4">
+    <div class="col-12">
+        <h5 class="mb-3">📊 サマリー統計（過去{{ days }}日間）</h5>
+        <div class="row g-3">
+            <!-- 提出率 -->
+            <div class="col-lg-3 col-md-6">
+                <div class="card border-{% if summary.submission_rate >= 90 %}success{% elif summary.submission_rate >= 70 %}warning{% else %}danger{% endif %} shadow-sm h-100">
+                    <div class="card-body text-center">
+                        <div class="display-4 text-{% if summary.submission_rate >= 90 %}success{% elif summary.submission_rate >= 70 %}warning{% else %}danger{% endif %} fw-bold">
+                            {{ summary.submission_rate }}%
+                        </div>
+                        <div class="text-muted small mt-2">📝 提出率</div>
+                    </div>
+                </div>
+            </div>
+            <!-- 体調不良者数 -->
+            <div class="col-lg-3 col-md-6">
+                <div class="card border-danger shadow-sm h-100">
+                    <div class="card-body text-center">
+                        <div class="display-4 text-danger fw-bold">{{ summary.poor_health_count }}</div>
+                        <div class="text-muted small mt-2">🔴 体調不良者</div>
+                        <small class="text-muted">（体調1-2の生徒数）</small>
+                    </div>
+                </div>
+            </div>
+            <!-- メンタル低下者数 -->
+            <div class="col-lg-3 col-md-6">
+                <div class="card border-info shadow-sm h-100">
+                    <div class="card-body text-center">
+                        <div class="display-4 text-info fw-bold">{{ summary.poor_mental_count }}</div>
+                        <div class="text-muted small mt-2">💙 メンタル低下者</div>
+                        <small class="text-muted">（メンタル1-2の生徒数）</small>
+                    </div>
+                </div>
+            </div>
+            <!-- 全体人数 -->
+            <div class="col-lg-3 col-md-6">
+                <div class="card border-secondary shadow-sm h-100">
+                    <div class="card-body text-center">
+                        <div class="display-4 text-secondary fw-bold">{{ summary.total_students }}</div>
+                        <div class="text-muted small mt-2">👥 全体人数</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- アラート -->
+{% if alerts %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h5 class="mb-3">⚠️ アラート</h5>
+        {% for alert in alerts %}
+        <div class="alert alert-{% if '体調不良' in alert %}danger{% elif 'メンタル' in alert %}info{% else %}warning{% endif %} alert-box mb-2">
+            {{ alert }}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- ヒートマップ -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">🗓️ 生徒×日付ヒートマップ（体調・メンタル）</h5>
+                <small class="text-white-50">セルをクリックで生徒詳細へ</small>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-wrapper days-{{ days }}">
+                    <table class="table table-bordered mb-0 table-sm">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="student-name-cell">生徒名</th>
+                                {% for date in date_list %}
+                                <th class="date-header text-center">
+                                    {{ date|date:"m/d" }}<br>({{ date|date:"D"|slice:":1" }})
+                                </th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in students_matrix %}
+                            <tr>
+                                <td class="student-name-cell">
+                                    <a href="{% url 'diary:teacher_student_detail' student_id=row.student.id %}" class="text-decoration-none">
+                                        <strong>{{ row.student.get_full_name }}</strong>
+                                    </a>
+                                </td>
+                                {% for date in date_list %}
+                                <td class="heatmap-cell text-center align-middle"
+                                    title="{% if date in row.entries %}{{ row.student.get_full_name }} - {{ date|date:'m/d' }}: 体調{{ row.entries|get_item:date|attr:'health_condition' }}, メンタル{{ row.entries|get_item:date|attr:'mental_condition' }}{% else %}{{ row.student.get_full_name }} - {{ date|date:'m/d' }}: 未提出{% endif %}"
+                                    onclick="window.location.href='{% url 'diary:teacher_student_detail' student_id=row.student.id %}'">{% if date in row.entries %}{% with entry=row.entries|get_item:date %}{% if entry.health_condition <= 2 %}🔴{% elif entry.health_condition == 3 %}🟡{% else %}🟢{% endif %}｜{% if entry.mental_condition <= 2 %}🔴{% elif entry.mental_condition == 3 %}🟡{% else %}🟢{% endif %}{% endwith %}{% else %}⚪｜⚪{% endif %}</td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr class="table-light">
+                                <td class="student-name-cell font-weight-bold">📊 不調者数</td>
+                                {% for date in date_list %}
+                                <td class="text-center small fw-bold
+                                    {% if daily_summary|get_item:date|get_item:'poor_health' >= 3 or daily_summary|get_item:date|get_item:'poor_mental' >= 3 %}bg-danger text-white
+                                    {% elif daily_summary|get_item:date|get_item:'poor_health' >= 1 or daily_summary|get_item:date|get_item:'poor_mental' >= 1 %}bg-warning text-dark
+                                    {% else %}bg-success text-white{% endif %}">
+                                    {{ daily_summary|get_item:date|get_item:'poor_health' }}｜{{ daily_summary|get_item:date|get_item:'poor_mental' }}
+                                </td>
+                                {% endfor %}
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+            <div class="card-footer text-muted">
+                <div class="row">
+                    <div class="col-md-6">
+                        <strong>凡例:</strong>
+                        <span class="ms-2">🔴 不調（1-2）</span>
+                        <span class="ms-2">🟡 普通（3）</span>
+                        <span class="ms-2">🟢 良好（4-5）</span>
+                        <span class="ms-2">⚪ 未提出</span>
+                    </div>
+                    <div class="col-md-6 text-md-end mt-2 mt-md-0">
+                        💡 各セル: 体調｜メンタル / 合計行: 体調不良｜メンタル不調
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 使い方 -->
+<div class="row">
+    <div class="col-12">
+        <div class="card bg-light">
+            <div class="card-body">
+                <h6 class="card-title">💡 使い方</h6>
+                <ul class="mb-0">
+                    <li>各セルに「体調｜メンタル」が表示され、絵文字で状態を一目で把握できます</li>
+                    <li>🔴 不調（1-2）: 早めの声かけやフォローが必要です</li>
+                    <li>🟡 普通（3）: 様子を見守ってください</li>
+                    <li>🟢 良好（4-5）: 健康な状態です</li>
+                    <li>⚪ 未提出: 提出を促してください</li>
+                    <li>合計行では「体調不良者数｜メンタル不調者数」を表示（例: 1｜2 = 体調1人、メンタル2人）</li>
+                    <li>セルをクリックすると生徒詳細ページで連絡帳の内容を確認できます</li>
+                    <li>受験前・テスト前の体調・メンタル変化をこのダッシュボードで早期発見できます</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% else %}
+<div class="alert alert-info">
+    担当クラスがありません。管理者に連絡して担任設定を行ってください。
+</div>
+{% endif %}
+{% endblock %}

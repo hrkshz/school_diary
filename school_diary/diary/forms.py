@@ -8,6 +8,7 @@ from crispy_forms.layout import Submit
 from django import forms
 
 from .models import DiaryEntry
+from .models import UserProfile
 
 
 class DiaryEntryForm(forms.ModelForm):
@@ -61,3 +62,25 @@ class DiaryEntryForm(forms.ModelForm):
             ),
             Submit("submit", "📝 提出する", css_class="btn btn-primary btn-lg w-100"),
         )
+
+
+class UserProfileAdminForm(forms.ModelForm):
+    """ユーザープロフィール管理画面用フォーム
+
+    管理学年を1, 2, 3のみに制限するChoiceFieldを使用。
+    Django 5 + Jazzminのベストプラクティスに準拠。
+    """
+
+    managed_grade = forms.TypedChoiceField(
+        choices=[("", "---"), (1, "1年"), (2, "2年"), (3, "3年")],
+        coerce=lambda x: int(x) if x and x != "" else None,
+        required=False,
+        empty_value=None,
+        widget=forms.Select,
+        label="管理学年",
+        help_text="学年主任の場合、管理する学年（1, 2, 3）",
+    )
+
+    class Meta:
+        model = UserProfile
+        fields = "__all__"

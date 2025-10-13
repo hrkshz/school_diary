@@ -1,0 +1,478 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ student.get_full_name }} - 連絡帳履歴{% endblock %}
+
+{% block content %}
+<!-- ヘッダー -->
+<div class="row mb-4">
+    <div class="col-12">
+        <h2>📖 {{ student.get_full_name }}さんの連絡帳</h2>
+        <p class="lead">
+            {{ student.classes.first }} -
+            未読: <span class="badge bg-danger">{{ unread_count }}</span>件 /
+            総件数: {{ page_obj.paginator.count }}件
+        </p>
+        <a href="{% url 'diary:teacher_dashboard' %}" class="btn btn-secondary">← ダッシュボードに戻る</a>
+    </div>
+</div>
+
+<!-- 担任メモセクション -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">📝 担任メモ</h5>
+                <button type="button" class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#addNoteModal">
+                    ➕ 新規メモ追加
+                </button>
+            </div>
+            <div class="card-body">
+                {% if notes %}
+                    {% for note in notes %}
+                    <div class="card mb-3 {% if note.is_shared %}border-primary{% else %}border-secondary{% endif %}">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div>
+                                    <small class="text-muted">
+                                        <strong>{{ note.teacher.get_full_name }}</strong>
+                                        {% if note.is_shared %}
+                                        <span class="badge bg-primary">👥 学年共有</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">🔒 個人メモ</span>
+                                        {% endif %}
+                                    </small>
+                                </div>
+                                <div>
+                                    <small class="text-muted">{{ note.updated_at|date:"Y/m/d H:i" }}</small>
+                                    {% if note.teacher == request.user %}
+                                    <button type="button" class="btn btn-sm btn-outline-secondary ms-2"
+                                            data-bs-toggle="modal" data-bs-target="#editNoteModal{{ note.id }}">
+                                        ✏️
+                                    </button>
+                                    <form method="post" action="{% url 'diary:teacher_delete_note' note_id=note.id %}"
+                                          style="display: inline;" onsubmit="return confirm('本当に削除しますか？');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">🗑️</button>
+                                    </form>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <p class="mb-0">{{ note.note }}</p>
+                        </div>
+                    </div>
+
+                    <!-- 編集モーダル -->
+                    {% if note.teacher == request.user %}
+                    <div class="modal fade" id="editNoteModal{{ note.id }}" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <form method="post" action="{% url 'diary:teacher_edit_note' note_id=note.id %}">
+                                    {% csrf_token %}
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">担任メモの編集</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="mb-3">
+                                            <label class="form-label">メモ内容 <span class="text-danger">*</span></label>
+                                            <textarea name="note" class="form-control" rows="5" required>{{ note.note }}</textarea>
+                                            <div class="form-text">家庭環境、健康情報、配慮事項など（10文字以上）</div>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="is_shared" id="editShared{{ note.id }}"
+                                                   {% if note.is_shared %}checked{% endif %}>
+                                            <label class="form-check-label" for="editShared{{ note.id }}">
+                                                👥 学年の担任全員と共有（学年会議での活用）
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                                        <button type="submit" class="btn btn-primary">保存</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted mb-0">この生徒の担任メモはまだありません。</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 新規メモ追加モーダル -->
+<div class="modal fade" id="addNoteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{% url 'diary:teacher_add_note' student_id=student.id %}">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title">新規担任メモ追加</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <small>
+                            <strong>対象生徒:</strong> {{ student.get_full_name }}<br>
+                            <strong>用途:</strong> 長期的な観察記録、引継ぎ情報<br>
+                            <strong>短期記録との違い:</strong> 日々の対応は連絡帳の「対応内容メモ」、長期的な情報はこちらに記録
+                        </small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">メモ内容 <span class="text-danger">*</span></label>
+                        <textarea name="note" class="form-control" rows="5" required
+                                  placeholder="例: 家庭環境について配慮が必要。母子家庭で夜遅くまで母親不在。体調不良時は祖母が対応。"></textarea>
+                        <div class="form-text">家庭環境、健康情報、配慮事項など（10文字以上）</div>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="is_shared" id="addShared">
+                        <label class="form-check-label" for="addShared">
+                            👥 学年の担任全員と共有（学年会議での活用）
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                    <button type="submit" class="btn btn-primary">追加</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% if entries %}
+<!-- 連絡帳一覧 -->
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">📋 連絡帳一覧</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 10%;">日付</th>
+                                <th style="width: 25%;">内容</th>
+                                <th style="width: 10%;" class="text-center">体調/心</th>
+                                <th style="width: 10%;">反応/記録</th>
+                                <th style="width: 15%;">対応状況</th>
+                                <th style="width: 30%;">アクション</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for entry in entries %}
+                            <tr {% if not entry.is_read %}class="table-warning"{% endif %}>
+                                <td><strong>{{ entry.entry_date|date:"m/d" }}</strong></td>
+                                <td>
+                                    {% if entry.reflection|length > 150 %}
+                                    {{ entry.reflection|slice:":150" }}...
+                                    {% else %}
+                                    {{ entry.reflection }}
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% if entry.health_condition <= 2 %}
+                                    <span class="badge bg-danger">🔴</span>
+                                    {% elif entry.health_condition == 3 %}
+                                    <span class="badge bg-warning text-dark">🟡</span>
+                                    {% else %}
+                                    <span class="badge bg-success">🟢</span>
+                                    {% endif %}
+                                    /
+                                    {% if entry.mental_condition <= 2 %}
+                                    <span class="badge bg-danger">🔴</span>
+                                    {% elif entry.mental_condition == 3 %}
+                                    <span class="badge bg-warning text-dark">🟡</span>
+                                    {% else %}
+                                    <span class="badge bg-success">🟢</span>
+                                    {% endif %}
+                                </td>
+                                <td class="small">
+                                    {% if entry.public_reaction %}
+                                    <div><span class="badge bg-success">{{ entry.get_public_reaction_display }}</span></div>
+                                    {% endif %}
+                                    {% if entry.internal_action %}
+                                    <div><span class="badge bg-warning text-dark">{{ entry.get_internal_action_display }}</span></div>
+                                    {% endif %}
+                                    {% if not entry.public_reaction and not entry.internal_action %}
+                                    <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td class="small">
+                                    {% if entry.internal_action %}
+                                        {% if entry.action_status == 'pending' %}
+                                        <span class="badge bg-warning">⚠️ 未対応</span>
+                                        {% elif entry.action_status == 'completed' %}
+                                        <span class="badge bg-success">✅ 対応済み</span>
+                                        <br><small class="text-muted">{{ entry.action_completed_at|date:"m/d H:i" }}</small>
+                                        {% if entry.action_note %}
+                                        <br><small class="text-muted">📝 {{ entry.action_note }}</small>
+                                        {% endif %}
+                                        {% endif %}
+                                    {% else %}
+                                    <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if not entry.is_read %}
+                                    <!-- 未読の場合: 既読処理UI -->
+                                    <div class="d-flex gap-2">
+                                        <form method="post" action="{% url 'diary:teacher_mark_as_read' diary_id=entry.id %}" class="flex-grow-1">
+                                            {% csrf_token %}
+                                            <select name="public_reaction" class="form-select form-select-sm mb-1">
+                                                <option value="checked" selected>📖 読んだよ</option>
+                                                <option value="thumbs_up">👍 いいね</option>
+                                                <option value="well_done">💯 よくできました</option>
+                                                <option value="good_effort">💪 がんばったね</option>
+                                                <option value="excellent">🌟 素晴らしい</option>
+                                                <option value="support">❤️ 応援してるよ</option>
+                                            </select>
+                                            <button type="submit" class="btn btn-sm btn-primary w-100">既読</button>
+                                        </form>
+                                        <button type="button" class="btn btn-sm btn-info"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#actionModal{{ entry.id }}">
+                                            📝 記録
+                                        </button>
+                                    </div>
+                                    {% else %}
+                                    <!-- 既読済みの場合: 編集ボタン表示 -->
+                                    <div class="d-flex gap-1">
+                                        {% if entry.internal_action and entry.action_status == 'pending' %}
+                                        <!-- 対応中の場合: 対応完了ボタンも表示 -->
+                                        <button type="button" class="btn btn-sm btn-success"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#completeModal{{ entry.id }}">
+                                            ✓ 対応済みにする
+                                        </button>
+                                        {% endif %}
+                                        <!-- 編集ボタン（既読済み全てに表示） -->
+                                        <button type="button" class="btn btn-sm btn-secondary"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#editModal{{ entry.id }}">
+                                            ✏️ 編集
+                                        </button>
+                                    </div>
+                                    {% endif %}
+                                </td>
+                            </tr>
+
+                            <!-- 記録して既読モーダル -->
+                            {% if not entry.is_read %}
+                            <div class="modal fade" id="actionModal{{ entry.id }}" tabindex="-1">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <form method="post" action="{% url 'diary:teacher_mark_as_read' diary_id=entry.id %}">
+                                            {% csrf_token %}
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">要対応内容の選択</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div class="mb-3">
+                                                    <label class="form-label">生徒への反応</label>
+                                                    <select name="public_reaction" class="form-select" required>
+                                                        <option value="checked" selected>📖 読んだよ</option>
+                                                        <option value="thumbs_up">👍 いいね</option>
+                                                        <option value="well_done">💯 よくできました</option>
+                                                        <option value="good_effort">💪 がんばったね</option>
+                                                        <option value="excellent">🌟 素晴らしい</option>
+                                                        <option value="support">❤️ 応援してるよ</option>
+                                                    </select>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">要対応内容</label>
+                                                    <select name="internal_action" class="form-select" required>
+                                                        <option value="">- 選択してください -</option>
+                                                        <option value="needs_follow_up">⚠️ 要フォロー</option>
+                                                        <option value="urgent">🔴 緊急対応必要</option>
+                                                        <option value="parent_contacted">📞 保護者連絡</option>
+                                                        <option value="individual_talk">🗣️ 個別面談</option>
+                                                        <option value="shared_meeting">👥 学年共有</option>
+                                                        <option value="monitoring">📝 継続観察</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                                                <button type="submit" class="btn btn-primary">既読にする</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            <!-- 対応完了モーダル -->
+                            {% if entry.internal_action and entry.action_status == 'pending' %}
+                            <div class="modal fade" id="completeModal{{ entry.id }}" tabindex="-1">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <form method="post" action="{% url 'diary:teacher_mark_action_completed' diary_id=entry.id %}">
+                                            {% csrf_token %}
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">対応完了の記録</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div class="mb-3">
+                                                    <label class="form-label">対応内容メモ（任意、200文字以内）</label>
+                                                    <textarea name="action_note" class="form-control" rows="3" maxlength="200"
+                                                              placeholder="例: 10/12面談20分実施。原因を聞き解決策を一緒に考えた。"></textarea>
+                                                    <div class="form-text">簡潔に記録してください。引継ぎや保護者面談で活用できます。</div>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                                                <button type="submit" class="btn btn-success">対応済みにする</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            <!-- 編集モーダル（既読済みエントリー用） -->
+                            {% if entry.is_read %}
+                            <div class="modal fade" id="editModal{{ entry.id }}" tabindex="-1">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <form method="post" action="{% url 'diary:teacher_mark_as_read' diary_id=entry.id %}">
+                                            {% csrf_token %}
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">反応・対応記録の編集</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <!-- 生徒情報表示 -->
+                                                <div class="alert alert-info mb-3">
+                                                    <small>
+                                                        <strong>生徒:</strong> {{ entry.student.get_full_name }}<br>
+                                                        <strong>日付:</strong> {{ entry.entry_date|date:"Y年m月d日" }}<br>
+                                                        <strong>内容:</strong>
+                                                        {% if entry.reflection|length > 50 %}
+                                                        {{ entry.reflection|slice:":50" }}...
+                                                        {% else %}
+                                                        {{ entry.reflection }}
+                                                        {% endif %}
+                                                    </small>
+                                                </div>
+
+                                                <!-- 反応選択 -->
+                                                <div class="mb-3">
+                                                    <label class="form-label">👤 生徒への反応（公開）</label>
+                                                    <select name="public_reaction" class="form-select">
+                                                        <option value="">（削除）</option>
+                                                        <option value="checked" {% if entry.public_reaction == "checked" %}selected{% endif %}>📖 読んだよ</option>
+                                                        <option value="thumbs_up" {% if entry.public_reaction == "thumbs_up" %}selected{% endif %}>👍 いいね</option>
+                                                        <option value="well_done" {% if entry.public_reaction == "well_done" %}selected{% endif %}>💯 よくできました</option>
+                                                        <option value="good_effort" {% if entry.public_reaction == "good_effort" %}selected{% endif %}>💪 がんばったね</option>
+                                                        <option value="excellent" {% if entry.public_reaction == "excellent" %}selected{% endif %}>🌟 素晴らしい</option>
+                                                        <option value="support" {% if entry.public_reaction == "support" %}selected{% endif %}>❤️ 応援してるよ</option>
+                                                    </select>
+                                                    <div class="form-text">「（削除）」を選択すると反応を削除できます。</div>
+                                                </div>
+
+                                                <!-- 対応記録選択 -->
+                                                <div class="mb-3">
+                                                    <label class="form-label">📋 対応記録（内部管理）</label>
+                                                    <select name="internal_action" class="form-select">
+                                                        <option value="">（削除）</option>
+                                                        <option value="needs_follow_up" {% if entry.internal_action == "needs_follow_up" %}selected{% endif %}>⚠️ 要フォロー</option>
+                                                        <option value="urgent" {% if entry.internal_action == "urgent" %}selected{% endif %}>🔴 緊急対応必要</option>
+                                                        <option value="parent_contacted" {% if entry.internal_action == "parent_contacted" %}selected{% endif %}>📞 保護者連絡</option>
+                                                        <option value="individual_talk" {% if entry.internal_action == "individual_talk" %}selected{% endif %}>🗣️ 個別面談</option>
+                                                        <option value="shared_meeting" {% if entry.internal_action == "shared_meeting" %}selected{% endif %}>👥 学年共有</option>
+                                                        <option value="monitoring" {% if entry.internal_action == "monitoring" %}selected{% endif %}>📝 継続観察</option>
+                                                    </select>
+                                                    <div class="form-text">「（削除）」を選択すると対応記録を削除できます。</div>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                                                <button type="submit" class="btn btn-primary">保存</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ページネーション -->
+{% if page_obj.has_other_pages %}
+<div class="row mt-4">
+    <div class="col-12">
+        <nav aria-label="ページネーション">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1" aria-label="最初">
+                        <span aria-hidden="true">&laquo;&laquo;</span>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="前へ">
+                        <span aria-hidden="true">&laquo;</span>
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">&laquo;&laquo;</span>
+                </li>
+                <li class="page-item disabled">
+                    <span class="page-link">&laquo;</span>
+                </li>
+                {% endif %}
+
+                <li class="page-item active">
+                    <span class="page-link">
+                        {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+                    </span>
+                </li>
+
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="次へ">
+                        <span aria-hidden="true">&raquo;</span>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}" aria-label="最後">
+                        <span aria-hidden="true">&raquo;&raquo;</span>
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">&raquo;</span>
+                </li>
+                <li class="page-item disabled">
+                    <span class="page-link">&raquo;&raquo;</span>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+</div>
+{% endif %}
+
+{% else %}
+<div class="alert alert-info">
+    {{ student.get_full_name }}さんの連絡帳はまだありません。
+</div>
+{% endif %}
+{% endblock %}
