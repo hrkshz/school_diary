@@ -109,8 +109,8 @@ MIGRATION_MODULES = {"sites": "school_diary.contrib.sites.migrations"}
 # ------------------------------------------------------------------------------
 # https://docs.djangoproject.com/en/dev/ref/settings/#authentication-backends
 AUTHENTICATION_BACKENDS = [
+    "school_diary.diary.auth_backends.EmailAuthenticationBackend",
     "django.contrib.auth.backends.ModelBackend",
-    "allauth.account.auth_backends.AuthenticationBackend",
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#auth-user-model
 # AUTH_USER_MODEL = "users.User"  # Using default auth.User for now
@@ -319,25 +319,12 @@ CELERY_TASK_SEND_SENT_EVENT = True
 CELERY_WORKER_HIJACK_ROOT_LOGGER = False
 # django-allauth
 # ------------------------------------------------------------------------------
+# https://docs.allauth.org/en/latest/account/configuration.html
 ACCOUNT_ALLOW_REGISTRATION = env.bool("DJANGO_ACCOUNT_ALLOW_REGISTRATION", default=True)  # type: ignore[arg-type]
-# https://docs.allauth.org/en/latest/account/configuration.html
 ACCOUNT_LOGIN_METHODS = {"email"}
-# https://docs.allauth.org/en/latest/account/configuration.html
 ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
-# https://docs.allauth.org/en/latest/account/configuration.html
-ACCOUNT_USER_MODEL_USERNAME_FIELD = None
-# https://docs.allauth.org/en/latest/account/configuration.html
 ACCOUNT_EMAIL_VERIFICATION = "mandatory"
-# https://docs.allauth.org/en/latest/account/configuration.html
 ACCOUNT_ADAPTER = "school_diary.diary.adapters.RoleBasedRedirectAdapter"
-# https://docs.allauth.org/en/latest/account/configuration.html
-# https://docs.allauth.org/en/latest/account/forms.html
-# https://docs.allauth.org/en/latest/socialaccount/configuration.html
-# https://docs.allauth.org/en/latest/socialaccount/configuration.html
-# Your stuff...
-# ------------------------------------------------------------------------------
-# 💡 動作確認のため、一時的に設定の上書きを試す (後で削除しても良い)
-KITS_ACCOUNTS_GROUP_NAMES = ("システム管理者", "マネージャー", "一般ユーザー")
 
 # Django REST Framework
 # ------------------------------------------------------------------------------

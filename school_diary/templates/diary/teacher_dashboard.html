@@ -1,0 +1,351 @@
+{% extends 'base.html' %}
+
+{% block title %}担任ダッシュボード{% endblock %}
+
+{% block extra_css %}
+<style>
+.hover-lift {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+.hover-lift:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2>👨‍🏫 担任ダッシュボード</h2>
+                {% if classroom %}
+                <p class="lead mb-0">{{ classroom }} - 生徒数: {{ students|length }}名</p>
+                {% else %}
+                <p class="lead mb-0">{{ user.username }}さん、こんにちは</p>
+                {% endif %}
+            </div>
+            <div>
+                <a href="{% url 'diary:class_health_dashboard' %}" class="btn btn-primary btn-lg">
+                    🩺 クラス健康状態<br><small class="text-white-50">ヒートマップで全体把握</small>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if students or filter_type != 'all' %}
+<!-- サマリーカード -->
+<div class="row mb-4">
+    <div class="col-12">
+        <h5 class="mb-3">📊 今日の重要事項</h5>
+        <div class="row g-3">
+            <!-- 緊急対応 -->
+            <div class="col-lg-3 col-md-6">
+                <a href="?filter=urgent" class="text-decoration-none">
+                    <div class="card border-danger shadow-sm h-100 hover-lift" style="cursor: pointer;">
+                        <div class="card-body text-center">
+                            <div class="display-4 text-danger fw-bold">{{ summary.urgent_action_count }}</div>
+                            <div class="text-muted small mt-2">🚨 緊急対応必要</div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <!-- 未対応アクション -->
+            <div class="col-lg-3 col-md-6">
+                <a href="?filter=pending_action" class="text-decoration-none">
+                    <div class="card border-warning shadow-sm h-100 hover-lift" style="cursor: pointer;">
+                        <div class="card-body text-center">
+                            <div class="display-4 text-warning fw-bold">{{ summary.pending_action_count }}</div>
+                            <div class="text-muted small mt-2">⚠️ 未対応アクション</div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <!-- 未読 -->
+            <div class="col-lg-3 col-md-6">
+                <a href="?filter=unread" class="text-decoration-none">
+                    <div class="card border-info shadow-sm h-100 hover-lift" style="cursor: pointer;">
+                        <div class="card-body text-center">
+                            <div class="display-4 text-info fw-bold">{{ summary.unread_total }}</div>
+                            <div class="text-muted small mt-2">📬 未読</div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <!-- 反応未選択 -->
+            <div class="col-lg-3 col-md-6">
+                <a href="?filter=no_reaction" class="text-decoration-none">
+                    <div class="card border-secondary shadow-sm h-100 hover-lift" style="cursor: pointer;">
+                        <div class="card-body text-center">
+                            <div class="display-4 text-secondary fw-bold">{{ summary.no_reaction_count }}</div>
+                            <div class="text-muted small mt-2">📝 反応未選択</div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 最近の学年共有メモ -->
+{% if recent_shared_notes %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">📢 最近の学年共有メモ（7日間）</h5>
+                <small class="text-white-50">最新5件</small>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    {% for note in recent_shared_notes %}
+                        {% if note.is_own_class_student %}
+                        <!-- 自分のクラスの生徒: クリック可能、30語まで -->
+                        <a href="{% url 'diary:teacher_student_detail' student_id=note.student.id %}"
+                           class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <div class="mb-1">
+                                        {% if note.is_new %}
+                                        <span class="badge bg-danger me-2">🆕 NEW</span>
+                                        {% endif %}
+                                        <strong>{{ note.student.get_full_name }}さん</strong>
+                                        <span class="text-muted ms-2">
+                                            <small>作成: {{ note.teacher.get_full_name }}
+                                            ({{ note.created_at|date:"m/d H:i" }})</small>
+                                        </span>
+                                    </div>
+                                    <p class="mb-0 text-muted">
+                                        {{ note.note|truncatewords:30 }}
+                                    </p>
+                                </div>
+                            </div>
+                        </a>
+                        {% else %}
+                        <!-- 他クラスの生徒: クリック不可、全文表示 -->
+                        <div class="list-group-item" style="background-color: #f8f9fa; cursor: default;">
+                            <div class="d-flex w-100 justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <div class="mb-1">
+                                        {% if note.is_new %}
+                                        <span class="badge bg-danger me-2">🆕 NEW</span>
+                                        {% endif %}
+                                        <span class="badge bg-secondary me-2">他クラス</span>
+                                        <strong>{{ note.student.get_full_name }}さん</strong>
+                                        <span class="text-muted ms-2">
+                                            <small>作成: {{ note.teacher.get_full_name }}
+                                            ({{ note.created_at|date:"m/d H:i" }})</small>
+                                        </span>
+                                    </div>
+                                    <p class="mb-0 text-muted">{{ note.note }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="card-footer text-muted text-center small">
+                💡 各生徒の詳細ページで全ての共有メモを確認できます
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- フィルタタブ -->
+<div class="row mb-3">
+    <div class="col-12">
+        <ul class="nav nav-tabs">
+            <li class="nav-item">
+                <a class="nav-link {% if filter_type == 'all' %}active{% endif %}" href="?filter=all">
+                    すべて
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if filter_type == 'urgent' %}active{% endif %}" href="?filter=urgent">
+                    🚨 緊急 {% if summary.urgent_action_count > 0 %}<span class="badge bg-danger">{{ summary.urgent_action_count }}</span>{% endif %}
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if filter_type == 'pending_action' %}active{% endif %}" href="?filter=pending_action">
+                    ⚠️ 未対応 {% if summary.pending_action_count > 0 %}<span class="badge bg-warning text-dark">{{ summary.pending_action_count }}</span>{% endif %}
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if filter_type == 'unread' %}active{% endif %}" href="?filter=unread">
+                    📬 未読 {% if summary.unread_total > 0 %}<span class="badge bg-info">{{ summary.unread_total }}</span>{% endif %}
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if filter_type == 'no_reaction' %}active{% endif %}" href="?filter=no_reaction">
+                    📝 未反応 {% if summary.no_reaction_count > 0 %}<span class="badge bg-secondary">{{ summary.no_reaction_count }}</span>{% endif %}
+                </a>
+            </li>
+        </ul>
+    </div>
+</div>
+
+<!-- 生徒一覧 -->
+{% if students %}
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">📋 生徒一覧</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 15%">生徒名</th>
+                                <th style="width: 10%" class="text-center">提出日時</th>
+                                <th style="width: 8%" class="text-center">体調</th>
+                                <th style="width: 8%" class="text-center">メンタル</th>
+                                <th style="width: 12%">反応</th>
+                                <th style="width: 12%">対応記録</th>
+                                <th style="width: 15%">対応状況</th>
+                                <th style="width: 20%">アクション</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for data in students %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'diary:teacher_student_detail' student_id=data.student.id %}" class="text-decoration-none">
+                                        <strong>{{ data.student.get_full_name }}</strong>
+                                    </a>
+                                    {% if data.unread_count > 0 %}
+                                    <br><span class="badge bg-info">🔵 NEW</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center small">
+                                    {% if data.latest_entry %}
+                                    {{ data.latest_entry.submission_date|date:"m/d H:i" }}
+                                    {% else %}
+                                    <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% if data.latest_entry %}
+                                        {% if data.latest_entry.health_condition <= 2 %}
+                                        <span class="badge bg-danger">🔴</span>
+                                        {% elif data.latest_entry.health_condition == 3 %}
+                                        <span class="badge bg-warning text-dark">🟡</span>
+                                        {% else %}
+                                        <span class="badge bg-success">🟢</span>
+                                        {% endif %}
+                                    {% else %}
+                                    <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% if data.latest_entry %}
+                                        {% if data.latest_entry.mental_condition <= 2 %}
+                                        <span class="badge bg-danger">🔴</span>
+                                        {% elif data.latest_entry.mental_condition == 3 %}
+                                        <span class="badge bg-warning text-dark">🟡</span>
+                                        {% else %}
+                                        <span class="badge bg-success">🟢</span>
+                                        {% endif %}
+                                    {% else %}
+                                    <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if data.latest_entry %}
+                                        {% if data.latest_entry.public_reaction %}
+                                        <span class="badge bg-success">{{ data.latest_entry.get_public_reaction_display }}</span>
+                                        {% else %}
+                                        <span class="badge bg-danger">⚠️ 未選択</span>
+                                        {% endif %}
+                                    {% else %}
+                                    <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if data.latest_entry and data.latest_entry.internal_action %}
+                                    <span class="badge
+                                        {% if data.latest_entry.internal_action == 'urgent' %}bg-danger
+                                        {% elif data.latest_entry.internal_action == 'needs_follow_up' %}bg-warning text-dark
+                                        {% else %}bg-info{% endif %}">
+                                        {{ data.latest_entry.get_internal_action_display }}
+                                    </span>
+                                    {% else %}
+                                    <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if data.latest_entry and data.latest_entry.internal_action %}
+                                        {% if data.latest_entry.action_status == 'pending' %}
+                                        <span class="badge bg-warning">⚠️ 未対応</span>
+                                        {% elif data.latest_entry.action_status == 'completed' %}
+                                        <span class="badge bg-success">✅ 対応済み</span>
+                                        <br><small class="text-muted">{{ data.latest_entry.action_completed_at|date:"m/d H:i" }}</small>
+                                        {% elif data.latest_entry.action_status == 'in_progress' %}
+                                        <span class="badge bg-primary">🔄 対応中</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">-</span>
+                                        {% endif %}
+                                    {% else %}
+                                    <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if data.latest_entry and data.latest_entry.internal_action and data.latest_entry.action_status == 'pending' %}
+                                    <form method="post" action="{% url 'diary:teacher_mark_action_completed' diary_id=data.latest_entry.id %}" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-success">
+                                            ✓ 対応済みにする
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<!-- 空状態 -->
+<div class="row">
+    <div class="col-12">
+        <div class="text-center py-5">
+            <div class="display-1 text-muted">🎉</div>
+            <h3 class="mt-3">
+                {% if filter_type == 'pending_action' %}
+                未対応のアクションはありません
+                {% elif filter_type == 'urgent' %}
+                緊急対応が必要な案件はありません
+                {% elif filter_type == 'unread' %}
+                未読の連絡帳はありません
+                {% elif filter_type == 'no_reaction' %}
+                反応未選択の連絡帳はありません
+                {% else %}
+                該当する連絡帳がありません
+                {% endif %}
+            </h3>
+            <p class="text-muted">
+                {% if filter_type == 'pending_action' %}
+                すべて対応済みです。お疲れ様でした！
+                {% else %}
+                フィルタを変更して他の連絡帳を確認できます。
+                {% endif %}
+            </p>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% else %}
+<div class="alert alert-info">
+    担当クラスがありません。管理者に連絡して担任設定を行ってください。
+</div>
+{% endif %}
+{% endblock %}

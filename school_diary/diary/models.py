@@ -1,6 +1,51 @@
 from django.conf import settings
+from django.core.validators import MaxValueValidator
+from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils import timezone
+
+from kits.audit.models import AuditMixin
+
+
+class TeacherReaction(models.TextChoices):
+    """担任の対応アクション（非推奨: public_reaction と internal_action を使用）"""
+
+    ENCOURAGE = "encourage", "👍 励まし"
+    COMMENTED = "commented", "💬 コメント済み"
+    NEEDS_FOLLOW_UP = "needs_follow_up", "⚠️ 要フォロー"
+    CONFIRMED = "confirmed", "✅ 確認済み"
+    PARENT_CONTACTED = "parent_contacted", "📞 保護者連絡済み"
+
+
+class PublicReaction(models.TextChoices):
+    """生徒に見える反応（ポジティブフィードバック）"""
+
+    THUMBS_UP = "thumbs_up", "👍 いいね"
+    WELL_DONE = "well_done", "💯 よくできました"
+    GOOD_EFFORT = "good_effort", "💪 がんばったね"
+    EXCELLENT = "excellent", "🌟 素晴らしい"
+    SUPPORT = "support", "❤️ 応援してるよ"
+    CHECKED = "checked", "📖 読んだよ"
+
+
+class InternalAction(models.TextChoices):
+    """先生だけが見る対応記録（内部管理）"""
+
+    NEEDS_FOLLOW_UP = "needs_follow_up", "⚠️ 要フォロー"
+    URGENT = "urgent", "🔴 緊急対応必要"
+    PARENT_CONTACTED = "parent_contacted", "📞 保護者連絡"
+    INDIVIDUAL_TALK = "individual_talk", "🗣️ 個別面談"
+    SHARED_MEETING = "shared_meeting", "👥 学年共有"
+    MONITORING = "monitoring", "📝 継続観察"
+
+
+class ActionStatus(models.TextChoices):
+    """対応状況（internal_actionの状態管理）"""
+
+    PENDING = "pending", "未対応"
+    IN_PROGRESS = "in_progress", "対応中"
+    COMPLETED = "completed", "対応済み"
+    NOT_REQUIRED = "not_required", "対応不要"
 
 
 class DiaryEntry(models.Model):
@@ -28,6 +73,15 @@ class DiaryEntry(models.Model):
         on_delete=models.CASCADE,
         related_name="diary_entries",
         verbose_name="生徒",
+    )
+    classroom = models.ForeignKey(
+        "ClassRoom",
+        on_delete=models.PROTECT,
+        related_name="diary_entries",
+        null=True,
+        blank=True,
+        verbose_name="所属クラス",
+        help_text="記載時の所属クラス（年度・学年・組）",
     )
     entry_date = models.DateField(
         "記載日",
@@ -70,6 +124,59 @@ class DiaryEntry(models.Model):
         null=True,
         blank=True,
     )
+    teacher_reaction = models.CharField(
+        "担任の対応（非推奨）",
+        max_length=20,
+        choices=TeacherReaction.choices,
+        blank=True,
+        null=True,
+        help_text="非推奨: public_reaction と internal_action を使用",
+    )
+    public_reaction = models.CharField(
+        "生徒への反応",
+        max_length=20,
+        choices=PublicReaction.choices,
+        blank=True,
+        null=True,
+        help_text="生徒に表示されるポジティブな反応",
+    )
+    internal_action = models.CharField(
+        "対応記録",
+        max_length=20,
+        choices=InternalAction.choices,
+        blank=True,
+        null=True,
+        help_text="先生のみが見る対応状況（生徒には非表示）",
+    )
+    action_status = models.CharField(
+        "対応状況",
+        max_length=20,
+        choices=ActionStatus.choices,
+        default=ActionStatus.PENDING,
+        help_text="internal_actionの対応状況を管理",
+    )
+    action_completed_at = models.DateTimeField(
+        "対応完了日時",
+        null=True,
+        blank=True,
+        help_text="対応完了にした日時",
+    )
+    action_completed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name="completed_diary_actions",
+        null=True,
+        blank=True,
+        verbose_name="対応者",
+        help_text="対応完了にした担任",
+    )
+    action_note = models.CharField(
+        "対応内容メモ",
+        max_length=200,
+        blank=True,
+        null=True,
+        help_text="どのように対応したかを簡潔に記録（引継ぎ・保護者面談で活用）",
+    )
 
     class Meta:
         verbose_name = "連絡帳エントリー"
@@ -79,17 +186,55 @@ class DiaryEntry(models.Model):
         indexes = [
             models.Index(fields=["entry_date"]),
             models.Index(fields=["is_read"]),
+            models.Index(fields=["action_status"]),
+            models.Index(fields=["internal_action"]),
         ]
 
     def __str__(self):
         student_name = self.student.get_full_name() or self.student.username
         return f"{student_name} - {self.entry_date}"
 
+    def save(self, *args, **kwargs):
+        """保存時の自動処理"""
+        # 新規作成時にclassroomを自動設定
+        if not self.pk and not self.classroom:
+            from .utils import get_current_classroom
+
+            self.classroom = get_current_classroom(self.student)
+
+        # 既存データの場合、internal_actionの変更を検知
+        if self.pk:
+            try:
+                old = DiaryEntry.objects.get(pk=self.pk)
+                # internal_actionが変更され、まだ対応済みでない場合はリセット
+                if old.internal_action != self.internal_action and self.action_status == ActionStatus.COMPLETED:
+                    self.action_status = ActionStatus.PENDING
+                    self.action_completed_at = None
+                    self.action_completed_by = None
+            except DiaryEntry.DoesNotExist:
+                pass
+
+        # internal_actionの値に応じて自動設定
+        if not self.internal_action or self.internal_action == "":
+            # 対応記録がない場合は「対応不要」
+            self.action_status = ActionStatus.NOT_REQUIRED
+
+        super().save(*args, **kwargs)
+
     def mark_as_read(self, teacher):
         """既読処理(イイネスタンプ)"""
         self.is_read = True
         self.read_by = teacher
         self.read_at = timezone.now()
+        self.save()
+
+    def mark_action_completed(self, teacher, note=""):
+        """対応完了処理"""
+        self.action_status = ActionStatus.COMPLETED
+        self.action_completed_at = timezone.now()
+        self.action_completed_by = teacher
+        if note:
+            self.action_note = note
         self.save()
 
     @property
@@ -159,41 +304,84 @@ class ClassRoom(models.Model):
         return self.students.count()
 
 
-class TeacherNote(models.Model):
-    """担任メモ(課題2: 担任間共有機能用)"""
+class UserProfile(AuditMixin):
+    """ユーザープロフィール（役割ベースの権限管理、変更履歴を自動記録）"""
 
-    diary_entry = models.ForeignKey(
-        DiaryEntry,
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name="teacher_notes",
-        verbose_name="連絡帳エントリー",
+        related_name="profile",
+        verbose_name="ユーザー",
     )
+
+    ROLE_CHOICES = [
+        ("student", "生徒"),
+        ("teacher", "担任"),
+        ("grade_leader", "学年主任"),
+        ("school_leader", "教頭/校長"),
+    ]
+    role = models.CharField(
+        "役割",
+        max_length=20,
+        choices=ROLE_CHOICES,
+        default="student",
+        help_text="ユーザーの役割（アクセス権限を自動的に設定）",
+    )
+    managed_grade = models.IntegerField(
+        "管理学年",
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(1), MaxValueValidator(3)],
+        help_text="学年主任の場合、管理する学年（1, 2, 3）",
+    )
+
+    class Meta:
+        verbose_name = "ユーザープロフィール"
+        verbose_name_plural = "ユーザープロフィール"
+
+    def __str__(self):
+        return f"{self.user.username} - {self.get_role_display()}"
+
+
+class TeacherNote(models.Model):
+    """担任メモ（生徒の長期的な観察記録・引継ぎ情報）"""
+
     teacher = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name="teacher_notes",
+        related_name="created_teacher_notes",
         verbose_name="担任",
+    )
+    student = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="teacher_notes_about_me",
+        verbose_name="対象生徒",
     )
     note = models.TextField(
         "メモ内容",
-        help_text="気になったこと、学年会議で共有したいことなど",
+        help_text="家庭環境、健康情報、配慮事項など（長期的な観察記録）",
     )
     is_shared = models.BooleanField(
         "学年会議で共有",
         default=False,
-        help_text="学年会議で共有する場合はチェック",
+        help_text="学年の担任全員が閲覧できます",
     )
     created_at = models.DateTimeField(
         "作成日時",
-        default=timezone.now,
+        auto_now_add=True,
+    )
+    updated_at = models.DateTimeField(
+        "更新日時",
+        auto_now=True,
     )
 
     class Meta:
         verbose_name = "担任メモ"
         verbose_name_plural = "担任メモ"
-        ordering = ["-created_at"]
+        ordering = ["-updated_at"]
 
     def __str__(self):
         teacher_name = self.teacher.get_full_name() or self.teacher.username
-        student_name = self.diary_entry.student.get_full_name()
+        student_name = self.student.get_full_name() or self.student.username
         return f"{teacher_name} → {student_name}"

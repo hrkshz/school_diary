@@ -39,16 +39,17 @@ class Migration(migrations.Migration):
             name='TeacherNote',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('note', models.TextField(help_text='気になったこと、学年会議で共有したいことなど', verbose_name='メモ内容')),
-                ('is_shared', models.BooleanField(default=False, help_text='学年会議で共有する場合はチェック', verbose_name='学年会議で共有')),
-                ('created_at', models.DateTimeField(default=django.utils.timezone.now, verbose_name='作成日時')),
-                ('diary_entry', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='teacher_notes', to='diary.diaryentry', verbose_name='連絡帳エントリー')),
-                ('teacher', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='teacher_notes', to=settings.AUTH_USER_MODEL, verbose_name='担任')),
+                ('note', models.TextField(help_text='家庭環境、健康情報、配慮事項など（長期的な観察記録）', verbose_name='メモ内容')),
+                ('is_shared', models.BooleanField(default=False, help_text='学年の担任全員が閲覧できます', verbose_name='学年会議で共有')),
+                ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='作成日時')),
+                ('updated_at', models.DateTimeField(auto_now=True, verbose_name='更新日時')),
+                ('student', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='teacher_notes_about_me', to=settings.AUTH_USER_MODEL, verbose_name='対象生徒')),
+                ('teacher', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='created_teacher_notes', to=settings.AUTH_USER_MODEL, verbose_name='担任')),
             ],
             options={
                 'verbose_name': '担任メモ',
                 'verbose_name_plural': '担任メモ',
-                'ordering': ['-created_at'],
+                'ordering': ['-updated_at'],
             },
         ),
         migrations.CreateModel(
