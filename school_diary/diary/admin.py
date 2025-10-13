@@ -309,7 +309,10 @@ class UserProfileInline(admin.StackedInline):
             "役割設定",
             {
                 "fields": ("role", "managed_grade"),
-                "description": "役割を設定すると、管理画面でのアクセス権限が自動的に変更されます。",
+                "description": (
+                    "役割を設定すると、管理画面でのアクセス権限が自動的に変更されます。<br>"
+                    "<strong>管理学年</strong>は学年主任を選択した場合のみ入力してください。"
+                ),
             },
         ),
     )
