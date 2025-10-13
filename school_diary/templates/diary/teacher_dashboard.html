@@ -86,6 +86,68 @@
                 </a>
             </div>
         </div>
+
+        <!-- 2行目: アラート機能 -->
+        <div class="row g-3 mt-2">
+            <!-- 継続的不調（3日連続） -->
+            <div class="col-lg-6 col-md-6">
+                <a href="?filter=consecutive_decline" class="text-decoration-none">
+                    <div class="card border-warning shadow-sm h-100 hover-lift" style="cursor: pointer;">
+                        <div class="card-body">
+                            <h6 class="text-muted mb-3">⚠️ 継続的不調（3日以上）</h6>
+                            <div class="row text-center">
+                                <div class="col-6">
+                                    <div class="h3 text-warning mb-0">{{ summary.consecutive_health_decline_count }}</div>
+                                    <small class="text-muted">体調低下</small>
+                                </div>
+                                <div class="col-6">
+                                    <div class="h3 text-warning mb-0">{{ summary.consecutive_mental_decline_count }}</div>
+                                    <small class="text-muted">メンタル低下</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            <!-- クラス全体（本日）- 2段階アラート -->
+            <div class="col-lg-6 col-md-6">
+                {% if summary.poor_health_today >= 5 or summary.poor_mental_today >= 5 %}
+                <div class="card border-danger shadow-sm h-100">
+                {% elif summary.poor_health_today >= 3 or summary.poor_mental_today >= 3 %}
+                <div class="card border-warning shadow-sm h-100">
+                {% else %}
+                <div class="card border-success shadow-sm h-100">
+                {% endif %}
+                    <div class="card-body">
+                        <h6 class="text-muted mb-3">🏫 クラス全体（本日）</h6>
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <div class="h3 {% if summary.poor_health_today >= 5 %}text-danger{% elif summary.poor_health_today >= 3 %}text-warning{% else %}text-success{% endif %} mb-0">
+                                    {{ summary.poor_health_today }}
+                                </div>
+                                <small class="text-muted">体調不良</small>
+                            </div>
+                            <div class="col-6">
+                                <div class="h3 {% if summary.poor_mental_today >= 5 %}text-danger{% elif summary.poor_mental_today >= 3 %}text-warning{% else %}text-success{% endif %} mb-0">
+                                    {{ summary.poor_mental_today }}
+                                </div>
+                                <small class="text-muted">メンタル低下</small>
+                            </div>
+                        </div>
+                        <div class="mt-2 text-center">
+                            {% if summary.poor_health_today >= 5 or summary.poor_mental_today >= 5 %}
+                            <small class="text-danger">🔴 5名以上: 学級閉鎖の検討を</small>
+                            {% elif summary.poor_health_today >= 3 or summary.poor_mental_today >= 3 %}
+                            <small class="text-warning">⚠️ 3名以上: 注意が必要です</small>
+                            {% else %}
+                            <small class="text-success">✅ 健康状態良好</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -184,6 +246,14 @@
                     📝 未反応 {% if summary.no_reaction_count > 0 %}<span class="badge bg-secondary">{{ summary.no_reaction_count }}</span>{% endif %}
                 </a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link {% if filter_type == 'consecutive_decline' %}active{% endif %}" href="?filter=consecutive_decline">
+                    ⚠️ 3日連続
+                    {% with total=summary.consecutive_health_decline_count|add:summary.consecutive_mental_decline_count %}
+                    {% if total > 0 %}<span class="badge bg-warning text-dark">{{ total }}</span>{% endif %}
+                    {% endwith %}
+                </a>
+            </li>
         </ul>
     </div>
 </div>
@@ -220,6 +290,12 @@
                                     </a>
                                     {% if data.unread_count > 0 %}
                                     <br><span class="badge bg-info">🔵 NEW</span>
+                                    {% endif %}
+                                    {% if data.student.id in consecutive_health_decline_ids %}
+                                    <br><span class="badge bg-danger">⚠️ 体調3日連続</span>
+                                    {% endif %}
+                                    {% if data.student.id in consecutive_mental_decline_ids %}
+                                    <br><span class="badge bg-danger">⚠️ メンタル3日連続</span>
                                     {% endif %}
                                 </td>
                                 <td class="text-center small">
@@ -328,6 +404,8 @@
                 未読の連絡帳はありません
                 {% elif filter_type == 'no_reaction' %}
                 反応未選択の連絡帳はありません
+                {% elif filter_type == 'consecutive_decline' %}
+                3日連続不調の生徒はいません
                 {% else %}
                 該当する連絡帳がありません
                 {% endif %}
@@ -335,6 +413,8 @@
             <p class="text-muted">
                 {% if filter_type == 'pending_action' %}
                 すべて対応済みです。お疲れ様でした！
+                {% elif filter_type == 'consecutive_decline' %}
+                継続的に不調を訴える生徒はいません。素晴らしい状態です！
                 {% else %}
                 フィルタを変更して他の連絡帳を確認できます。
                 {% endif %}
