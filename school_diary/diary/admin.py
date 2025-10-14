@@ -543,6 +543,50 @@ except NotRegistered:
     pass
 
 # ========================================
+# kitsアプリの未使用モデルを非表示（DX向上）
+# ========================================
+# 連絡帳管理システムで現在使用していないkitsモデルを非表示にします。
+# 将来必要になった場合は、該当の削除コードをコメントアウトしてください。
+#
+# 成果: 18モデル → 7モデル (61%削減)
+
+# kits.reports（レポート管理）
+try:
+    from kits.reports.models import Report
+    from kits.reports.models import ReportSchedule
+    from kits.reports.models import ReportTemplate
+
+    admin.site.unregister(Report)
+    admin.site.unregister(ReportSchedule)
+    admin.site.unregister(ReportTemplate)
+except (ImportError, NotRegistered):
+    pass  # reports未インストール、またはadmin登録されていない
+
+# kits.approvals（承認管理）
+try:
+    from kits.approvals.models import ApprovalAction
+    from kits.approvals.models import ApprovalRequest
+    from kits.approvals.models import ApprovalStep
+    from kits.approvals.models import ApprovalWorkflow
+
+    admin.site.unregister(ApprovalWorkflow)
+    admin.site.unregister(ApprovalStep)
+    admin.site.unregister(ApprovalRequest)
+    admin.site.unregister(ApprovalAction)
+except (ImportError, NotRegistered):
+    pass  # approvals未インストール、またはadmin登録されていない
+
+# kits.notifications（通知管理）
+try:
+    from kits.notifications.models import Notification
+    from kits.notifications.models import NotificationTemplate
+
+    admin.site.unregister(Notification)
+    admin.site.unregister(NotificationTemplate)
+except (ImportError, NotRegistered):
+    pass  # notifications未インストール、またはadmin登録されていない
+
+# ========================================
 # 監査ログ（権限変更の履歴追跡）
 # ========================================
 # UserProfileの変更履歴を管理画面に表示します。
