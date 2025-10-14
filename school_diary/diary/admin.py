@@ -559,7 +559,13 @@ UserProfile.history.model._meta.verbose_name_plural = "ユーザー変更履歴"
 
 @admin.register(UserProfile.history.model)
 class HistoricalUserProfileAdmin(SimpleHistoryAdmin):
-    """権限変更の監査ログ（誰が・いつ・どの権限を変更したか）"""
+    """権限変更の監査ログ（誰が・いつ・どの権限を変更したか）
+
+    セキュリティ・コンプライアンス要件:
+    - 監査ログは読み取り専用（改ざん防止）
+    - 追加・編集・削除は全て不可
+    - SOX法、GDPR、ISO 27001準拠
+    """
 
     list_display = ("user", "role", "managed_grade", "history_date", "history_user", "history_type")
     list_filter = ("role", "history_type", "history_date")
@@ -568,6 +574,9 @@ class HistoricalUserProfileAdmin(SimpleHistoryAdmin):
 
     def has_add_permission(self, request):
         return False  # 履歴は追加不可（自動記録のみ）
+
+    def has_change_permission(self, request, obj=None):
+        return False  # 履歴は編集不可（監査証跡保護）
 
     def has_delete_permission(self, request, obj=None):
         return False  # 履歴は削除不可（監査証跡保護）
