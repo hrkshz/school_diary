@@ -7,14 +7,72 @@ class DiaryConfig(AppConfig):
     verbose_name = "連絡帳"
 
     def ready(self):
-        """アプリ起動時の初期化処理"""
-        # AuditLogを管理画面から削除（HistoricalUserProfileで十分）
+        """アプリ起動時の初期化処理
+
+        全アプリロード完了後に実行される。
+        不要なkitsモデルを管理画面から除外（教師向けのシンプルな画面を実現）。
+        """
         from django.contrib import admin
         from django.contrib.admin.exceptions import NotRegistered
 
+        # AuditLog（HistoricalUserProfileで代替）
         try:
             from kits.audit.models import AuditLog
 
             admin.site.unregister(AuditLog)
         except (ImportError, NotRegistered):
-            pass  # audit未インストール、またはadmin登録されていない
+            pass
+
+        # kits.reports（レポート管理: 3モデル）
+        try:
+            from kits.reports.models import Report
+            from kits.reports.models import ReportSchedule
+            from kits.reports.models import ReportTemplate
+
+            admin.site.unregister(Report)
+            admin.site.unregister(ReportSchedule)
+            admin.site.unregister(ReportTemplate)
+        except (ImportError, NotRegistered):
+            pass
+
+        # kits.approvals（承認管理: 4モデル）
+        try:
+            from kits.approvals.models import ApprovalAction
+            from kits.approvals.models import ApprovalRequest
+            from kits.approvals.models import ApprovalStep
+            from kits.approvals.models import ApprovalWorkflow
+
+            admin.site.unregister(ApprovalWorkflow)
+            admin.site.unregister(ApprovalStep)
+            admin.site.unregister(ApprovalRequest)
+            admin.site.unregister(ApprovalAction)
+        except (ImportError, NotRegistered):
+            pass
+
+        # kits.notifications（通知管理: 2モデル）
+        try:
+            from kits.notifications.models import Notification
+            from kits.notifications.models import NotificationTemplate
+
+            admin.site.unregister(Notification)
+            admin.site.unregister(NotificationTemplate)
+        except (ImportError, NotRegistered):
+            pass
+
+        # kits.io（データ入出力: 2モデル）
+        try:
+            from kits.io.models import ImportHistory
+            from kits.io.models import ImportMapping
+
+            admin.site.unregister(ImportHistory)
+            admin.site.unregister(ImportMapping)
+        except (ImportError, NotRegistered):
+            pass
+
+        # kits.demos（デモ・参考実装: 1モデル）
+        try:
+            from kits.demos.models import DemoRequest
+
+            admin.site.unregister(DemoRequest)
+        except (ImportError, NotRegistered):
+            pass
