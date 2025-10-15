@@ -34,5 +34,14 @@ TEMPLATES[0]["OPTIONS"]["debug"] = True  # type: ignore[index]
 # ------------------------------------------------------------------------------
 # https://docs.djangoproject.com/en/dev/ref/settings/#media-url
 MEDIA_URL = "http://media.testserver/"
+
+# django-allauth
+# ------------------------------------------------------------------------------
+# テスト環境でもメール確認をスキップ（開発環境と同じ）
+ACCOUNT_EMAIL_VERIFICATION = "none"
+
+# Django adminの認証をallauthに統一（本番環境と同じ動作）
+DJANGO_ADMIN_FORCE_ALLAUTH = True
+
 # Your stuff...
 # ------------------------------------------------------------------------------

@@ -6,9 +6,12 @@ from crispy_forms.layout import Layout
 from crispy_forms.layout import Row
 from crispy_forms.layout import Submit
 from django import forms
+from django.core.exceptions import ValidationError
+from django.utils import timezone
 
 from .models import DiaryEntry
 from .models import UserProfile
+from .utils import get_previous_school_day
 
 
 class DiaryEntryForm(forms.ModelForm):
@@ -63,6 +66,26 @@ class DiaryEntryForm(forms.ModelForm):
             Submit("submit", "📝 提出する", css_class="btn btn-primary btn-lg w-100"),
         )
 
+    def clean_entry_date(self):
+        """記載日が前登校日であることを検証
+
+        Returns:
+            date: 検証済みの記載日
+
+        Raises:
+            ValidationError: 記載日が前登校日でない場合
+        """
+        entry_date = self.cleaned_data["entry_date"]
+        today = timezone.now().date()
+        expected_date = get_previous_school_day(today)
+
+        if entry_date != expected_date:
+            raise ValidationError(
+                f"記載日は前登校日（{expected_date.strftime('%Y年%m月%d日')}）にしてください。",
+            )
+
+        return entry_date
+
 
 class UserProfileAdminForm(forms.ModelForm):
     """ユーザープロフィール管理画面用フォーム
@@ -87,6 +110,9 @@ class UserProfileAdminForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
+        if not cleaned_data:
+            return cleaned_data
+
         role = cleaned_data.get('role')
         managed_grade = cleaned_data.get('managed_grade')
 

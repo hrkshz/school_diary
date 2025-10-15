@@ -76,3 +76,6 @@ class DiaryConfig(AppConfig):
             admin.site.unregister(DemoRequest)
         except (ImportError, NotRegistered):
             pass
+
+        # シグナル登録（User作成時にUserProfile自動作成）
+        import school_diary.diary.signals  # noqa: F401

@@ -29,6 +29,29 @@ class Command(BaseCommand):
         else:
             self.stdout.write(self.style.WARNING("⚠️  管理者は既に存在します"))
 
+        # 校長作成（メールアドレスは小文字のみ）
+        principal_email = "principal@example.com"
+        if not User.objects.filter(username="principal").exists():
+            principal = User.objects.create_user(
+                username="principal",
+                email=principal_email,
+                password="password123",
+                first_name="校長",
+                last_name="田中",
+            )
+            # EmailAddress レコードを作成
+            EmailAddress.objects.get_or_create(
+                user=principal,
+                email=principal_email,
+                defaults={"verified": True, "primary": True},
+            )
+            # UserProfile の role 設定
+            principal.profile.role = "school_leader"
+            principal.profile.save()
+            self.stdout.write(self.style.SUCCESS("✅ 校長を作成しました"))
+        else:
+            self.stdout.write(self.style.WARNING("⚠️  校長は既に存在します"))
+
         # 担任作成（各学年2名 = 6名、メールアドレスは小文字のみ）
         teachers = []
         for grade in [1, 2, 3]:
@@ -55,6 +78,19 @@ class Command(BaseCommand):
                     self.stdout.write(
                         self.style.WARNING(f"⚠️  {email}は既に存在します"),
                     )
+
+                # UserProfile の role 設定（新規・既存共通）
+                # 1年A組担任は学年主任を兼任
+                if grade == 1 and i == 0:
+                    teacher.profile.role = "grade_leader"
+                    teacher.profile.managed_grade = grade
+                    teacher.profile.save()
+                    self.stdout.write(
+                        self.style.SUCCESS(f"   → {email}を学年主任（{grade}年）に設定"),
+                    )
+                else:
+                    teacher.profile.role = "teacher"
+                    teacher.profile.save()
 
         # クラス作成（各学年2クラス = 6クラス）
         classrooms = []

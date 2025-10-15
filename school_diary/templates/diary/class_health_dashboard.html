@@ -117,82 +117,126 @@
     </div>
 </div>
 
-<!-- サマリーカード -->
-<div class="row mb-4">
-    <div class="col-12">
-        <h5 class="mb-3">📊 サマリー統計（過去{{ days }}日間）</h5>
-        <div class="row g-3">
-            <!-- 本日の欠席者 -->
-            <div class="col-lg-3 col-md-6">
-                <div class="card border-{% if absence_summary.total_absent >= 5 %}danger{% elif absence_summary.total_absent >= 3 %}warning{% else %}success{% endif %} shadow-sm h-100">
-                    <div class="card-body text-center">
-                        <div class="display-4 text-{% if absence_summary.total_absent >= 5 %}danger{% elif absence_summary.total_absent >= 3 %}warning{% else %}success{% endif %} fw-bold">
-                            {{ absence_summary.total_absent }}
-                        </div>
-                        <div class="text-muted small mt-2">🏠 本日の欠席者</div>
-                        <small class="text-muted">（うち病気: {{ absence_summary.absent_illness }}名）</small>
-                    </div>
-                </div>
-            </div>
-            <!-- 体調不良者数 -->
-            <div class="col-lg-3 col-md-6">
-                <div class="card border-danger shadow-sm h-100">
-                    <div class="card-body text-center">
-                        <div class="display-4 text-danger fw-bold">{{ summary.poor_health_count }}</div>
-                        <div class="text-muted small mt-2">🔴 体調不良者</div>
-                        <small class="text-muted">（体調1-2の生徒数）</small>
-                    </div>
-                </div>
-            </div>
-            <!-- メンタル低下者数 -->
-            <div class="col-lg-3 col-md-6">
-                <div class="card border-info shadow-sm h-100">
-                    <div class="card-body text-center">
-                        <div class="display-4 text-info fw-bold">{{ summary.poor_mental_count }}</div>
-                        <div class="text-muted small mt-2">💙 メンタル低下者</div>
-                        <small class="text-muted">（メンタル1-2の生徒数）</small>
-                    </div>
-                </div>
-            </div>
-            <!-- 全体人数 -->
-            <div class="col-lg-3 col-md-6">
-                <div class="card border-secondary shadow-sm h-100">
-                    <div class="card-body text-center">
-                        <div class="display-4 text-secondary fw-bold">{{ summary.total_students }}</div>
-                        <div class="text-muted small mt-2">👥 全体人数</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- 学年全体統計（参考）-->
+<!-- 学年全体統計（自クラス vs 学年平均）-->
 {% if grade_summary %}
 <div class="row mb-4">
     <div class="col-12">
         <div class="card border-info shadow">
             <div class="card-header bg-info text-white">
-                <h5 class="mb-0">📊 学年全体（参考）</h5>
+                <h5 class="mb-0">📊 学年全体統計（自クラス vs 学年平均）</h5>
             </div>
             <div class="card-body">
+                {% if grade_summary.single_class %}
+                <!-- クラスが1つだけの場合 -->
+                <p class="lead mb-3">
+                    {{ classroom.grade }}年生は1クラスのみのため、比較データはありません
+                </p>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <div class="card border-warning">
+                            <div class="card-body">
+                                <h6 class="card-title">🏠 本日の欠席者</h6>
+                                <p class="display-6 mb-0">{{ grade_summary.my_class_absent_today }} 名</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="card border-danger">
+                            <div class="card-body">
+                                <h6 class="card-title">🔴 体調不良者（過去{{ days }}日間）</h6>
+                                <p class="display-6 mb-0">{{ grade_summary.my_class_poor_health }} 名</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="card border-info">
+                            <div class="card-body">
+                                <h6 class="card-title">💙 メンタル低下者（過去{{ days }}日間）</h6>
+                                <p class="display-6 mb-0">{{ grade_summary.my_class_poor_mental }} 名</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <!-- 複数クラスがある場合、比較を表示 -->
                 <p class="lead mb-3">
                     {{ classroom.grade }}年生全体（{{ grade_summary.class_count }}クラス、計{{ grade_summary.total_students }}名）
                 </p>
                 <div class="row">
-                    <div class="col-md-6">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="text-muted">🔴 体調不良:</span>
-                            <strong>平均 {{ grade_summary.avg_poor_health }} 名/クラス</strong>
+                    <!-- 本日の欠席者比較 -->
+                    <div class="col-md-4 mb-3">
+                        <div class="card border-warning shadow-sm">
+                            <div class="card-body">
+                                <h6 class="card-title">🏠 本日の欠席者</h6>
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="text-muted">自クラス:</span>
+                                    <strong class="display-6">{{ grade_summary.my_class_absent_today }} 名</strong>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="text-muted">学年平均:</span>
+                                    <span>{{ grade_summary.avg_absent_today }} 名</span>
+                                </div>
+                                <hr>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="text-muted">差分:</span>
+                                    <strong class="{% if grade_summary.diff_absent_today > 0 %}text-danger{% elif grade_summary.diff_absent_today < 0 %}text-success{% else %}text-secondary{% endif %}">
+                                        {% if grade_summary.diff_absent_today > 0 %}+{% endif %}{{ grade_summary.diff_absent_today }} 名
+                                        {% if grade_summary.diff_absent_today > 0 %}（平均より多い）{% elif grade_summary.diff_absent_today < 0 %}（平均より少ない）{% else %}（平均と同じ）{% endif %}
+                                    </strong>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="col-md-6">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="text-muted">💙 メンタル低下:</span>
-                            <strong>平均 {{ grade_summary.avg_poor_mental }} 名/クラス</strong>
+                    <!-- 体調不良者比較 -->
+                    <div class="col-md-4 mb-3">
+                        <div class="card border-danger shadow-sm">
+                            <div class="card-body">
+                                <h6 class="card-title">🔴 体調不良者（過去{{ days }}日間）</h6>
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="text-muted">自クラス:</span>
+                                    <strong class="display-6">{{ grade_summary.my_class_poor_health }} 名</strong>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="text-muted">学年平均:</span>
+                                    <span>{{ grade_summary.avg_poor_health }} 名</span>
+                                </div>
+                                <hr>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="text-muted">差分:</span>
+                                    <strong class="{% if grade_summary.diff_poor_health > 0 %}text-danger{% elif grade_summary.diff_poor_health < 0 %}text-success{% else %}text-secondary{% endif %}">
+                                        {% if grade_summary.diff_poor_health > 0 %}+{% endif %}{{ grade_summary.diff_poor_health }} 名
+                                        {% if grade_summary.diff_poor_health > 0 %}（平均より多い）{% elif grade_summary.diff_poor_health < 0 %}（平均より少ない）{% else %}（平均と同じ）{% endif %}
+                                    </strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- メンタル低下者比較 -->
+                    <div class="col-md-4 mb-3">
+                        <div class="card border-info shadow-sm">
+                            <div class="card-body">
+                                <h6 class="card-title">💙 メンタル低下者（過去{{ days }}日間）</h6>
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="text-muted">自クラス:</span>
+                                    <strong class="display-6">{{ grade_summary.my_class_poor_mental }} 名</strong>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="text-muted">学年平均:</span>
+                                    <span>{{ grade_summary.avg_poor_mental }} 名</span>
+                                </div>
+                                <hr>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="text-muted">差分:</span>
+                                    <strong class="{% if grade_summary.diff_poor_mental > 0 %}text-danger{% elif grade_summary.diff_poor_mental < 0 %}text-success{% else %}text-secondary{% endif %}">
+                                        {% if grade_summary.diff_poor_mental > 0 %}+{% endif %}{{ grade_summary.diff_poor_mental }} 名
+                                        {% if grade_summary.diff_poor_mental > 0 %}（平均より多い）{% elif grade_summary.diff_poor_mental < 0 %}（平均より少ない）{% else %}（平均と同じ）{% endif %}
+                                    </strong>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -299,6 +343,7 @@
                     <li>合計行では「体調不良者数｜メンタル不調者数」を表示（例: 1｜2 = 体調1人、メンタル2人）</li>
                     <li>セルをクリックすると生徒詳細ページで連絡帳の内容を確認できます</li>
                     <li>受験前・テスト前の体調・メンタル変化をこのダッシュボードで早期発見できます</li>
+                    <li><strong>データの期間について</strong>：欠席は「本日」（即時対応用）、体調・メンタルは「過去{{ days }}日間」（継続的な傾向把握用）で表示しています。期間が異なるのは、データの性質（客観的 vs 主観的）と対応方法（即時 vs 継続監視）に合わせた設計です。</li>
                 </ul>
             </div>
         </div>

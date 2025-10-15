@@ -19,6 +19,11 @@ urlpatterns = [
         name="diary_create",
     ),
     path(
+        "diary/<int:pk>/edit/",
+        views.DiaryUpdateView.as_view(),
+        name="diary_update",
+    ),
+    path(
         "history/",
         views.DiaryHistoryView.as_view(),
         name="diary_history",

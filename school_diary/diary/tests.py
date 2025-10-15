@@ -273,6 +273,114 @@ class TestDiaryEntryForm:
         assert "mental_condition" in form.errors
         assert "reflection" in form.errors
 
+    def test_entry_date_previous_school_day_valid(self):
+        """
+        【テスト17】前登校日なら成功
+
+        期待される動作:
+        - 2025-10-15（水）に 2025-10-14（火）を入力
+        - is_valid() が True
+        """
+        from unittest.mock import patch
+
+        today = date(2025, 10, 15)  # 水曜日
+        expected_previous = date(2025, 10, 14)  # 火曜日
+
+        with patch("django.utils.timezone.now") as mock_now:
+            mock_now.return_value.date.return_value = today
+
+            form = DiaryEntryForm(
+                data={
+                    "entry_date": expected_previous,
+                    "health_condition": "3",
+                    "mental_condition": "4",
+                    "reflection": "テスト用の振り返り",
+                },
+            )
+            assert form.is_valid(), f"Form errors: {form.errors}"
+
+    def test_entry_date_not_previous_school_day_invalid(self):
+        """
+        【テスト18】前登校日でない場合はエラー
+
+        期待される動作:
+        - 2025-10-15（水）に 2025-10-13（月）を入力
+        - is_valid() が False
+        - エラーメッセージに「前登校日」が含まれる
+        """
+        from unittest.mock import patch
+
+        today = date(2025, 10, 15)  # 水曜日
+        wrong_date = date(2025, 10, 13)  # 月曜日（前々日）
+
+        with patch("django.utils.timezone.now") as mock_now:
+            mock_now.return_value.date.return_value = today
+
+            form = DiaryEntryForm(
+                data={
+                    "entry_date": wrong_date,
+                    "health_condition": "3",
+                    "mental_condition": "4",
+                    "reflection": "テスト用の振り返り",
+                },
+            )
+            assert not form.is_valid()
+            assert "entry_date" in form.errors
+            assert "前登校日" in str(form.errors["entry_date"])
+
+    def test_entry_date_future_invalid(self):
+        """
+        【テスト19】未来の日付はエラー
+
+        期待される動作:
+        - 2025-10-15（水）に 2025-10-16（木）を入力
+        - is_valid() が False
+        """
+        from unittest.mock import patch
+
+        today = date(2025, 10, 15)  # 水曜日
+        future_date = date(2025, 10, 16)  # 木曜日（明日）
+
+        with patch("django.utils.timezone.now") as mock_now:
+            mock_now.return_value.date.return_value = today
+
+            form = DiaryEntryForm(
+                data={
+                    "entry_date": future_date,
+                    "health_condition": "3",
+                    "mental_condition": "4",
+                    "reflection": "テスト用の振り返り",
+                },
+            )
+            assert not form.is_valid()
+            assert "entry_date" in form.errors
+
+    def test_entry_date_monday_expects_friday(self):
+        """
+        【テスト20】月曜日は金曜日を期待
+
+        期待される動作:
+        - 2025-10-13（月）に 2025-10-10（金）を入力
+        - is_valid() が True
+        """
+        from unittest.mock import patch
+
+        monday = date(2025, 10, 13)  # 月曜日
+        expected_friday = date(2025, 10, 10)  # 金曜日
+
+        with patch("django.utils.timezone.now") as mock_now:
+            mock_now.return_value.date.return_value = monday
+
+            form = DiaryEntryForm(
+                data={
+                    "entry_date": expected_friday,
+                    "health_condition": "3",
+                    "mental_condition": "4",
+                    "reflection": "テスト用の振り返り",
+                },
+            )
+            assert form.is_valid(), f"Form errors: {form.errors}"
+
 
 @pytest.mark.django_db
 class TestDiaryEntry:
@@ -324,3 +432,322 @@ class TestDiaryEntry:
 
         expected = f"{test_user.username} - {yesterday}"
         assert str(entry) == expected
+
+    def test_diary_becomes_past_record_after_read(self, test_user):
+        """
+        【テスト21】既読処理=過去記録化
+
+        期待される動作:
+        - 作成直後: is_editable=True（編集可能）、is_read=False
+        - 既読処理後: is_editable=False（過去記録、編集不可）、is_read=True
+
+        要件: 「本PoCでは既読処理が行われた時点で過去記録の扱いとする」
+        """
+        # 担任ユーザーを作成
+        teacher = User.objects.create_user(
+            username="teacher001",
+            email="teacher001@example.com",
+            password="teacherpass123",
+        )
+
+        # 生徒が連絡帳作成
+        yesterday = date.today() - timedelta(days=1)
+        entry = DiaryEntry.objects.create(
+            student=test_user,
+            entry_date=yesterday,
+            health_condition=3,
+            mental_condition=4,
+            reflection="テスト用の振り返り",
+        )
+
+        # 未既読: 編集可能
+        assert entry.is_editable is True, "作成直後は編集可能であるべき"
+        assert entry.is_read is False, "作成直後は未読であるべき"
+
+        # 担任が既読処理
+        entry.mark_as_read(teacher)
+
+        # 既読後: 編集不可（過去記録化）
+        assert entry.is_editable is False, "既読後は編集不可（過去記録）であるべき"
+        assert entry.is_read is True, "既読処理後はis_read=Trueであるべき"
+        assert entry.read_by == teacher, "既読者が正しく記録されるべき"
+        assert entry.read_at is not None, "既読日時が記録されるべき"
+
+
+@pytest.mark.django_db
+class TestPreviousSchoolDay:
+    """get_previous_school_day() ヘルパー関数のユニットテスト
+
+    前登校日の計算ロジックを検証します。
+    土日を除外し、月曜日の場合は金曜日を返すことを確認します。
+    """
+
+    def test_monday_returns_friday(self):
+        """
+        【テスト10】月曜日 → 金曜日
+
+        期待される動作:
+        - 2025-10-13（月）→ 2025-10-10（金）
+        """
+        from school_diary.diary.utils import get_previous_school_day
+
+        monday = date(2025, 10, 13)  # 月曜日
+        expected_friday = date(2025, 10, 10)  # 金曜日
+        result = get_previous_school_day(monday)
+        assert result == expected_friday
+
+    def test_tuesday_returns_monday(self):
+        """
+        【テスト11】火曜日 → 月曜日
+
+        期待される動作:
+        - 2025-10-14（火）→ 2025-10-13（月）
+        """
+        from school_diary.diary.utils import get_previous_school_day
+
+        tuesday = date(2025, 10, 14)  # 火曜日
+        expected_monday = date(2025, 10, 13)  # 月曜日
+        result = get_previous_school_day(tuesday)
+        assert result == expected_monday
+
+    def test_wednesday_returns_tuesday(self):
+        """
+        【テスト12】水曜日 → 火曜日
+
+        期待される動作:
+        - 2025-10-15（水）→ 2025-10-14（火）
+        """
+        from school_diary.diary.utils import get_previous_school_day
+
+        wednesday = date(2025, 10, 15)  # 水曜日
+        expected_tuesday = date(2025, 10, 14)  # 火曜日
+        result = get_previous_school_day(wednesday)
+        assert result == expected_tuesday
+
+    def test_thursday_returns_wednesday(self):
+        """
+        【テスト13】木曜日 → 水曜日
+
+        期待される動作:
+        - 2025-10-16（木）→ 2025-10-15（水）
+        """
+        from school_diary.diary.utils import get_previous_school_day
+
+        thursday = date(2025, 10, 16)  # 木曜日
+        expected_wednesday = date(2025, 10, 15)  # 水曜日
+        result = get_previous_school_day(thursday)
+        assert result == expected_wednesday
+
+    def test_friday_returns_thursday(self):
+        """
+        【テスト14】金曜日 → 木曜日
+
+        期待される動作:
+        - 2025-10-17（金）→ 2025-10-16（木）
+        """
+        from school_diary.diary.utils import get_previous_school_day
+
+        friday = date(2025, 10, 17)  # 金曜日
+        expected_thursday = date(2025, 10, 16)  # 木曜日
+        result = get_previous_school_day(friday)
+        assert result == expected_thursday
+
+    def test_saturday_returns_friday(self):
+        """
+        【テスト15】土曜日 → 金曜日
+
+        期待される動作:
+        - 2025-10-18（土）→ 2025-10-17（金）
+        """
+        from school_diary.diary.utils import get_previous_school_day
+
+        saturday = date(2025, 10, 18)  # 土曜日
+        expected_friday = date(2025, 10, 17)  # 金曜日
+        result = get_previous_school_day(saturday)
+        assert result == expected_friday
+
+    def test_sunday_returns_friday(self):
+        """
+        【テスト16】日曜日 → 金曜日
+
+        期待される動作:
+        - 2025-10-19（日）→ 2025-10-17（金）
+        """
+        from school_diary.diary.utils import get_previous_school_day
+
+        sunday = date(2025, 10, 19)  # 日曜日
+        expected_friday = date(2025, 10, 17)  # 金曜日
+        result = get_previous_school_day(sunday)
+        assert result == expected_friday
+
+
+@pytest.mark.django_db
+class TestDiaryUpdateView:
+    """DiaryUpdateView の統合テスト（TDD: Red Phase）
+
+    S-02「連絡帳編集」機能の動作を検証します。
+    要件: 既読前のみ編集可能、既読後は過去記録化（編集不可）
+    """
+
+    @pytest.fixture
+    def teacher(self, db):
+        """担任ユーザーを作成するフィクスチャ"""
+        return User.objects.create_user(
+            username="teacher001",
+            email="teacher001@example.com",
+            password="teacherpass123",
+        )
+
+    @pytest.fixture
+    def unread_entry(self, test_user, db):
+        """未既読のエントリー（編集可能）"""
+        return DiaryEntry.objects.create(
+            student=test_user,
+            entry_date=date.today() - timedelta(days=1),
+            health_condition=4,
+            mental_condition=3,
+            reflection="元の内容",
+        )
+
+    @pytest.fixture
+    def read_entry(self, test_user, teacher, db):
+        """既読済みのエントリー（編集不可）"""
+        entry = DiaryEntry.objects.create(
+            student=test_user,
+            entry_date=date.today() - timedelta(days=2),
+            health_condition=4,
+            mental_condition=3,
+            reflection="既読後の内容",
+        )
+        entry.mark_as_read(teacher)
+        return entry
+
+    def test_edit_own_unread_entry_success(
+        self,
+        authenticated_client,
+        test_user,
+        unread_entry,
+    ):
+        """
+        【テスト22】自分の未既読エントリーを編集できる
+
+        期待される動作:
+        - ステータスコード 302（リダイレクト）
+        - 編集内容が保存される
+        - student_dashboard へリダイレクト
+        """
+        url = reverse("diary:diary_update", args=[unread_entry.pk])
+        response = authenticated_client.post(
+            url,
+            {
+                "entry_date": unread_entry.entry_date.isoformat(),
+                "health_condition": "5",
+                "mental_condition": "4",
+                "reflection": "修正後の内容",
+            },
+        )
+
+        assert response.status_code == 302
+        assert response.url == reverse("diary:student_dashboard")
+
+        unread_entry.refresh_from_db()
+        assert unread_entry.health_condition == 5
+        assert unread_entry.mental_condition == 4
+        assert unread_entry.reflection == "修正後の内容"
+
+    def test_cannot_edit_read_entry(
+        self,
+        authenticated_client,
+        test_user,
+        read_entry,
+    ):
+        """
+        【テスト23】既読後は編集できない
+
+        期待される動作:
+        - ステータスコード 404（Not Found）
+        - 既読エントリーは get_queryset() でフィルタされる
+        """
+        url = reverse("diary:diary_update", args=[read_entry.pk])
+        response = authenticated_client.post(
+            url,
+            {
+                "entry_date": read_entry.entry_date.isoformat(),
+                "health_condition": "5",
+                "mental_condition": "5",
+                "reflection": "編集しようとする（失敗するべき）",
+            },
+        )
+
+        assert response.status_code == 404
+
+        # データが変更されていないことを確認
+        read_entry.refresh_from_db()
+        assert read_entry.reflection == "既読後の内容"
+
+    def test_cannot_edit_others_entry(self, test_user, test_user2, unread_entry):
+        """
+        【テスト24】他人のエントリーは編集できない
+
+        期待される動作:
+        - ステータスコード 404（Not Found）
+        - 他人のエントリーは get_queryset() でフィルタされる
+        """
+        # test_user2 でログイン（エントリーの所有者はtest_user）
+        client2 = Client()
+        client2.force_login(test_user2)
+
+        url = reverse("diary:diary_update", args=[unread_entry.pk])
+        response = client2.post(
+            url,
+            {
+                "entry_date": unread_entry.entry_date.isoformat(),
+                "health_condition": "5",
+                "mental_condition": "5",
+                "reflection": "他人のエントリーを編集しようとする（失敗するべき）",
+            },
+        )
+
+        assert response.status_code == 404
+
+        # データが変更されていないことを確認
+        unread_entry.refresh_from_db()
+        assert unread_entry.reflection == "元の内容"
+
+    def test_get_edit_page_success(
+        self,
+        authenticated_client,
+        test_user,
+        unread_entry,
+    ):
+        """
+        【テスト27】編集ページを表示できる
+
+        期待される動作:
+        - ステータスコード 200
+        - diary/diary_update.html テンプレートが使用される
+        - フォームが表示される
+        """
+        url = reverse("diary:diary_update", args=[unread_entry.pk])
+        response = authenticated_client.get(url)
+
+        assert response.status_code == 200
+        assert "diary/diary_update.html" in [t.name for t in response.templates]
+        assert "form" in response.context
+        assert isinstance(response.context["form"], DiaryEntryForm)
+
+    def test_unauthenticated_user_redirected(self, unread_entry):
+        """
+        【テスト28】未認証ユーザーはリダイレクト
+
+        期待される動作:
+        - ステータスコード 302（リダイレクト）
+        - ログインページへリダイレクト
+        """
+        client = Client()
+        url = reverse("diary:diary_update", args=[unread_entry.pk])
+        response = client.get(url)
+
+        assert response.status_code == 302
+        assert "/accounts/login/" in response.url
+        assert f"next={url}" in response.url

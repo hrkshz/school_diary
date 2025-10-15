@@ -337,17 +337,17 @@ class CustomUserAdmin(BaseUserAdmin):
         "is_active",
     )
 
-    list_filter = BaseUserAdmin.list_filter + (
+    list_filter = list(BaseUserAdmin.list_filter or ()) + [
         ("homeroom_classes", admin.RelatedOnlyFieldListFilter),
-    )
+    ]
 
     search_fields = BaseUserAdmin.search_fields
 
-    actions = list(BaseUserAdmin.actions or []) + ["activate_email_for_selected"]
+    actions = list(BaseUserAdmin.actions or []) + ["activate_email_for_selected"]  # type: ignore
 
     inlines = [UserProfileInline]
 
-    # fieldsetsを明示的に定義（不要な項目を削除）
+    # fieldsetsを明示的に定義（編集画面用）
     fieldsets = (
         (None, {"fields": ("username", "password")}),
         ("個人情報", {"fields": ("first_name", "last_name", "email")}),
@@ -356,6 +356,20 @@ class CustomUserAdmin(BaseUserAdmin):
             {
                 "fields": ("is_active", "is_staff", "is_superuser"),
                 "description": "is_active: 卒業・退学した生徒はチェックを外します",
+            },
+        ),
+    )
+
+    # add_fieldsetsを定義（新規作成画面用）
+    add_fieldsets = (
+        (
+            None,
+            {
+                "classes": ("wide",),
+                "fields": ("username", "email", "password1", "password2"),
+                "description": (
+                    "<strong>注意</strong>: メールアドレスは必須です。ログイン時に使用されます。"
+                ),
             },
         ),
     )
