@@ -71,7 +71,7 @@ class TestDiaryCreateViewUI:
             f"送信ボタンのテキストが正しくありません。"
             f"期待: '提出する' を含む、実際: '{submit_btn.text}'"
         )
-        assert "btn-primary" in submit_btn.get("class", []), (
+        assert "btn-primary" in (submit_btn.get("class") or []), (
             "送信ボタンに btn-primary クラスが適用されていません。"
             "Bootstrap のプライマリボタンスタイルが必要です。"
         )
@@ -438,7 +438,7 @@ class TestDiaryHistoryViewUI:
             "テーブルが見つかりません。"
             "diary_history.html に <table> 要素があるか確認してください。"
         )
-        table_classes = table.get("class", [])
+        table_classes = table.get("class") or []
         assert "table-striped" in table_classes, (
             "table-striped クラスが適用されていません。"
         )
@@ -605,12 +605,16 @@ class TestRootURLRedirect:
         - / にアクセスすると HTTP 302 (Found) が返る
         - Location ヘッダーが /diary/dashboard/ を指している
         """
-        # Arrange: 生徒ユーザーを作成
+        # Arrange: 生徒ユーザー + UserProfileを作成
+        from school_diary.diary.models import UserProfile
         student_user = User.objects.create_user(
             username="student",
             email="student@example.com",
             password="student123",
         )
+        # UserProfile はsignals.pyで自動作成される
+        student_user.refresh_from_db()
+
         client = Client()
         client.force_login(student_user)
 
@@ -625,6 +629,136 @@ class TestRootURLRedirect:
         expected_url = reverse("diary:student_dashboard")
         assert response.url == expected_url, (
             f"リダイレクト先が正しくありません。期待: {expected_url}, 実際: {response.url}"
+        )
+
+
+@pytest.mark.django_db
+class TestAuthenticationFlow:
+    """認証フローの完全テスト
+
+    すべてのユーザーが /accounts/login/ で認証され、
+    ログアウト後も正しく /accounts/login/ に戻ることを確認します。
+    """
+
+    def test_logout_redirects_to_home_then_login(self):
+        """
+        【テスト1】ログアウト後は / → /accounts/login/ にリダイレクト
+
+        期待される動作:
+        - /accounts/logout/ にアクセス（POST）
+        - / にリダイレクト
+        - 未認証なので /accounts/login/ にリダイレクト
+        """
+        # Arrange: 認証済みユーザー + UserProfile作成
+        from school_diary.diary.models import UserProfile
+        user = User.objects.create_user(
+            username="logout_test",
+            email="logout@example.com",
+            password="test123",
+        )
+        # UserProfile はsignals.pyで自動作成される
+        user.refresh_from_db()
+
+        client = Client()
+        client.force_login(user)
+
+        # Act: ログアウト（POSTメソッド、follow=Trueで全リダイレクトを追跡）
+        response = client.post("/accounts/logout/", follow=True)
+
+        # Assert: 最終的に /accounts/login/ にリダイレクト
+        assert response.status_code == 200, (
+            f"最終ステータスコードが200ではありません。実際: {response.status_code}"
+        )
+        # リダイレクトチェーンを確認
+        redirect_chain = [url for url, status in response.redirect_chain]
+        # ログアウト後は / または /accounts/login/ にリダイレクトされるはず
+        assert len(redirect_chain) > 0, (
+            f"リダイレクトが発生していません。リダイレクトチェーン: {redirect_chain}"
+        )
+        # 最終的なURLが /accounts/login/ であることを確認
+        final_url = redirect_chain[-1][0] if redirect_chain else response.request['PATH_INFO']
+        assert "/accounts/login/" in final_url or response.request['PATH_INFO'] == "/accounts/login/", (
+            f"最終的に /accounts/login/ にリダイレクトされていません。最終URL: {final_url}, リダイレクトチェーン: {redirect_chain}"
+        )
+
+    def test_admin_force_allauth_setting_enabled(self):
+        """
+        【テスト2】DJANGO_ADMIN_FORCE_ALLAUTH が有効になっている
+
+        期待される動作:
+        - テスト環境で DJANGO_ADMIN_FORCE_ALLAUTH = True
+        - 本番環境と同じ認証システムを使用
+
+        Note: 実際のリダイレクト動作は urls.py のロードタイミングに依存するため、
+        ここでは設定値のみを確認します。実際の動作は手動テストで確認してください。
+        """
+        from django.conf import settings
+
+        # Assert: DJANGO_ADMIN_FORCE_ALLAUTH が有効
+        assert settings.DJANGO_ADMIN_FORCE_ALLAUTH is True, (
+            f"DJANGO_ADMIN_FORCE_ALLAUTH が有効になっていません。"
+            f"実際: {settings.DJANGO_ADMIN_FORCE_ALLAUTH}"
+        )
+
+    def test_teacher_redirects_to_dashboard(self):
+        """
+        【テスト3】担任が / にアクセスすると担任ダッシュボードにリダイレクト
+
+        期待される動作:
+        - 担任ユーザーでログイン
+        - / にアクセス
+        - /diary/teacher/dashboard/ にリダイレクト
+        """
+        # Arrange: 担任ユーザー + UserProfile + クラス作成
+        teacher = User.objects.create_user(
+            username="teacher_auth_test",
+            email="teacher_auth@example.com",
+            password="teacher123",
+        )
+        # UserProfile はsignals.pyで自動作成される
+        teacher.refresh_from_db()
+
+        classroom = ClassRoom.objects.create(
+            grade=1,
+            class_name="A",
+            academic_year=2025,
+            homeroom_teacher=teacher,
+        )
+
+        client = Client()
+        client.force_login(teacher)
+
+        # Act: ルートURLにアクセス
+        response = client.get("/", follow=False)
+
+        # Assert: 担任ダッシュボードにリダイレクト
+        assert response.status_code == 302, (
+            f"ステータスコードが302ではありません。実際: {response.status_code}"
+        )
+        from django.urls import reverse
+        expected_url = reverse("diary:teacher_dashboard")
+        assert response.url == expected_url, (
+            f"リダイレクト先が正しくありません。期待: {expected_url}, 実際: {response.url}"
+        )
+
+    def test_all_users_use_same_login_endpoint(self):
+        """
+        【テスト4】すべてのユーザーが /accounts/login/ で認証される
+
+        期待される動作:
+        - 生徒、担任、管理者すべてが同じログインページを使用
+        - これは設定値 LOGIN_URL = "account_login" によって保証される
+        """
+        from django.conf import settings
+
+        # Assert: LOGIN_URLが統一されていることを確認
+        assert settings.LOGIN_URL == "account_login", (
+            f"LOGIN_URLが期待値と異なります。期待: 'account_login', 実際: {settings.LOGIN_URL}"
+        )
+
+        # allauth のアダプターが設定されていることを確認
+        assert settings.ACCOUNT_ADAPTER == "school_diary.diary.adapters.RoleBasedRedirectAdapter", (
+            f"ACCOUNT_ADAPTERが正しく設定されていません。実際: {settings.ACCOUNT_ADAPTER}"
         )
 
 
@@ -760,7 +894,7 @@ class TestTeacherDashboardViewUI:
         # Assert
         table = soup.find("table")
         assert table is not None, "テーブルが見つかりません。"
-        table_classes = table.get("class", [])
+        table_classes = table.get("class") or []
         assert "table-hover" in table_classes, (
             "table-hover クラスが適用されていません。"
         )

@@ -82,5 +82,9 @@ CELERY_TASK_EAGER_PROPAGATES = True
 # 本番環境では base.py の "mandatory" が有効になります
 ACCOUNT_EMAIL_VERIFICATION = "none"
 
+# Django admin の認証を allauth に統一
+# ログアウト後の再ログインを /accounts/login/ 経由にする
+DJANGO_ADMIN_FORCE_ALLAUTH = True
+
 # Your stuff...
 # ------------------------------------------------------------------------------

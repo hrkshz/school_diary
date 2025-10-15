@@ -65,7 +65,12 @@
                         <strong>メンタル:</strong> {{ entry.get_mental_condition_display }}
                     </div>
                 </div>
-                <p class="mb-0 text-muted">{{ entry.reflection|truncatewords:30 }}</p>
+                <p class="mb-2 text-muted">{{ entry.reflection|truncatewords:30 }}</p>
+                {% if entry.is_editable %}
+                <a href="{% url 'diary:diary_update' entry.pk %}" class="btn btn-sm btn-outline-primary">
+                    ✏️ 編集
+                </a>
+                {% endif %}
             </div>
         </div>
         {% empty %}

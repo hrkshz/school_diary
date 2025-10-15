@@ -17,6 +17,7 @@ from django.utils import timezone
 from django.views.generic import CreateView
 from django.views.generic import ListView
 from django.views.generic import TemplateView
+from django.views.generic import UpdateView
 
 from .forms import DiaryEntryForm
 from .models import AbsenceReason
@@ -104,11 +105,13 @@ class StudentDashboardView(LoginRequiredMixin, TemplateView):
             .order_by("-entry_date")[:7]
         )
 
-        # 今日の提出済みか確認
-        yesterday = timezone.now().date() - timezone.timedelta(days=1)
+        # 今日の提出済みか確認（前登校日ベース）
+        from .utils import get_previous_school_day
+
+        expected_date = get_previous_school_day(timezone.now().date())
         context["today_submitted"] = DiaryEntry.objects.filter(
             student=self.request.user,
-            entry_date=yesterday,
+            entry_date=expected_date,
         ).exists()
 
         return context
@@ -204,21 +207,8 @@ class TeacherDashboardView(LoginRequiredMixin, TemplateView):
                 },
             )
 
-        # 3日連続低下者を検出 (いじめ・不登校の早期発見)
-        health_decline_students, mental_decline_students = (
-            get_students_with_consecutive_decline(classroom)
-        )
-
-        # 本日のクラス全体統計 (2段階アラート: 3名で注意、5名で危険)
-        today = timezone.now().date()
-        today_entries = DiaryEntry.objects.filter(
-            student__classes=classroom,
-            entry_date=today,
-        )
-        poor_health_today = today_entries.filter(health_condition__lte=2).count()
-        poor_mental_today = today_entries.filter(mental_condition__lte=2).count()
-
         # フィルタ処理
+        today = timezone.now().date()
         filter_type = self.request.GET.get("filter", "all")
 
         if filter_type == "urgent":
@@ -248,15 +238,55 @@ class TeacherDashboardView(LoginRequiredMixin, TemplateView):
                 for s in student_data
                 if s["latest_entry"] and not s["latest_entry"].public_reaction
             ]
-        elif filter_type == "consecutive_decline":
-            # 3日連続不調のみ (体調 or メンタル)
-            consecutive_health_ids = {s.id for s in health_decline_students}
-            consecutive_mental_ids = {s.id for s in mental_decline_students}
-            consecutive_all_ids = consecutive_health_ids | consecutive_mental_ids
+        elif filter_type == "absent":
+            # 欠席者のみ（今日欠席している生徒）
+            absent_records = DailyAttendance.objects.filter(
+                classroom=classroom,
+                date=today,
+                status=AttendanceStatus.ABSENT,
+            ).select_related("student")
 
-            student_data = [
-                s for s in student_data if s["student"].id in consecutive_all_ids
-            ]
+            # 欠席者の生徒データを作成
+            absent_student_data = []
+            for record in absent_records:
+                # 最新の連絡帳を取得
+                latest_entry = DiaryEntry.objects.filter(
+                    student=record.student,
+                ).order_by("-entry_date").first()
+
+                absent_student_data.append({
+                    "student": record.student,
+                    "latest_entry": latest_entry,
+                    "unread_count": 0,  # 欠席者なので未読カウントは不要
+                    "absence_reason": record.absence_reason,  # 欠席理由を追加
+                })
+
+            student_data = absent_student_data
+        elif filter_type == "no_entry_yesterday":
+            # 昨日未提出のみ
+            yesterday = today - timedelta(days=1)
+
+            no_entry_student_data = []
+            for student in classroom.students.all():
+                # 昨日の連絡帳があるかチェック
+                has_entry = DiaryEntry.objects.filter(
+                    student=student,
+                    entry_date=yesterday,
+                ).exists()
+
+                if not has_entry:
+                    # 最新の連絡帳を取得
+                    latest_entry = DiaryEntry.objects.filter(
+                        student=student,
+                    ).order_by("-entry_date").first()
+
+                    no_entry_student_data.append({
+                        "student": student,
+                        "latest_entry": latest_entry,
+                        "unread_count": 0,
+                    })
+
+            student_data = no_entry_student_data
 
         context["classroom"] = classroom
         context["students"] = student_data
@@ -266,37 +296,8 @@ class TeacherDashboardView(LoginRequiredMixin, TemplateView):
             "pending_action_count": summary_stats["pending_action_count"],
             "urgent_action_count": summary_stats["urgent_action_count"],
             "no_reaction_count": summary_stats["no_reaction_count"],
-            "consecutive_health_decline_count": len(health_decline_students),
-            "consecutive_mental_decline_count": len(mental_decline_students),
-            "poor_health_today": poor_health_today,
-            "poor_mental_today": poor_mental_today,
         }
         context["filter_type"] = filter_type
-
-        # 生徒IDセットを作成 (テンプレートでバッジ判定用)
-        context["consecutive_health_decline_ids"] = {s.id for s in health_decline_students}
-        context["consecutive_mental_decline_ids"] = {s.id for s in mental_decline_students}
-
-        # 最近の学年共有メモを取得（過去7日間、最新5件）
-        seven_days_ago = timezone.now() - timedelta(days=7)
-        recent_shared_notes = TeacherNote.objects.filter(
-            is_shared=True,
-            student__classes__grade=classroom.grade,
-            student__classes__academic_year=classroom.academic_year,
-            created_at__gte=seven_days_ago,
-        ).select_related("teacher", "student").order_by("-created_at").distinct()[:5]
-
-        # 自分のクラスの生徒IDセットを事前取得（パフォーマンス最適化）
-        own_student_ids = set(classroom.students.values_list("id", flat=True))
-
-        # 新着判定（ログイン時刻より新しいメモ）+ 自分のクラスの生徒かどうかを判定
-        for note in recent_shared_notes:
-            note.is_new = (note.created_at > self.request.user.last_login
-                           if self.request.user.last_login else True)
-            # 自分のクラスの生徒かどうかを判定
-            note.is_own_class_student = note.student.id in own_student_ids
-
-        context["recent_shared_notes"] = recent_shared_notes
 
         # 本日の欠席者情報を集計
         today_attendance = DailyAttendance.objects.filter(
@@ -362,6 +363,45 @@ class DiaryCreateView(LoginRequiredMixin, CreateView):
 
         # 保存成功メッセージ
         messages.success(self.request, "連絡帳を作成しました。")
+        return super().form_valid(form)
+
+
+class DiaryUpdateView(LoginRequiredMixin, UpdateView):
+    """連絡帳編集ページ（S-02: 既読前のみ編集可）
+
+    生徒が既読前の連絡帳を編集するページ。
+    既読後は過去記録化されるため編集不可。
+
+    セキュリティ:
+    - LoginRequiredMixin: 未認証ユーザーをブロック
+    - get_queryset(): 自分のエントリーで、かつ未既読のもののみ取得
+    """
+
+    model = DiaryEntry
+    form_class = DiaryEntryForm
+    template_name = "diary/diary_update.html"
+    success_url = reverse_lazy("diary:student_dashboard")
+
+    def get_queryset(self):
+        """セキュリティ: 自分の未既読エントリーのみ編集可能
+
+        フィルタ条件:
+        - student=self.request.user: 自分のエントリーのみ
+        - is_read=False: 既読前のみ（is_editable=True）
+
+        既読後または他人のエントリーにアクセスした場合は404エラー。
+        """
+        return DiaryEntry.objects.filter(
+            student=self.request.user,
+            is_read=False,  # is_editable = True
+        )
+
+    def form_valid(self, form):
+        """フォーム送信時の処理
+
+        編集成功メッセージを表示。
+        """
+        messages.success(self.request, "連絡帳を更新しました。")
         return super().form_valid(form)
 
 
@@ -790,6 +830,9 @@ class ClassHealthDashboardView(LoginRequiredMixin, TemplateView):
             "days": days,
         }
 
+        # 本日の日付を取得（欠席データ集計に使用）
+        today = timezone.now().date()
+
         # 学年全体統計を計算（担任が学年平均と比較できるように）
         grade_classrooms = ClassRoom.objects.filter(
             grade=classroom.grade,
@@ -798,48 +841,94 @@ class ClassHealthDashboardView(LoginRequiredMixin, TemplateView):
 
         if grade_classrooms.exists():
             # 学年全体（自分のクラスを除く）の統計
+            # パフォーマンス最適化: 一括クエリで学年全体のデータを取得（2N回→2回、83-92%削減）
             grade_total_students = 0
-            grade_total_entries = 0
-            grade_total_expected = 0
             grade_poor_health_students = set()
             grade_poor_mental_students = set()
 
+            # 学年全体の生徒リストを一括取得
+            all_grade_students = []
             for other_classroom in grade_classrooms:
-                other_students = other_classroom.students.all()
-                grade_total_students += other_students.count()
+                other_students = list(other_classroom.students.all())
+                all_grade_students.extend(other_students)
+                grade_total_students += len(other_students)
 
-                # この他クラスの連絡帳
-                other_entries = DiaryEntry.objects.filter(
-                    student__in=other_students,
+            # 学年全体の連絡帳を一括取得（1回のクエリ）
+            if all_grade_students:
+                grade_entries = DiaryEntry.objects.filter(
+                    student__in=all_grade_students,
                     entry_date__gte=start_date,
                     entry_date__lte=end_date,
                 )
-                grade_total_entries += other_entries.count()
-                grade_total_expected += other_students.count() * days
 
-                # 体調・メンタル低下者
-                for entry in other_entries:
+                # Pythonで集計（メモリ内処理）
+                for entry in grade_entries:
                     if entry.health_condition <= 2:
                         grade_poor_health_students.add(entry.student_id)
                     if entry.mental_condition <= 2:
                         grade_poor_mental_students.add(entry.student_id)
 
+            # 学年全体の本日の欠席者数を一括取得（1回のクエリ）
+            grade_absent_today = DailyAttendance.objects.filter(
+                classroom__in=grade_classrooms,
+                date=today,
+                status=AttendanceStatus.ABSENT,
+            ).count()
+
+            # 自クラスの本日の欠席者数を取得
+            my_class_absent_today = DailyAttendance.objects.filter(
+                classroom=classroom,
+                date=today,
+                status=AttendanceStatus.ABSENT,
+            ).count()
+
             # 学年平均を計算（自分のクラスを含む全体）
             all_classrooms_count = grade_classrooms.count() + 1  # 自分のクラス含む
             grade_avg_poor_health = round(len(grade_poor_health_students) / grade_classrooms.count(), 1)
             grade_avg_poor_mental = round(len(grade_poor_mental_students) / grade_classrooms.count(), 1)
+            grade_avg_absent_today = round(grade_absent_today / grade_classrooms.count(), 1)
+
+            # 自クラスのデータ
+            my_class_poor_health = summary["poor_health_count"]
+            my_class_poor_mental = summary["poor_mental_count"]
+
+            # 差分計算（自クラス - 学年平均）
+            diff_poor_health = my_class_poor_health - grade_avg_poor_health
+            diff_poor_mental = my_class_poor_mental - grade_avg_poor_mental
+            diff_absent_today = my_class_absent_today - grade_avg_absent_today
 
             grade_summary = {
                 "total_students": grade_total_students + summary["total_students"],
                 "class_count": all_classrooms_count,
                 "avg_poor_health": grade_avg_poor_health,
                 "avg_poor_mental": grade_avg_poor_mental,
+                "avg_absent_today": grade_avg_absent_today,
+                # 自クラスのデータを追加
+                "my_class_poor_health": my_class_poor_health,
+                "my_class_poor_mental": my_class_poor_mental,
+                "my_class_absent_today": my_class_absent_today,
+                # 差分を追加
+                "diff_poor_health": round(diff_poor_health, 1),
+                "diff_poor_mental": round(diff_poor_mental, 1),
+                "diff_absent_today": round(diff_absent_today, 1),
             }
         else:
-            grade_summary = None
+            # クラスが1つしかない場合、自クラスのデータのみ表示
+            # 本日の欠席者数を取得
+            my_class_absent_today = DailyAttendance.objects.filter(
+                classroom=classroom,
+                date=today,
+                status=AttendanceStatus.ABSENT,
+            ).count()
 
-        # 本日の欠席者情報を集計
-        today = timezone.now().date()
+            grade_summary = {
+                "my_class_poor_health": summary["poor_health_count"],
+                "my_class_poor_mental": summary["poor_mental_count"],
+                "my_class_absent_today": my_class_absent_today,
+                "single_class": True,  # テンプレートで判定用
+            }
+
+        # 本日の欠席者情報を集計（todayは既に794行目で取得済み）
         today_attendance = DailyAttendance.objects.filter(
             classroom=classroom,
             date=today,

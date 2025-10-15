@@ -9,6 +9,13 @@ from django.http import JsonResponse
 
 from school_diary.diary.views import home_redirect_view
 
+# Force Django admin to use allauth login
+# Source: https://django-allauth.readthedocs.io/en/latest/advanced.html#admin
+if settings.DJANGO_ADMIN_FORCE_ALLAUTH:
+    from allauth.account.decorators import secure_admin_login
+    admin.autodiscover()
+    admin.site.login = secure_admin_login(admin.site.login)
+
 
 def health_check(request):
     """ヘルスチェックエンドポイント - アプリケーションの死活監視用"""
