@@ -210,15 +210,14 @@
                         <div class="card border-danger shadow-sm">
                             <div class="card-body">
                                 <h6 class="card-title text-danger">{{ student.get_full_name }}</h6>
-                                {% with latest=student.diary_entries.all|first %}
-                                {% if latest %}
+                                {% if student.inline_history %}
                                 <p class="card-text small">
-                                    <span class="badge bg-danger">メンタル: ★×{{ latest.mental_condition }}</span>
-                                    <span class="badge bg-warning">体調: ★×{{ latest.health_condition }}</span>
+                                    <span class="badge bg-secondary">📊 {{ student.inline_history }}</span>
                                 </p>
-                                <p class="card-text small text-muted">{{ latest.reflection|truncatewords:15 }}</p>
+                                <p class="card-text small text-muted">{{ student.latest_snippet }}</p>
+                                {% else %}
+                                <p class="card-text small text-muted">未提出</p>
                                 {% endif %}
-                                {% endwith %}
                                 <a href="{% url 'diary:teacher_student_detail' student_id=student.id %}" class="btn btn-sm btn-danger">詳細</a>
                             </div>
                         </div>
@@ -242,17 +241,14 @@
                         <div class="card border-warning shadow-sm">
                             <div class="card-body">
                                 <h6 class="card-title text-warning">{{ student.get_full_name }}</h6>
-                                {% with latest=student.diary_entries.all|first %}
-                                {% if latest %}
+                                {% if student.inline_history %}
                                 <p class="card-text small">
-                                    <span class="badge bg-warning">メンタル: ★×{{ latest.mental_condition }}</span>
-                                    <span class="badge bg-warning">体調: ★×{{ latest.health_condition }}</span>
+                                    <span class="badge bg-secondary">📊 {{ student.inline_history }}</span>
                                 </p>
-                                <p class="card-text small text-muted">{{ latest.reflection|truncatewords:15 }}</p>
+                                <p class="card-text small text-muted">{{ student.latest_snippet }}</p>
                                 {% else %}
                                 <p class="card-text small text-muted">昨日未提出</p>
                                 {% endif %}
-                                {% endwith %}
                                 <a href="{% url 'diary:teacher_student_detail' student_id=student.id %}" class="btn btn-sm btn-warning">詳細</a>
                             </div>
                         </div>
@@ -276,15 +272,12 @@
                         <div class="card border-success shadow-sm">
                             <div class="card-body">
                                 <h6 class="card-title text-success">{{ student.get_full_name }}</h6>
-                                {% with latest=student.diary_entries.all|first %}
-                                {% if latest %}
+                                {% if student.inline_history %}
                                 <p class="card-text small">
-                                    <span class="badge bg-success">メンタル: ★×{{ latest.mental_condition }}</span>
-                                    <span class="badge bg-success">体調: ★×{{ latest.health_condition }}</span>
+                                    <span class="badge bg-secondary">📊 {{ student.inline_history }}</span>
                                 </p>
-                                <p class="card-text small text-muted">{{ latest.reflection|truncatewords:15 }}</p>
+                                <p class="card-text small text-muted">{{ student.latest_snippet }}</p>
                                 {% endif %}
-                                {% endwith %}
                                 <a href="{% url 'diary:teacher_student_detail' student_id=student.id %}" class="btn btn-sm btn-success">詳細</a>
                             </div>
                         </div>

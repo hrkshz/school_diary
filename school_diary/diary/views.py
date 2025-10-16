@@ -387,19 +387,35 @@ class TeacherDashboardView(LoginRequiredMixin, TemplateView):
 
         classified_students = alert_service.classify_students(classroom)
 
-        # 各分類の生徒に最新の連絡帳をprefetch（N+1問題回避）
+        # 各分類の生徒に最新3件の連絡帳をprefetch（N+1問題回避、履歴表示用）
         for tier in ['critical', 'high', 'normal']:
             student_ids = [s.id for s in classified_students[tier]]
             if student_ids:
-                # prefetch_relatedで最新1件を取得
-                classified_students[tier] = list(
+                # prefetch_relatedで最新3件を取得（履歴統合用）
+                students_with_history = list(
                     classroom.students.filter(id__in=student_ids).prefetch_related(
                         Prefetch(
                             "diary_entries",
-                            queryset=DiaryEntry.objects.order_by("-entry_date")[:1],
+                            queryset=DiaryEntry.objects.order_by("-entry_date")[:3],
+                            to_attr="recent_entries_for_history",
                         )
                     )
                 )
+
+                # 各生徒に履歴文字列を追加
+                for student in students_with_history:
+                    if hasattr(student, 'recent_entries_for_history') and student.recent_entries_for_history:
+                        student.inline_history = alert_service.format_inline_history(
+                            student.recent_entries_for_history
+                        )
+                        student.latest_snippet = alert_service.get_snippet(
+                            student.recent_entries_for_history[0]
+                        )
+                    else:
+                        student.inline_history = ""
+                        student.latest_snippet = "未提出"
+
+                classified_students[tier] = students_with_history
 
         context["classified_students"] = classified_students
 
