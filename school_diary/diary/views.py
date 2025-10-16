@@ -382,6 +382,27 @@ class TeacherDashboardView(LoginRequiredMixin, TemplateView):
 
         context["alerts"] = alerts
 
+        # Inbox Pattern: 3段階分類（Critical/High/Normal）
+        from . import alert_service
+
+        classified_students = alert_service.classify_students(classroom)
+
+        # 各分類の生徒に最新の連絡帳をprefetch（N+1問題回避）
+        for tier in ['critical', 'high', 'normal']:
+            student_ids = [s.id for s in classified_students[tier]]
+            if student_ids:
+                # prefetch_relatedで最新1件を取得
+                classified_students[tier] = list(
+                    classroom.students.filter(id__in=student_ids).prefetch_related(
+                        Prefetch(
+                            "diary_entries",
+                            queryset=DiaryEntry.objects.order_by("-entry_date")[:1],
+                        )
+                    )
+                )
+
+        context["classified_students"] = classified_students
+
         return context
 
 
