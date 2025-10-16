@@ -3,6 +3,17 @@
 {% block title %}生徒ダッシュボード{% endblock %}
 
 {% block content %}
+{% if has_reminder %}
+<div class="alert alert-info alert-dismissible fade show" role="alert">
+    <h5 class="alert-heading">📝 連絡帳の提出をお願いします</h5>
+    <p class="mb-0">
+        <strong>前登校日（{{ reminder_date }}）</strong>の連絡帳がまだ提出されていません。
+        <a href="{% url 'diary:diary_create' %}" class="alert-link">こちらから提出してください</a>
+    </p>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+{% endif %}
+
 <div class="row">
     <div class="col-12 mb-4">
         <h2>📝 連絡帳システム</h2>

@@ -73,6 +73,49 @@
     </div>
 </div>
 
+<!-- 学年主任向けアラート表示（MAP-2A: Level 2 Critical-Escalation） -->
+{% if escalation_alerts %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h5 class="mb-3">🚨 学年主任通知（緊急対応が必要）</h5>
+        {% for alert in escalation_alerts %}
+        <div class="alert alert-danger shadow-sm mb-3" role="alert">
+            <div class="d-flex align-items-start">
+                <div class="flex-shrink-0">
+                    <span class="display-6">🚨</span>
+                </div>
+                <div class="flex-grow-1 ms-3">
+                    <h5 class="alert-heading mb-2">【緊急】{{ alert.message }}</h5>
+                    <div class="mb-2">
+                        <strong>対象生徒:</strong> {{ alert.student.get_full_name }}さん（{{ alert.classroom }}組）
+                    </div>
+                    <div class="mb-2">
+                        <strong>担任:</strong> {{ alert.teacher.get_full_name }}先生
+                    </div>
+                    <div class="mb-2">
+                        <strong>期間:</strong>
+                        {% for date in alert.dates %}
+                            {{ date }}{% if not forloop.last %} → {% endif %}
+                        {% endfor %}
+                        （3日連続）
+                    </div>
+                    <div class="mb-0">
+                        <strong>対応:</strong> {{ alert.action }}
+                    </div>
+                </div>
+                <div class="flex-shrink-0">
+                    <a href="{% url 'diary:teacher_student_detail' student_id=alert.student.id %}" class="btn btn-danger">詳細を見る</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        <div class="alert alert-warning" role="alert">
+            <strong>⚠️ 重要:</strong> このアラートは、メンタル★1が3日連続した場合に自動発生します。DSM-5臨床基準に基づく早期介入が必要な状態です。担任と連携し、保護者面談やスクールカウンセラーとの面談を至急手配してください。
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <!-- クラス別統計テーブル -->
 <div class="row mb-4">
     <div class="col-12">

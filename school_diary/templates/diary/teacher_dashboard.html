@@ -121,6 +121,66 @@
     </div>
 </div>
 
+<!-- アラート表示セクション（MAP-2A: 早期警告システム） -->
+{% if alerts %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h5 class="mb-3">⚠️ アラート</h5>
+        {% for alert in alerts %}
+            {% if alert.level == 'critical' %}
+            <!-- Level 1: Critical - メンタル★1（赤） -->
+            <div class="alert alert-danger shadow-sm mb-2" role="alert">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <span class="display-6">🚨</span>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="alert-heading mb-1">【緊急】{{ alert.message }}</h6>
+                        <p class="mb-1 small">日付: {{ alert.date }}</p>
+                        <p class="mb-0 small"><strong>対応:</strong> {{ alert.action }}</p>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <a href="{% url 'diary:teacher_student_detail' student_id=alert.student.id %}" class="btn btn-sm btn-danger">詳細を見る</a>
+                    </div>
+                </div>
+            </div>
+            {% elif alert.level == 'warning' and alert.type == 'mental_decline' %}
+            <!-- Level 3: Warning - メンタル連続低下（黄色） -->
+            <div class="alert alert-warning shadow-sm mb-2" role="alert">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <span class="h4">⚠️</span>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="alert-heading mb-1">{{ alert.message }}</h6>
+                        <p class="mb-1 small">推移: {{ alert.trend }}</p>
+                        <p class="mb-0 small"><strong>対応:</strong> {{ alert.action }}</p>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <a href="{% url 'diary:teacher_student_detail' student_id=alert.student.id %}" class="btn btn-sm btn-warning">詳細を見る</a>
+                    </div>
+                </div>
+            </div>
+            {% elif alert.level == 'warning' and alert.type == 'class_health' %}
+            <!-- Level 4: Warning - クラス全体の体調不良（青） -->
+            <div class="alert alert-info shadow-sm mb-2" role="alert">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <span class="h4">💙</span>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="alert-heading mb-1">{{ alert.message }}</h6>
+                        <p class="mb-1 small">日付: {{ alert.date }}</p>
+                        <p class="mb-0 small"><strong>対応:</strong> {{ alert.action }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
 <!-- フィルタタブ（4種類に削減） -->
 <div class="row mb-3">
     <div class="col-12">

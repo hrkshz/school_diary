@@ -114,6 +114,10 @@ class StudentDashboardView(LoginRequiredMixin, TemplateView):
             entry_date=expected_date,
         ).exists()
 
+        # リマインダー表示判定
+        context["has_reminder"] = not context["today_submitted"]
+        context["reminder_date"] = expected_date
+
         return context
 
 
@@ -324,6 +328,59 @@ class TeacherDashboardView(LoginRequiredMixin, TemplateView):
 
         # 全生徒リスト（出席入力モーダル用）
         context["all_students"] = classroom.students.all().order_by("last_name", "first_name")
+
+        # アラート生成（MAP-2A: 早期警告システム）
+        from .utils import check_consecutive_decline, check_critical_mental_state, get_previous_school_day
+
+        alerts = []
+
+        # 全生徒をチェック（フィルタに依存しない早期警告）
+        for student in classroom.students.all():
+            # Level 1: Critical - メンタル★1（即座の対応が必要）
+            mental_state = check_critical_mental_state(student)
+            if mental_state["has_alert"]:
+                alerts.append({
+                    "level": "critical",
+                    "type": "mental_critical",
+                    "student": student,
+                    "message": f"{student.get_full_name()}さん - メンタル★1",
+                    "date": mental_state["date"],
+                    "action": "声をかけてください。",
+                })
+
+            # Level 3: Warning - メンタル3日連続低下
+            mental_decline = check_consecutive_decline(student, "mental_condition")
+            if mental_decline["has_alert"]:
+                trend_values = mental_decline["trend"]
+                trend_str = " → ".join([f"★{'★' * v}" for v in trend_values])
+                alerts.append({
+                    "level": "warning",
+                    "type": "mental_decline",
+                    "student": student,
+                    "message": f"{student.get_full_name()}さん - メンタル低下が続いています",
+                    "trend": trend_str,
+                    "dates": mental_decline["dates"],
+                    "action": "注意して見守ってください。",
+                })
+
+        # Level 4: Warning - クラス5人以上が体調不良
+        previous_date = get_previous_school_day(today)
+        poor_health_count = DiaryEntry.objects.filter(
+            student__classes=classroom,
+            entry_date=previous_date,
+            health_condition__lte=2,
+        ).count()
+
+        if poor_health_count >= 5:
+            alerts.append({
+                "level": "warning",
+                "type": "class_health",
+                "message": f"クラス全体 - 体調不良が多いです（{poor_health_count}名）",
+                "date": previous_date,
+                "action": "注意してください。",
+            })
+
+        context["alerts"] = alerts
 
         return context
 
@@ -1082,6 +1139,32 @@ class GradeOverviewView(LoginRequiredMixin, TemplateView):
             "total_poor_health": total_poor_health,
             "total_poor_mental": total_poor_mental,
         }
+
+        # アラート生成（MAP-2A: 学年主任向け早期警告システム）
+        escalation_alerts = []
+
+        # 全クラスの全生徒をチェック（Level 2: メンタル★1が3日連続 → 学年主任通知）
+        for classroom_stat in classroom_stats:
+            classroom = classroom_stat["classroom"]
+            for student in classroom.students.all():
+                # 過去3日分のエントリーを取得
+                recent_entries = student.diary_entries.order_by("-entry_date")[:3]
+
+                # 3件揃っているか、かつ全てメンタル★1かチェック
+                if len(recent_entries) == 3 and all(
+                    entry.mental_condition == 1 for entry in recent_entries
+                ):
+                    escalation_alerts.append({
+                        "level": "critical_escalation",
+                        "student": student,
+                        "classroom": classroom,
+                        "teacher": classroom.homeroom_teacher,
+                        "message": f"【学年主任通知】{classroom}組 {student.get_full_name()}さん - メンタル★1が3日連続",
+                        "dates": [entry.entry_date for entry in reversed(recent_entries)],
+                        "action": "担任に状況を確認し、保護者面談や専門機関との連携を検討してください。",
+                    })
+
+        context["escalation_alerts"] = escalation_alerts
 
         return context
 

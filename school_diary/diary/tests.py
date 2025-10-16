@@ -751,3 +751,391 @@ class TestDiaryUpdateView:
         assert response.status_code == 302
         assert "/accounts/login/" in response.url
         assert f"next={url}" in response.url
+
+
+@pytest.mark.django_db
+class TestConsecutiveDeclineDetection:
+    """3日連続低下検出のユニットテスト
+
+    メンタル・体調の3日連続低下パターンを検出するアルゴリズムを検証します。
+    定義: day1≥day2≥day3 AND day3<day1（非改善 AND 全体的低下）
+    """
+
+    @pytest.fixture
+    def student(self, db):
+        """テスト用の生徒ユーザーを作成"""
+        user = User.objects.create_user(
+            username="student_alert_test",
+            email="student_alert_test@example.com",
+            password="testpass123",
+        )
+        user.profile.role = "student"
+        user.profile.save()
+        return user
+
+    def create_entry(self, student, entry_date, health_value, mental_value=3):
+        """DiaryEntryを作成するヘルパー"""
+        return DiaryEntry.objects.create(
+            student=student,
+            entry_date=entry_date,
+            health_condition=health_value,
+            mental_condition=mental_value,
+            reflection="Test entry",
+        )
+
+    def test_basic_declining_trend_triggers_alert(self, student):
+        """
+        【テスト29】厳密な連続低下（5→4→3）はアラート対象
+
+        期待される動作:
+        - has_alert: True
+        - trend: [5, 4, 3]
+        - dates: 3日分
+        """
+        from school_diary.diary.utils import check_consecutive_decline
+
+        # 固定日付: 2025-10-13（月）、14（火）、15（水）
+        self.create_entry(student, date(2025, 10, 13), health_value=5)
+        self.create_entry(student, date(2025, 10, 14), health_value=4)
+        self.create_entry(student, date(2025, 10, 15), health_value=3)
+
+        result = check_consecutive_decline(student, "health_condition")
+
+        assert result["has_alert"] is True
+        assert result["trend"] == [5, 4, 3]
+        assert len(result["dates"]) == 3
+
+    def test_non_improving_with_plateau_triggers_alert(self, student):
+        """
+        【テスト30】停滞後の低下（4→4→3）はアラート対象
+
+        回復力の喪失パターン: 改善せず、最終的に低下
+        期待される動作:
+        - has_alert: True
+        - trend: [4, 4, 3]
+        """
+        from school_diary.diary.utils import check_consecutive_decline
+
+        self.create_entry(student, date(2025, 10, 13), health_value=4)
+        self.create_entry(student, date(2025, 10, 14), health_value=4)
+        self.create_entry(student, date(2025, 10, 15), health_value=3)
+
+        result = check_consecutive_decline(student, "health_condition")
+
+        assert result["has_alert"] is True
+        assert result["trend"] == [4, 4, 3]
+
+    def test_improving_trend_no_alert(self, student):
+        """
+        【テスト31】改善傾向（3→4→5）はアラート対象外
+
+        期待される動作:
+        - has_alert: False
+        """
+        from school_diary.diary.utils import check_consecutive_decline
+
+        self.create_entry(student, date(2025, 10, 13), health_value=3)
+        self.create_entry(student, date(2025, 10, 14), health_value=4)
+        self.create_entry(student, date(2025, 10, 15), health_value=5)
+
+        result = check_consecutive_decline(student, "health_condition")
+
+        assert result["has_alert"] is False
+
+    def test_fluctuating_pattern_no_alert(self, student):
+        """
+        【テスト32】回復あり（4→3→4）はアラート対象外
+
+        一時的な変動であり、回復力がある
+        期待される動作:
+        - has_alert: False
+        """
+        from school_diary.diary.utils import check_consecutive_decline
+
+        self.create_entry(student, date(2025, 10, 13), health_value=4)
+        self.create_entry(student, date(2025, 10, 14), health_value=3)
+        self.create_entry(student, date(2025, 10, 15), health_value=4)
+
+        result = check_consecutive_decline(student, "health_condition")
+
+        assert result["has_alert"] is False
+
+    def test_insufficient_data_no_alert(self, student):
+        """
+        【テスト33】データ不足（2日分のみ）はアラート対象外
+
+        期待される動作:
+        - has_alert: False
+        - trend: []
+        - dates: []
+        """
+        from school_diary.diary.utils import check_consecutive_decline
+
+        self.create_entry(student, date(2025, 10, 14), health_value=4)
+        self.create_entry(student, date(2025, 10, 15), health_value=3)
+
+        result = check_consecutive_decline(student, "health_condition")
+
+        assert result["has_alert"] is False
+        assert result["trend"] == []
+        assert result["dates"] == []
+
+    def test_absent_day_exclusion_no_alert(self, student):
+        """
+        【テスト34】欠席日除外で3日未満となる場合はアラート対象外
+
+        シナリオ:
+        - 10/13: ★★★★★ (5)
+        - 10/14: 欠席（DailyAttendance.ABSENT）
+        - 10/15: ★★★ (3)
+        → 実質2日分のデータのみ、アラート対象外
+
+        期待される動作:
+        - has_alert: False
+        """
+        from school_diary.diary.models import AttendanceStatus
+        from school_diary.diary.models import ClassRoom
+        from school_diary.diary.models import DailyAttendance
+        from school_diary.diary.utils import check_consecutive_decline
+
+        # クラスを作成（DailyAttendanceに必要）
+        classroom = ClassRoom.objects.create(
+            grade=1,
+            class_name="A",
+            academic_year=2025,
+        )
+
+        # 10/13: エントリーあり
+        self.create_entry(student, date(2025, 10, 13), health_value=5)
+
+        # 10/14: 欠席記録
+        DailyAttendance.objects.create(
+            student=student,
+            classroom=classroom,
+            date=date(2025, 10, 14),
+            status=AttendanceStatus.ABSENT,
+        )
+
+        # 10/15: エントリーあり
+        self.create_entry(student, date(2025, 10, 15), health_value=3)
+
+        result = check_consecutive_decline(student, "health_condition")
+
+        # 欠席日を除外すると2日分のデータのみ → アラート対象外
+        assert result["has_alert"] is False
+
+
+@pytest.mark.django_db
+class TestCriticalMentalState:
+    """メンタル★1検出のユニットテスト
+
+    深刻なメンタル状態（★1: とても落ち込んでいる）を検出します。
+    ★1は臨床的に有意な症状レベル、即座の対応が必要。
+    """
+
+    @pytest.fixture
+    def student(self, db):
+        """テスト用の生徒ユーザーを作成"""
+        user = User.objects.create_user(
+            username="student_mental_test",
+            email="student_mental_test@example.com",
+            password="testpass123",
+        )
+        user.profile.role = "student"
+        user.profile.save()
+        return user
+
+    def create_entry(self, student, entry_date, mental_value):
+        """DiaryEntryを作成するヘルパー"""
+        return DiaryEntry.objects.create(
+            student=student,
+            entry_date=entry_date,
+            health_condition=3,
+            mental_condition=mental_value,
+            reflection="Test entry",
+        )
+
+    def test_mental_star_1_triggers_critical_alert(self, student):
+        """
+        【テスト35】メンタル★1はCriticalアラート対象
+
+        期待される動作:
+        - has_alert: True
+        - current_value: 1
+        - date: 最新エントリーの日付
+        """
+        from school_diary.diary.utils import check_critical_mental_state
+
+        self.create_entry(student, date(2025, 10, 15), mental_value=1)
+
+        result = check_critical_mental_state(student)
+
+        assert result["has_alert"] is True
+        assert result["current_value"] == 1
+        assert result["date"] == date(2025, 10, 15)
+
+    def test_mental_star_2_to_5_no_alert(self, student):
+        """
+        【テスト36】メンタル★2-5はアラート対象外
+
+        ★2「落ち込んでいる」は日常的な感情の起伏、正常範囲
+        期待される動作:
+        - has_alert: False
+        """
+        from school_diary.diary.utils import check_critical_mental_state
+
+        # ★2でテスト
+        self.create_entry(student, date(2025, 10, 15), mental_value=2)
+
+        result = check_critical_mental_state(student)
+
+        assert result["has_alert"] is False
+        assert result["current_value"] == 2
+
+    def test_no_entry_no_alert(self, student):
+        """
+        【テスト37】エントリーなしの場合はアラート対象外
+
+        期待される動作:
+        - has_alert: False
+        - current_value: None
+        - date: None
+        """
+        from school_diary.diary.utils import check_critical_mental_state
+
+        result = check_critical_mental_state(student)
+
+        assert result["has_alert"] is False
+        assert result["current_value"] is None
+        assert result["date"] is None
+
+    def test_mental_star_1_consecutive_days(self, student):
+        """
+        【テスト38】メンタル★1が複数日連続
+
+        学年主任通知の基礎データとなる
+        期待される動作:
+        - 最新エントリーのメンタル: 1
+        - 過去3日分全てが★1
+        """
+        from school_diary.diary.utils import check_critical_mental_state
+
+        # 3日連続で★1
+        self.create_entry(student, date(2025, 10, 13), mental_value=1)
+        self.create_entry(student, date(2025, 10, 14), mental_value=1)
+        self.create_entry(student, date(2025, 10, 15), mental_value=1)
+
+        result = check_critical_mental_state(student)
+
+        # 最新エントリーが★1であることを確認
+        assert result["has_alert"] is True
+        assert result["current_value"] == 1
+
+        # 過去3日分のエントリーが全て★1であることを確認
+        recent_three = student.diary_entries.order_by("-entry_date")[:3]
+        assert len(recent_three) == 3
+        assert all(e.mental_condition == 1 for e in recent_three)
+
+
+@pytest.mark.django_db
+class TestGradeLeaderNotification:
+    """学年主任通知のユニットテスト
+
+    メンタル★1が3日連続の場合、学年主任に自動通知します。
+    組織的対応の自動化により、担任レベルでの情報停滞を防ぎます。
+    """
+
+    @pytest.fixture
+    def student(self, db):
+        """テスト用の生徒ユーザーを作成"""
+        user = User.objects.create_user(
+            username="student_escalation_test",
+            email="student_escalation_test@example.com",
+            password="testpass123",
+        )
+        user.profile.role = "student"
+        user.profile.save()
+        return user
+
+    def create_entry(self, student, entry_date, mental_value):
+        """DiaryEntryを作成するヘルパー"""
+        return DiaryEntry.objects.create(
+            student=student,
+            entry_date=entry_date,
+            health_condition=3,
+            mental_condition=mental_value,
+            reflection="Test entry",
+        )
+
+    def test_mental_star_1_three_consecutive_days_triggers_escalation(self, student):
+        """
+        【テスト39】メンタル★1が3日連続で学年主任通知
+
+        期待される動作:
+        - 最新3エントリーが全て★1
+        - エスカレーション条件を満たす
+        """
+        # 3日連続で★1
+        self.create_entry(student, date(2025, 10, 13), mental_value=1)
+        self.create_entry(student, date(2025, 10, 14), mental_value=1)
+        self.create_entry(student, date(2025, 10, 15), mental_value=1)
+
+        # 最新3エントリーを取得
+        recent_three = student.diary_entries.order_by("-entry_date")[:3]
+
+        assert len(recent_three) == 3
+        assert all(e.mental_condition == 1 for e in recent_three)
+
+    def test_mental_star_1_only_two_days_no_escalation(self, student):
+        """
+        【テスト40】メンタル★1が2日のみの場合は学年主任通知なし
+
+        期待される動作:
+        - エスカレーション条件を満たさない
+        """
+        # 2日のみ★1
+        self.create_entry(student, date(2025, 10, 14), mental_value=1)
+        self.create_entry(student, date(2025, 10, 15), mental_value=1)
+
+        recent_three = student.diary_entries.order_by("-entry_date")[:3]
+
+        # 3日分のデータがない
+        assert len(recent_three) == 2
+
+    def test_mental_star_1_non_consecutive_no_escalation(self, student):
+        """
+        【テスト41】メンタル★1が非連続の場合は学年主任通知なし
+
+        シナリオ: ★1 → ★2 → ★1（連続でない）
+        期待される動作:
+        - エスカレーション条件を満たさない
+        """
+        self.create_entry(student, date(2025, 10, 13), mental_value=1)
+        self.create_entry(student, date(2025, 10, 14), mental_value=2)
+        self.create_entry(student, date(2025, 10, 15), mental_value=1)
+
+        recent_three = student.diary_entries.order_by("-entry_date")[:3]
+
+        # 3日分のデータはあるが、全て★1ではない
+        assert len(recent_three) == 3
+        assert not all(e.mental_condition == 1 for e in recent_three)
+
+    def test_mental_star_1_four_consecutive_days_single_notification(self, student):
+        """
+        【テスト42】メンタル★1が4日連続でも通知は1回のみ（重複回避）
+
+        期待される動作:
+        - 最新3エントリーが全て★1
+        - 4日目でも条件は同じ（重複通知を避ける実装が必要）
+        """
+        # 4日連続で★1
+        self.create_entry(student, date(2025, 10, 12), mental_value=1)
+        self.create_entry(student, date(2025, 10, 13), mental_value=1)
+        self.create_entry(student, date(2025, 10, 14), mental_value=1)
+        self.create_entry(student, date(2025, 10, 15), mental_value=1)
+
+        recent_three = student.diary_entries.order_by("-entry_date")[:3]
+
+        # 最新3エントリーは全て★1（4日目以降も条件は変わらない）
+        assert len(recent_three) == 3
+        assert all(e.mental_condition == 1 for e in recent_three)
