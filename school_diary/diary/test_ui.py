@@ -904,7 +904,7 @@ class TestTeacherDashboardViewUI:
         【テスト4】テーブルヘッダーが正しい（テーブルビュー）
 
         期待される動作:
-        - 「生徒名」「提出日時」「体調」「メンタル」「反応」「対応記録」「対応状況」「アクション」のヘッダーが存在する
+        - 5列構成: 「生徒名」「出欠」「提出」「状態」「アクション」のヘッダーが存在する
         """
         # Arrange: テーブルビューにアクセス
         url = reverse("diary:teacher_dashboard") + "?view=table"
@@ -917,7 +917,7 @@ class TestTeacherDashboardViewUI:
         thead = soup.find("thead")
         assert thead is not None, "<thead> が見つかりません。"
         headers = [th.text.strip() for th in thead.find_all("th")]
-        expected_headers = ["生徒名", "提出日時", "体調", "メンタル"]
+        expected_headers = ["生徒名", "出欠", "提出", "状態", "アクション"]
 
         for expected in expected_headers:
             assert expected in headers, (
@@ -956,11 +956,11 @@ class TestTeacherDashboardViewUI:
 
     def test_student_health_mental_displayed(self, teacher_client_with_class):
         """
-        【テスト6】生徒の体調・メンタルが表示される（テーブルビュー）
+        【テスト6】生徒の状態が表示される（テーブルビュー）
 
         期待される動作:
-        - 最新の体調が絵文字バッジで表示される（🟢🟡🔴）
-        - 最新のメンタルが絵文字バッジで表示される（🟢🟡🔴）
+        - 状態列に Inbox Pattern 優先度バッジが表示される（P0/P1/P2/P3）
+        - 出席/提出のバッジが表示される
         """
         # Arrange: テーブルビューにアクセス
         url = reverse("diary:teacher_dashboard") + "?view=table"
@@ -973,10 +973,10 @@ class TestTeacherDashboardViewUI:
         tbody = soup.find("tbody")
         assert tbody is not None, "<tbody> が見つかりません。"
 
-        # 体調・メンタルのバッジ（badge）が表示されていることを確認
+        # 状態バッジ（badge）が表示されていることを確認（出席、提出、状態）
         badges = tbody.find_all("span", class_="badge")
         assert len(badges) >= 2, (
-            f"体調・メンタルバッジが不足しています。期待: 2以上、実際: {len(badges)}"
+            f"状態バッジが不足しています。期待: 2以上、実際: {len(badges)}"
         )
 
     def test_no_classroom_alert_displayed(self, authenticated_client):
