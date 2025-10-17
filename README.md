@@ -32,6 +32,22 @@
 - データの一括管理
 - 検索・フィルタ機能
 
+## クイックスタート
+
+```bash
+# 1. Docker起動
+docker compose -f docker-compose.local.yml up -d
+
+# 2. マイグレーション
+docker compose -f docker-compose.local.yml run --rm django python manage.py migrate
+
+# 3. テストデータ投入
+docker compose -f docker-compose.local.yml run --rm django python manage.py setup_dev
+
+# 4. アクセス
+# http://localhost:8000 (管理者: admin/admin123)
+```
+
 ### アクセス URL
 
 - **開発サーバー**: http://localhost:8000
