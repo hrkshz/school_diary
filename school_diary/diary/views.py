@@ -220,32 +220,13 @@ class TeacherDashboardView(LoginRequiredMixin, TemplateView):
         # フィルタ処理
         filter_type = self.request.GET.get("filter", "all")
 
-        if filter_type == "urgent":
-            # 緊急対応必要のみ
+        if filter_type == "important":
+            # 重要（P0: メンタル★1のみ）
             student_data = [
                 s
                 for s in student_data
                 if s["latest_entry"]
-                and s["latest_entry"].internal_action == InternalAction.URGENT
-            ]
-        elif filter_type == "pending_action":
-            # 未対応アクションのみ
-            student_data = [
-                s
-                for s in student_data
-                if s["latest_entry"]
-                and s["latest_entry"].internal_action
-                and s["latest_entry"].action_status == ActionStatus.PENDING
-            ]
-        elif filter_type == "unread":
-            # 未読のみ
-            student_data = [s for s in student_data if s["unread_count"] > 0]
-        elif filter_type == "no_reaction":
-            # 反応未選択のみ
-            student_data = [
-                s
-                for s in student_data
-                if s["latest_entry"] and not s["latest_entry"].public_reaction
+                and s["latest_entry"].mental_condition == 1
             ]
         elif filter_type == "absent":
             # 欠席者のみ（今日欠席している生徒）
@@ -271,31 +252,6 @@ class TeacherDashboardView(LoginRequiredMixin, TemplateView):
                 })
 
             student_data = absent_student_data
-        elif filter_type == "no_entry_yesterday":
-            # 昨日未提出のみ
-            yesterday = today - timedelta(days=1)
-
-            no_entry_student_data = []
-            for student in classroom.students.all():
-                # 昨日の連絡帳があるかチェック
-                has_entry = DiaryEntry.objects.filter(
-                    student=student,
-                    entry_date=yesterday,
-                ).exists()
-
-                if not has_entry:
-                    # 最新の連絡帳を取得
-                    latest_entry = DiaryEntry.objects.filter(
-                        student=student,
-                    ).order_by("-entry_date").first()
-
-                    no_entry_student_data.append({
-                        "student": student,
-                        "latest_entry": latest_entry,
-                        "unread_count": 0,
-                    })
-
-            student_data = no_entry_student_data
 
         context["classroom"] = classroom
         context["students"] = student_data
