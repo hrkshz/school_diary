@@ -70,6 +70,11 @@ urlpatterns = [
         views.teacher_delete_note,
         name="teacher_delete_note",
     ),
+    path(
+        "teacher/note/<int:note_id>/mark-read/",
+        views.mark_shared_note_read,
+        name="mark_shared_note_read",
+    ),
     # 出席管理
     path(
         "teacher/attendance/save/",

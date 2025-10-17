@@ -387,6 +387,41 @@ class TeacherNote(models.Model):
         return f"{teacher_name} → {student_name}"
 
 
+class TeacherNoteReadStatus(models.Model):
+    """担任メモの既読状態管理（学年共有アラート用）"""
+
+    teacher = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="note_read_statuses",
+        verbose_name="担任",
+    )
+    note = models.ForeignKey(
+        "TeacherNote",
+        on_delete=models.CASCADE,
+        related_name="read_statuses",
+        verbose_name="担任メモ",
+    )
+    read_at = models.DateTimeField(
+        "既読日時",
+        auto_now_add=True,
+    )
+
+    class Meta:
+        unique_together = [["teacher", "note"]]
+        verbose_name = "担任メモ既読状態"
+        verbose_name_plural = "担任メモ既読状態"
+        ordering = ["-read_at"]
+        indexes = [
+            models.Index(fields=["teacher", "note"]),
+        ]
+
+    def __str__(self):
+        teacher_name = self.teacher.get_full_name() or self.teacher.username
+        note_info = f"Note #{self.note.id}"
+        return f"{teacher_name} - {note_info} ({self.read_at.strftime('%Y-%m-%d %H:%M')})"
+
+
 class AttendanceStatus(models.TextChoices):
     """出席状況"""
 
