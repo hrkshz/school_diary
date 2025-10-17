@@ -217,41 +217,10 @@ class TeacherDashboardView(LoginRequiredMixin, TemplateView):
                 },
             )
 
-        # フィルタ処理
-        filter_type = self.request.GET.get("filter", "all")
-
-        if filter_type == "important":
-            # 重要（P0: メンタル★1のみ）
-            student_data = [
-                s
-                for s in student_data
-                if s["latest_entry"]
-                and s["latest_entry"].mental_condition == 1
-            ]
-        elif filter_type == "absent":
-            # 欠席者のみ（今日欠席している生徒）
-            absent_records = DailyAttendance.objects.filter(
-                classroom=classroom,
-                date=today,
-                status=AttendanceStatus.ABSENT,
-            ).select_related("student")
-
-            # 欠席者の生徒データを作成
-            absent_student_data = []
-            for record in absent_records:
-                # 最新の連絡帳を取得
-                latest_entry = DiaryEntry.objects.filter(
-                    student=record.student,
-                ).order_by("-entry_date").first()
-
-                absent_student_data.append({
-                    "student": record.student,
-                    "latest_entry": latest_entry,
-                    "unread_count": 0,  # 欠席者なので未読カウントは不要
-                    "absence_reason": record.absence_reason,  # 欠席理由を追加
-                })
-
-            student_data = absent_student_data
+        # Table View用: 本日の未提出者数を計算
+        today_not_submitted_count = sum(
+            1 for s in student_data if s["latest_entry"] is None
+        )
 
         context["classroom"] = classroom
         context["students"] = student_data
@@ -262,7 +231,7 @@ class TeacherDashboardView(LoginRequiredMixin, TemplateView):
             "urgent_action_count": summary_stats["urgent_action_count"],
             "no_reaction_count": summary_stats["no_reaction_count"],
         }
-        context["filter_type"] = filter_type
+        context["today_not_submitted_count"] = today_not_submitted_count  # Table View用
 
         # 本日の欠席者情報を集計
         today_attendance = DailyAttendance.objects.filter(
