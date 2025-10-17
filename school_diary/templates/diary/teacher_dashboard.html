@@ -27,13 +27,13 @@
                 {% endif %}
             </div>
             <div class="d-flex gap-2">
-                {% if request.GET.inbox == '1' %}
-                <a href="?" class="btn btn-outline-secondary btn-lg">
-                    📋 テーブルビュー<br><small>従来の表示に戻す</small>
+                {% if request.GET.view == 'table' %}
+                <a href="?" class="btn btn-outline-primary btn-lg">
+                    📬 Inbox View<br><small>優先度別カード表示</small>
                 </a>
                 {% else %}
-                <a href="?inbox=1" class="btn btn-outline-primary btn-lg">
-                    📬 Inbox View<br><small>優先度別カード表示</small>
+                <a href="?view=table" class="btn btn-outline-secondary btn-lg">
+                    📋 テーブルビュー<br><small>一覧表示に切替</small>
                 </a>
                 {% endif %}
                 <a href="{% url 'diary:class_health_dashboard' %}" class="btn btn-primary btn-lg">
@@ -48,177 +48,70 @@
 </div>
 
 {% if students or filter_type != 'all' %}
-<!-- サマリーカード（優先度順、3枚） -->
-<div class="row mb-4">
+
+<!-- 本日の概況（ワンライナー、常に表示） -->
+<div class="row mb-3">
     <div class="col-12">
-        <h5 class="mb-3">📊 今日やるべきこと</h5>
-
-        <!-- 優先度1: 緊急対応（赤、大きく表示） -->
-        {% if summary.urgent_action_count > 0 %}
-        <div class="row mb-3">
-            <div class="col-12">
-                <a href="?filter=urgent" class="text-decoration-none">
-                    <div class="card border-danger shadow hover-lift" style="cursor: pointer;">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <h4 class="text-danger mb-2">🚨 緊急対応が必要</h4>
-                                    <p class="text-muted mb-0">今すぐ確認してください</p>
-                                </div>
-                                <div class="display-3 text-danger fw-bold">{{ summary.urgent_action_count }}</div>
-                            </div>
-                        </div>
-                    </div>
-                </a>
-            </div>
-        </div>
-        {% endif %}
-
-        <!-- 優先度2: 未対応アクション（黄色） -->
-        {% if summary.pending_action_count > 0 %}
-        <div class="row mb-3">
-            <div class="col-12">
-                <a href="?filter=pending_action" class="text-decoration-none">
-                    <div class="card border-warning shadow-sm hover-lift" style="cursor: pointer;">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <h5 class="text-warning mb-2">⚠️ 未対応アクション</h5>
-                                    <p class="text-muted mb-0 small">今日中に対応してください</p>
-                                </div>
-                                <div class="display-4 text-warning fw-bold">{{ summary.pending_action_count }}</div>
-                            </div>
-                        </div>
-                    </div>
-                </a>
-            </div>
-        </div>
-        {% endif %}
-
-        <!-- 優先度3: 今日の状況（青、3カラム） -->
-        <div class="row mb-3">
-            <div class="col-12">
-                <div class="card border-info shadow-sm">
-                    <div class="card-body">
-                        <h6 class="text-info mb-3">📋 今日の状況</h6>
-                        <div class="row text-center">
-                            <div class="col-md-4">
-                                <a href="?filter=absent" class="text-decoration-none">
-                                    <div class="h4 {% if absence_data.total_absent >= 5 %}text-danger{% elif absence_data.total_absent >= 3 %}text-warning{% else %}text-success{% endif %} mb-1">
-                                        {{ absence_data.total_absent }}名
-                                    </div>
-                                    <small class="text-muted">🏠 欠席（うち病気{{ absence_data.absent_illness }}）</small>
-                                </a>
-                            </div>
-                            <div class="col-md-4">
-                                <a href="?filter=unread" class="text-decoration-none">
-                                    <div class="h4 text-info mb-1">{{ summary.unread_total }}</div>
-                                    <small class="text-muted">📬 未読</small>
-                                </a>
-                            </div>
-                            <div class="col-md-4">
-                                <a href="?filter=no_reaction" class="text-decoration-none">
-                                    <div class="h4 text-secondary mb-1">{{ summary.no_reaction_count }}</div>
-                                    <small class="text-muted">📝 反応未選択</small>
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- アラート表示セクション（MAP-2A: 早期警告システム） -->
-{% if alerts %}
-<div class="row mb-4">
-    <div class="col-12">
-        <h5 class="mb-3">⚠️ アラート</h5>
-        {% for alert in alerts %}
-            {% if alert.level == 'critical' %}
-            <!-- Level 1: Critical - メンタル★1（赤） -->
-            <div class="alert alert-danger shadow-sm mb-2" role="alert">
-                <div class="d-flex align-items-center">
-                    <div class="flex-shrink-0">
-                        <span class="display-6">🚨</span>
-                    </div>
-                    <div class="flex-grow-1 ms-3">
-                        <h6 class="alert-heading mb-1">【緊急】{{ alert.message }}</h6>
-                        <p class="mb-1 small">日付: {{ alert.date }}</p>
-                        <p class="mb-0 small"><strong>対応:</strong> {{ alert.action }}</p>
-                    </div>
-                    <div class="flex-shrink-0">
-                        <a href="{% url 'diary:teacher_student_detail' student_id=alert.student.id %}" class="btn btn-sm btn-danger">詳細を見る</a>
-                    </div>
-                </div>
-            </div>
-            {% elif alert.level == 'warning' and alert.type == 'mental_decline' %}
-            <!-- Level 3: Warning - メンタル連続低下（黄色） -->
-            <div class="alert alert-warning shadow-sm mb-2" role="alert">
-                <div class="d-flex align-items-center">
-                    <div class="flex-shrink-0">
-                        <span class="h4">⚠️</span>
-                    </div>
-                    <div class="flex-grow-1 ms-3">
-                        <h6 class="alert-heading mb-1">{{ alert.message }}</h6>
-                        <p class="mb-1 small">推移: {{ alert.trend }}</p>
-                        <p class="mb-0 small"><strong>対応:</strong> {{ alert.action }}</p>
-                    </div>
-                    <div class="flex-shrink-0">
-                        <a href="{% url 'diary:teacher_student_detail' student_id=alert.student.id %}" class="btn btn-sm btn-warning">詳細を見る</a>
-                    </div>
-                </div>
-            </div>
-            {% elif alert.level == 'warning' and alert.type == 'class_health' %}
-            <!-- Level 4: Warning - クラス全体の体調不良（青） -->
-            <div class="alert alert-info shadow-sm mb-2" role="alert">
-                <div class="d-flex align-items-center">
-                    <div class="flex-shrink-0">
-                        <span class="h4">💙</span>
-                    </div>
-                    <div class="flex-grow-1 ms-3">
-                        <h6 class="alert-heading mb-1">{{ alert.message }}</h6>
-                        <p class="mb-1 small">日付: {{ alert.date }}</p>
-                        <p class="mb-0 small"><strong>対応:</strong> {{ alert.action }}</p>
-                    </div>
-                </div>
-            </div>
+        <div class="alert alert-info mb-0">
+            <strong>📊 本日の概況:</strong>
+            <a href="?filter=absent" class="text-decoration-none ms-2">
+                🏠 欠席 <span class="badge {% if absence_data.total_absent >= 5 %}bg-danger{% elif absence_data.total_absent >= 3 %}bg-warning text-dark{% else %}bg-success{% endif %}">{{ absence_data.total_absent }}名</span>
+                <small class="text-muted">（うち病気{{ absence_data.absent_illness }}）</small>
+            </a>
+            {% if classified_students %}
+            <span class="mx-2">|</span>
+            <a href="#important" class="text-decoration-none">
+                🔴 重要 <span class="badge bg-danger">{{ classified_students.important|length }}名</span>
+            </a>
+            <span class="mx-2">|</span>
+            <a href="#needs_attention" class="text-decoration-none">
+                🟡 要注意 <span class="badge bg-warning text-dark">{{ classified_students.needs_attention|length }}名</span>
+            </a>
+            <span class="mx-2">|</span>
+            <a href="#needs_response" class="text-decoration-none">
+                🔵 未対応 <span class="badge bg-primary">{{ needs_response_count }}名</span>
+            </a>
+            <span class="mx-2">|</span>
+            <a href="#completed" class="text-decoration-none">
+                ✅ 対応済み <span class="badge bg-success">{{ classified_students.completed|length }}名</span>
+            </a>
             {% endif %}
-        {% endfor %}
+        </div>
     </div>
 </div>
-{% endif %}
 
-<!-- Inbox Pattern: 3段階カード表示（Medical Triage Model） -->
-{% if classified_students and request.GET.inbox == '1' %}
+{% if request.GET.view == 'table' %}
+<!-- テーブルビュー: フィルタタブと生徒一覧テーブル -->
+{% else %}
+<!-- Inbox Pattern: 4段階カード表示 + サブセクション -->
+{% if classified_students %}
 <div class="row mb-4">
     <div class="col-12">
         <h5 class="mb-3">📬 Inbox View（優先度別）</h5>
-        <a href="?" class="btn btn-sm btn-secondary mb-3">← テーブルビューに戻る</a>
 
-        <!-- 🚨 Critical Tier（赤）-->
-        {% if classified_students.critical %}
-        <div class="card border-danger mb-3">
+        <!-- P0: 重要（赤）- メンタル★1 -->
+        {% if classified_students.important %}
+        <div class="card border-danger mb-3" id="important">
             <div class="card-header bg-danger text-white">
-                <h6 class="mb-0">🚨 Critical - 緊急対応（{{ classified_students.critical|length }}名）</h6>
+                <h5 class="mb-0">🔴 重要（{{ classified_students.important|length }}名）</h5>
+                <small>P0: メンタル★1 - 即座の対応が必要です</small>
             </div>
             <div class="card-body">
                 <div class="row">
-                    {% for student in classified_students.critical %}
-                    <div class="col-md-6 col-lg-4 mb-3">
-                        <div class="card border-danger shadow-sm">
+                    {% for student in classified_students.important %}
+                    <div class="col-12 col-md-6 col-lg-4 mb-3">
+                        <div class="card border-danger shadow-sm hover-lift">
                             <div class="card-body">
-                                <h6 class="card-title text-danger">{{ student.get_full_name }}</h6>
+                                <h6 class="card-title text-danger fw-bold">{{ student.get_full_name }}</h6>
                                 {% if student.inline_history %}
-                                <p class="card-text small">
+                                <p class="card-text small mb-1">
                                     <span class="badge bg-secondary">📊 {{ student.inline_history }}</span>
                                 </p>
                                 <p class="card-text small text-muted">{{ student.latest_snippet }}</p>
                                 {% else %}
                                 <p class="card-text small text-muted">未提出</p>
                                 {% endif %}
-                                <a href="{% url 'diary:teacher_student_detail' student_id=student.id %}" class="btn btn-sm btn-danger">詳細</a>
+                                <a href="{% url 'diary:teacher_student_detail' student_id=student.id %}" class="btn btn-sm btn-danger">詳細を見る</a>
                             </div>
                         </div>
                     </div>
@@ -228,28 +121,29 @@
         </div>
         {% endif %}
 
-        <!-- ⚠️ High Tier（黄）-->
-        {% if classified_students.high %}
-        <div class="card border-warning mb-3">
+        <!-- P1: 要注意（黄）- 3日連続メンタル低下 -->
+        {% if classified_students.needs_attention %}
+        <div class="card border-warning mb-3" id="needs_attention">
             <div class="card-header bg-warning text-dark">
-                <h6 class="mb-0">⚠️ High - 本日中に対応（{{ classified_students.high|length }}名）</h6>
+                <h5 class="mb-0">🟡 要注意（{{ classified_students.needs_attention|length }}名）</h5>
+                <small>P1: 3日連続メンタル低下 - 注意して見守ってください</small>
             </div>
             <div class="card-body">
                 <div class="row">
-                    {% for student in classified_students.high %}
-                    <div class="col-md-6 col-lg-4 mb-3">
-                        <div class="card border-warning shadow-sm">
+                    {% for student in classified_students.needs_attention %}
+                    <div class="col-12 col-md-6 col-lg-4 mb-3">
+                        <div class="card border-warning shadow-sm hover-lift">
                             <div class="card-body">
-                                <h6 class="card-title text-warning">{{ student.get_full_name }}</h6>
+                                <h6 class="card-title text-warning fw-bold">{{ student.get_full_name }}</h6>
                                 {% if student.inline_history %}
-                                <p class="card-text small">
+                                <p class="card-text small mb-1">
                                     <span class="badge bg-secondary">📊 {{ student.inline_history }}</span>
                                 </p>
                                 <p class="card-text small text-muted">{{ student.latest_snippet }}</p>
                                 {% else %}
-                                <p class="card-text small text-muted">昨日未提出</p>
+                                <p class="card-text small text-muted">未提出</p>
                                 {% endif %}
-                                <a href="{% url 'diary:teacher_student_detail' student_id=student.id %}" class="btn btn-sm btn-warning">詳細</a>
+                                <a href="{% url 'diary:teacher_student_detail' student_id=student.id %}" class="btn btn-sm btn-warning">詳細を見る</a>
                             </div>
                         </div>
                     </div>
@@ -259,39 +153,144 @@
         </div>
         {% endif %}
 
-        <!-- ✅ Normal Tier（緑）-->
-        {% if classified_students.normal %}
-        <div class="card border-success mb-3">
-            <div class="card-header bg-success text-white">
-                <h6 class="mb-0">✅ Normal - 良好（{{ classified_students.normal|length }}名）</h6>
+        <!-- P2: 未対応（青）- サブセクション（未提出/未読/反応未選択） -->
+        {% if classified_students.not_submitted or classified_students.unread or classified_students.no_reaction %}
+        <div class="card border-primary mb-3" id="needs_response">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">🔵 未対応（{{ needs_response_count }}名）</h5>
+                <small>P2: 日常タスク - 上から順に対応を進めてください</small>
             </div>
             <div class="card-body">
-                <div class="row">
-                    {% for student in classified_students.normal %}
-                    <div class="col-md-6 col-lg-4 mb-3">
-                        <div class="card border-success shadow-sm">
+                <!-- サブセクション1: 未提出 -->
+                {% if classified_students.not_submitted %}
+                <h6 class="text-primary fw-bold mb-2">📅 未提出（{{ classified_students.not_submitted|length }}名）- 声かけを検討</h6>
+                <div class="row mb-4">
+                    {% for student in classified_students.not_submitted %}
+                    <div class="col-12 col-md-6 col-lg-4 mb-3">
+                        <div class="card border-primary shadow-sm hover-lift">
                             <div class="card-body">
-                                <h6 class="card-title text-success">{{ student.get_full_name }}</h6>
+                                <h6 class="card-title">{{ student.get_full_name }}</h6>
+                                <p class="card-text small text-muted">昨日の連絡帳が未提出です</p>
+                                <a href="{% url 'diary:teacher_student_detail' student_id=student.id %}" class="btn btn-sm btn-primary">詳細を見る</a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <hr>
+                {% endif %}
+
+                <!-- サブセクション2: 未読 -->
+                {% if classified_students.unread %}
+                <h6 class="text-primary fw-bold mb-2">🔵 未読（{{ classified_students.unread|length }}名）- 連絡帳を確認</h6>
+                <div class="row mb-4">
+                    {% for student in classified_students.unread %}
+                    <div class="col-12 col-md-6 col-lg-4 mb-3">
+                        <div class="card border-primary shadow-sm hover-lift">
+                            <div class="card-body">
+                                <h6 class="card-title">{{ student.get_full_name }}</h6>
                                 {% if student.inline_history %}
-                                <p class="card-text small">
+                                <p class="card-text small mb-1">
                                     <span class="badge bg-secondary">📊 {{ student.inline_history }}</span>
                                 </p>
                                 <p class="card-text small text-muted">{{ student.latest_snippet }}</p>
+                                {% else %}
+                                <p class="card-text small text-muted">連絡帳が未読です</p>
                                 {% endif %}
-                                <a href="{% url 'diary:teacher_student_detail' student_id=student.id %}" class="btn btn-sm btn-success">詳細</a>
+                                <a href="{% url 'diary:teacher_student_detail' student_id=student.id %}" class="btn btn-sm btn-primary">詳細を見る</a>
                             </div>
                         </div>
                     </div>
                     {% endfor %}
                 </div>
+                <hr>
+                {% endif %}
+
+                <!-- サブセクション3: 反応未選択 -->
+                {% if classified_students.no_reaction %}
+                <h6 class="text-primary fw-bold mb-2">⚠️ 反応未選択（{{ classified_students.no_reaction|length }}名）- 反応を選択</h6>
+                <div class="row">
+                    {% for student in classified_students.no_reaction %}
+                    <div class="col-12 col-md-6 col-lg-4 mb-3">
+                        <div class="card border-primary shadow-sm hover-lift">
+                            <div class="card-body">
+                                <h6 class="card-title">{{ student.get_full_name }}</h6>
+                                {% if student.inline_history %}
+                                <p class="card-text small mb-1">
+                                    <span class="badge bg-secondary">📊 {{ student.inline_history }}</span>
+                                </p>
+                                <p class="card-text small text-muted">{{ student.latest_snippet }}</p>
+                                {% else %}
+                                <p class="card-text small text-muted">反応未選択</p>
+                                {% endif %}
+                                <a href="{% url 'diary:teacher_student_detail' student_id=student.id %}" class="btn btn-sm btn-primary">詳細を見る</a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
             </div>
         </div>
         {% endif %}
+
+        <!-- P3: 対応済み（緑）- 過去3日間のみ表示、Bootstrap Collapse -->
+        {% if classified_students.completed %}
+        <div class="card border-success mb-3" id="completed">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <button class="btn btn-link text-white text-decoration-none p-0" type="button" data-bs-toggle="collapse" data-bs-target="#completedSection" aria-expanded="false" aria-controls="completedSection">
+                        ✅ 対応済み（{{ classified_students.completed|length }}名）<small class="ms-2">クリックして表示/非表示</small>
+                    </button>
+                </h5>
+                <small>P3: 過去3日間の対応済み連絡帳（本日/昨日/一昨日）</small>
+            </div>
+            <div class="collapse" id="completedSection">
+                <div class="card-body">
+                    <!-- 日付別にグループ化 -->
+                    {% regroup classified_students.completed by completed_date as completed_by_date %}
+                    {% for date_group in completed_by_date %}
+                    <h6 class="text-success fw-bold mb-2">
+                        {% if date_group.grouper == today %}
+                        📅 本日（{{ date_group.grouper }}）
+                        {% elif date_group.grouper == today|add:"-1" %}
+                        📅 昨日（{{ date_group.grouper }}）
+                        {% else %}
+                        📅 一昨日（{{ date_group.grouper }}）
+                        {% endif %}
+                    </h6>
+                    <div class="row mb-3">
+                        {% for student in date_group.list %}
+                        <div class="col-12 col-md-6 col-lg-4 mb-3">
+                            <div class="card border-success shadow-sm hover-lift">
+                                <div class="card-body">
+                                    <h6 class="card-title text-success">{{ student.get_full_name }}</h6>
+                                    {% if student.inline_history %}
+                                    <p class="card-text small mb-1">
+                                        <span class="badge bg-secondary">📊 {{ student.inline_history }}</span>
+                                    </p>
+                                    <p class="card-text small text-muted">{{ student.latest_snippet }}</p>
+                                    {% endif %}
+                                    <a href="{% url 'diary:teacher_student_detail' student_id=student.id %}" class="btn btn-sm btn-success btn-sm">詳細</a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% if not forloop.last %}<hr>{% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
     </div>
 </div>
 {% endif %}
+{% endif %}
 
-<!-- フィルタタブ（4種類に削減） -->
+<!-- テーブルビュー表示時のみ: フィルタタブ（4種類に削減） -->
+{% if request.GET.view == 'table' %}
 <div class="row mb-3">
     <div class="col-12">
         <ul class="nav nav-tabs">
@@ -350,14 +349,15 @@
                                 <th style="width: 10%" class="text-center">メンタル</th>
                                 <th style="width: 30%">アクション</th>
                                 {% else %}
-                                <th style="width: 15%">生徒名</th>
-                                <th style="width: 10%" class="text-center">提出日時</th>
-                                <th style="width: 8%" class="text-center">体調</th>
-                                <th style="width: 8%" class="text-center">メンタル</th>
-                                <th style="width: 12%">反応</th>
-                                <th style="width: 12%">対応記録</th>
-                                <th style="width: 15%">対応状況</th>
-                                <th style="width: 20%">アクション</th>
+                                <th style="width: 14%">生徒名</th>
+                                <th style="width: 9%" class="text-center">出欠</th>
+                                <th style="width: 9%" class="text-center">提出日時</th>
+                                <th style="width: 7%" class="text-center">体調</th>
+                                <th style="width: 7%" class="text-center">メンタル</th>
+                                <th style="width: 11%">反応</th>
+                                <th style="width: 11%">対応記録</th>
+                                <th style="width: 14%">対応状況</th>
+                                <th style="width: 18%">アクション</th>
                                 {% endif %}
                             </tr>
                         </thead>
@@ -429,6 +429,26 @@
                                     </a>
                                     {% if data.unread_count > 0 %}
                                     <br><span class="badge bg-info">🔵 NEW</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% if data.attendance_status == 'present' %}
+                                    <span class="badge bg-success">🟢 出席</span>
+                                    {% elif data.attendance_status == 'absent' %}
+                                    <span class="badge bg-danger">🔴 欠席</span>
+                                    {% if data.absence_reason == 'illness' %}
+                                    <br><small class="text-muted">病気</small>
+                                    {% elif data.absence_reason == 'family' %}
+                                    <br><small class="text-muted">家庭の都合</small>
+                                    {% elif data.absence_reason == 'other' %}
+                                    <br><small class="text-muted">その他</small>
+                                    {% endif %}
+                                    {% elif data.attendance_status == 'late' %}
+                                    <span class="badge bg-warning text-dark">🟡 遅刻</span>
+                                    {% elif data.attendance_status == 'early_leave' %}
+                                    <span class="badge bg-warning text-dark">🟡 早退</span>
+                                    {% else %}
+                                    <span class="text-muted">-</span>
                                     {% endif %}
                                 </td>
                                 <td class="text-center small">
@@ -524,7 +544,7 @@
     </div>
 </div>
 {% else %}
-<!-- 空状態 -->
+<!-- 空状態（テーブルビューのみ） -->
 <div class="row">
     <div class="col-12">
         <div class="text-center py-5">
@@ -559,6 +579,7 @@
     </div>
 </div>
 {% endif %}
+{% endif %}
 {% else %}
 <div class="alert alert-info">
     担当クラスがありません。管理者に連絡して担任設定を行ってください。
@@ -592,18 +613,18 @@
                                     <td>{{ student.get_full_name }}</td>
                                     <td>
                                         <select name="student_{{ student.id }}_status" class="form-select form-select-sm attendance-status" data-student-id="{{ student.id }}">
-                                            <option value="present">出席</option>
-                                            <option value="absent">欠席</option>
-                                            <option value="late">遅刻</option>
-                                            <option value="early_leave">早退</option>
+                                            <option value="present" {% if student.attendance_status == 'present' %}selected{% endif %}>出席</option>
+                                            <option value="absent" {% if student.attendance_status == 'absent' %}selected{% endif %}>欠席</option>
+                                            <option value="late" {% if student.attendance_status == 'late' %}selected{% endif %}>遅刻</option>
+                                            <option value="early_leave" {% if student.attendance_status == 'early_leave' %}selected{% endif %}>早退</option>
                                         </select>
                                     </td>
                                     <td>
-                                        <select name="student_{{ student.id }}_reason" class="form-select form-select-sm absence-reason" id="reason_{{ student.id }}" disabled>
-                                            <option value="">-</option>
-                                            <option value="illness">病気</option>
-                                            <option value="family">家庭の都合</option>
-                                            <option value="other">その他</option>
+                                        <select name="student_{{ student.id }}_reason" class="form-select form-select-sm absence-reason" id="reason_{{ student.id }}" {% if student.attendance_status != 'absent' %}disabled{% endif %}>
+                                            <option value="" {% if not student.attendance_absence_reason %}selected{% endif %}>-</option>
+                                            <option value="illness" {% if student.attendance_absence_reason == 'illness' %}selected{% endif %}>病気</option>
+                                            <option value="family" {% if student.attendance_absence_reason == 'family' %}selected{% endif %}>家庭の都合</option>
+                                            <option value="other" {% if student.attendance_absence_reason == 'other' %}selected{% endif %}>その他</option>
                                         </select>
                                     </td>
                                 </tr>

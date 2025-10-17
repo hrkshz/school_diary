@@ -326,8 +326,35 @@ class TeacherDashboardView(LoginRequiredMixin, TemplateView):
         }
         context["absence_data"] = absence_data
 
-        # 全生徒リスト（出席入力モーダル用）
-        context["all_students"] = classroom.students.all().order_by("last_name", "first_name")
+        # 今日の出席データを取得（モーダル初期表示用）
+        today_attendance_records = DailyAttendance.objects.filter(
+            classroom=classroom,
+            date=today,
+        ).select_related("student")
+
+        # 生徒IDをキーとした辞書に変換
+        attendance_by_student_id = {}
+        for record in today_attendance_records:
+            attendance_by_student_id[record.student_id] = {
+                "status": record.status,
+                "absence_reason": record.absence_reason,
+            }
+
+        # 出席情報をstudent_dataに追加（テーブル表示用、N+1問題回避済み）
+        for data in student_data:
+            attendance_data = attendance_by_student_id.get(data["student"].id)
+            data["attendance_status"] = attendance_data["status"] if attendance_data else "present"
+            data["absence_reason"] = attendance_data["absence_reason"] if attendance_data else None
+
+        # 全生徒リストに出席データを付加（テンプレートで簡単にアクセスできるように）
+        all_students_with_attendance = []
+        for student in classroom.students.all().order_by("last_name", "first_name"):
+            attendance_data = attendance_by_student_id.get(student.id)
+            student.attendance_status = attendance_data['status'] if attendance_data else 'present'
+            student.attendance_absence_reason = attendance_data['absence_reason'] if attendance_data else None
+            all_students_with_attendance.append(student)
+
+        context["all_students"] = all_students_with_attendance
 
         # アラート生成（MAP-2A: 早期警告システム）
         from .utils import check_consecutive_decline, check_critical_mental_state, get_previous_school_day
@@ -382,13 +409,20 @@ class TeacherDashboardView(LoginRequiredMixin, TemplateView):
 
         context["alerts"] = alerts
 
-        # Inbox Pattern: 3段階分類（Critical/High/Normal）
+        # Inbox Pattern: 6カテゴリ分類（Important/NeedsAttention/NotSubmitted/Unread/NoReaction/Completed）
         from . import alert_service
 
         classified_students = alert_service.classify_students(classroom)
 
+        # 未対応の合計を計算（テンプレート側での複雑な計算を避ける）
+        needs_response_count = (
+            len(classified_students['not_submitted']) +
+            len(classified_students['unread']) +
+            len(classified_students['no_reaction'])
+        )
+
         # 各分類の生徒に最新3件の連絡帳をprefetch（N+1問題回避、履歴表示用）
-        for tier in ['critical', 'high', 'normal']:
+        for tier in ['important', 'needs_attention', 'not_submitted', 'unread', 'no_reaction']:
             student_ids = [s.id for s in classified_students[tier]]
             if student_ids:
                 # prefetch_relatedで最新3件を取得（履歴統合用）
@@ -417,7 +451,45 @@ class TeacherDashboardView(LoginRequiredMixin, TemplateView):
 
                 classified_students[tier] = students_with_history
 
+        # completedは (student, date) のタプルのリストなので、studentのみ抽出してprefetch
+        completed_tuples = classified_students['completed']
+        if completed_tuples:
+            completed_student_ids = [s.id for s, d in completed_tuples]
+            students_with_history = list(
+                classroom.students.filter(id__in=completed_student_ids).prefetch_related(
+                    Prefetch(
+                        "diary_entries",
+                        queryset=DiaryEntry.objects.order_by("-entry_date")[:3],
+                        to_attr="recent_entries_for_history",
+                    )
+                )
+            )
+
+            # 各生徒に履歴文字列を追加 + 日付情報を保持
+            students_with_dates = []
+            for student in students_with_history:
+                # タプルから日付を取得
+                entry_date = [d for s, d in completed_tuples if s.id == student.id][0]
+
+                if hasattr(student, 'recent_entries_for_history') and student.recent_entries_for_history:
+                    student.inline_history = alert_service.format_inline_history(
+                        student.recent_entries_for_history
+                    )
+                    student.latest_snippet = alert_service.get_snippet(
+                        student.recent_entries_for_history[0]
+                    )
+                else:
+                    student.inline_history = ""
+                    student.latest_snippet = "未提出"
+
+                # 日付情報を付加
+                student.completed_date = entry_date
+                students_with_dates.append(student)
+
+            classified_students['completed'] = students_with_dates
+
         context["classified_students"] = classified_students
+        context["needs_response_count"] = needs_response_count
 
         return context
 

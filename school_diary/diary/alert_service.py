@@ -1,14 +1,21 @@
 """Alert Service for Inbox Pattern (Teacher Dashboard)
 
-This module provides backend logic for classifying students into 3 tiers:
-- Critical: Immediate action required (mental★1, 3-day decline, urgent action)
-- High: Action needed today (mental★★, yesterday no submission, health★★)
-- Normal: Observation mode (healthy, submitted, no alerts)
+This module provides backend logic for classifying students into 4 tiers + subsections:
+
+Main tiers:
+- Important (P0): Mental★1, immediate action required
+- Needs Attention (P1): 3-day consecutive mental decline, early detection
+- Needs Response (P2): Daily tasks
+  - P2-1: Not submitted (yesterday's diary missing)
+  - P2-2: Unread (submitted today but not read)
+  - P2-3: No reaction (read but no reaction selected)
+- Completed (P3): Read + reaction selected, past 3 days only
 
 Design principles:
 - N+1 problem avoidance (bulk fetch + Python classification)
 - Medical triage model (inspired by emergency room prioritization)
 - Separation of concerns (business logic separated from views)
+- Subsection pattern (Gmail/Trello/Jira style)
 """
 
 from datetime import timedelta
@@ -16,19 +23,23 @@ from django.utils import timezone
 from collections import defaultdict
 
 from .models import DiaryEntry
+from .utils import get_previous_school_day
 
 
 def classify_students(classroom):
-    """生徒を3段階に分類（Critical / High / Normal）
+    """生徒を4段階に分類（Inbox Pattern + サブセクション）
 
     Args:
         classroom: ClassRoomインスタンス
 
     Returns:
         dict: {
-            'critical': [student1, student2, ...],  # 要対応（即日）
-            'high': [student3, student4, ...],      # 要確認（本日中）
-            'normal': [student5, student6, ...]     # 正常（様子見）
+            'important': [student1, ...],      # P0: メンタル★1（重要）
+            'needs_attention': [student2, ...], # P1: 3日連続低下（要注意）
+            'not_submitted': [student3, ...],   # P2-1: 未提出
+            'unread': [student4, ...],          # P2-2: 未読
+            'no_reaction': [student5, ...],     # P2-3: 反応未選択
+            'completed': [(student6, date), ...] # P3: 対応済み（日付付き）
         }
 
     Performance:
@@ -36,7 +47,7 @@ def classify_students(classroom):
         - 35名クラスで数ミリ秒
     """
     today = timezone.now().date()
-    yesterday = today - timedelta(days=1)
+    yesterday = get_previous_school_day(today)
 
     # 1. 全生徒の過去7日分を一括取得（N+1問題回避）
     all_recent_entries = DiaryEntry.objects.filter(
@@ -49,28 +60,84 @@ def classify_students(classroom):
     for entry in all_recent_entries:
         entries_by_student[entry.student_id].append(entry)
 
-    # 3. 各生徒を分類
-    critical = []
-    high = []
-    normal = []
+    # 3. 各生徒を分類（排他的、優先度順）
+    important = []
+    needs_attention = []
+    not_submitted = []
+    unread = []
+    no_reaction = []
+    completed = []
 
     for student in classroom.students.all():
         recent_entries = entries_by_student.get(student.id, [])
         latest_entry = recent_entries[0] if recent_entries else None
 
-        # 分類ロジック
+        # P0: 重要（メンタル★1、最優先）
         if _is_critical(latest_entry, recent_entries, today, yesterday):
-            critical.append(student)
-        elif _is_high(latest_entry, recent_entries, today, yesterday):
-            high.append(student)
-        else:
-            normal.append(student)
+            important.append(student)
+            continue
+
+        # P1: 要注意（3日連続メンタル低下）
+        if _check_consecutive_decline(recent_entries):
+            needs_attention.append(student)
+            continue
+
+        # P2-1: 未提出（エントリーなし or 昨日より古い）
+        if not latest_entry or latest_entry.entry_date < yesterday:
+            not_submitted.append(student)
+            continue
+
+        # P2-2: 未読
+        if not latest_entry.is_read:
+            unread.append(student)
+            continue
+
+        # P2-3: 反応未選択（既読だが反応なし）
+        if latest_entry.is_read and not latest_entry.public_reaction:
+            no_reaction.append(student)
+            continue
+
+        # P3: 対応済み（前登校日以降のみ表示、土日を考慮）
+        if latest_entry.entry_date >= yesterday:
+            completed.append((student, latest_entry.entry_date))
 
     return {
-        'critical': critical,
-        'high': high,
-        'normal': normal
+        'important': important,
+        'needs_attention': needs_attention,
+        'not_submitted': not_submitted,
+        'unread': unread,
+        'no_reaction': no_reaction,
+        'completed': completed
     }
+
+
+def _check_consecutive_decline(recent_entries):
+    """3日連続でメンタルが低下しているかチェック
+
+    定義: day1 ≥ day2 ≥ day3 AND day3 < day1
+    例: ★★★★★ → ★★★★ → ★★★ は True
+
+    Args:
+        recent_entries: DiaryEntryのリスト（最新順）
+
+    Returns:
+        bool: 3日連続低下の場合True
+    """
+    if len(recent_entries) < 3:
+        return False
+
+    # 最新3件を古い順に取得
+    entries = sorted(recent_entries[:3], key=lambda e: e.entry_date)
+
+    day1_mental = entries[0].mental_condition
+    day2_mental = entries[1].mental_condition
+    day3_mental = entries[2].mental_condition
+
+    # 連続低下: day1 >= day2 >= day3 AND day3 < day1
+    if day1_mental >= day2_mental >= day3_mental and day3_mental < day1_mental:
+        return True
+
+    return False
 
 
 def _is_critical(latest_entry, recent_entries, today, yesterday):
@@ -78,41 +145,12 @@ def _is_critical(latest_entry, recent_entries, today, yesterday):
 
     条件:
     - メンタル★1（最優先）
-    - 3日連続低下（後で実装）
-    - 対応記録が「緊急」（後で実装）
     """
     if not latest_entry:
         return False
 
     # メンタル★1
     if latest_entry.mental_condition == 1:
-        return True
-
-    return False
-
-
-def _is_high(latest_entry, recent_entries, today, yesterday):
-    """Highに分類されるかチェック
-
-    条件:
-    - メンタル★★
-    - 体調★★
-    - 昨日未提出（最終提出が2日以上前）
-    """
-    if not latest_entry:
-        # 昨日未提出（エントリーなし）
-        return True
-
-    # 最終提出日が昨日より古い = 昨日未提出
-    if latest_entry.entry_date < yesterday:
-        return True
-
-    # メンタル★★
-    if latest_entry.mental_condition == 2:
-        return True
-
-    # 体調★★
-    if latest_entry.health_condition == 2:
         return True
 
     return False

@@ -66,8 +66,8 @@ def setup_classroom(db):
 class TestClassifyStudents:
     """classify_students() のテスト（3段階分類）"""
 
-    def test_classify_critical_mental_star_1(self, setup_classroom):
-        """メンタル★1の生徒はcriticalに分類される"""
+    def test_classify_important_mental_star_1(self, setup_classroom):
+        """メンタル★1の生徒はimportantに分類される"""
         classroom = setup_classroom['classroom']
         student = setup_classroom['students'][0]
         today = timezone.now().date()
@@ -77,60 +77,48 @@ class TestClassifyStudents:
             student=student,
             entry_date=today,
             health_condition=4,
-            mental_condition=1,  # ★1 = Critical
+            mental_condition=1,  # ★1 = Important
             reflection="つらい"
         )
 
         result = alert_service.classify_students(classroom)
 
-        assert student in result['critical']
-        assert student not in result['high']
-        assert student not in result['normal']
+        assert student in result['important']
+        assert student not in result['needs_attention']
+        assert student not in result['not_submitted']
+        assert student not in result['unread']
+        assert student not in result['no_reaction']
 
-    def test_classify_high_mental_star_2(self, setup_classroom):
-        """メンタル★★の生徒はhighに分類される"""
+    def test_classify_completed(self, setup_classroom):
+        """既読・反応済みの生徒はcompletedに分類される"""
         classroom = setup_classroom['classroom']
         student = setup_classroom['students'][0]
         today = timezone.now().date()
 
-        # メンタル★★のエントリー作成
-        DiaryEntry.objects.create(
-            student=student,
-            entry_date=today,
-            health_condition=4,
-            mental_condition=2,  # ★★ = High
-            reflection="少し不安"
-        )
-
-        result = alert_service.classify_students(classroom)
-
-        assert student not in result['critical']
-        assert student in result['high']
-        assert student not in result['normal']
-
-    def test_classify_normal_healthy(self, setup_classroom):
-        """体調・メンタルが良好な生徒はnormalに分類される"""
-        classroom = setup_classroom['classroom']
-        student = setup_classroom['students'][0]
-        today = timezone.now().date()
-
-        # 健康なエントリー作成
+        # 健康なエントリー作成（既読・反応済み）
         DiaryEntry.objects.create(
             student=student,
             entry_date=today,
             health_condition=5,  # ★★★★★
             mental_condition=5,  # ★★★★★
-            reflection="元気です"
+            reflection="元気です",
+            is_read=True,  # 既読
+            public_reaction="承知しました"  # 反応済み
         )
 
         result = alert_service.classify_students(classroom)
 
-        assert student not in result['critical']
-        assert student not in result['high']
-        assert student in result['normal']
+        # completedは(student, date)のタプルのリスト
+        completed_students = [s for s, d in result['completed']]
+        assert student in completed_students
+        assert student not in result['important']
+        assert student not in result['needs_attention']
+        assert student not in result['not_submitted']
+        assert student not in result['unread']
+        assert student not in result['no_reaction']
 
-    def test_classify_no_entry_yesterday(self, setup_classroom):
-        """昨日未提出の生徒はhighに分類される"""
+    def test_classify_not_submitted(self, setup_classroom):
+        """昨日未提出の生徒はnot_submittedに分類される"""
         classroom = setup_classroom['classroom']
         student = setup_classroom['students'][0]
         today = timezone.now().date()
@@ -147,18 +135,71 @@ class TestClassifyStudents:
 
         result = alert_service.classify_students(classroom)
 
-        # 昨日未提出 = high
-        assert student not in result['critical']
-        assert student in result['high']
-        assert student not in result['normal']
+        # 昨日未提出 = not_submitted
+        assert student in result['not_submitted']
+        assert student not in result['important']
+        assert student not in result['needs_attention']
+        assert student not in result['unread']
+        assert student not in result['no_reaction']
+
+    def test_classify_unread(self, setup_classroom):
+        """未読の生徒はunreadに分類される"""
+        classroom = setup_classroom['classroom']
+        student = setup_classroom['students'][0]
+        today = timezone.now().date()
+
+        # 健康だが未読のエントリー
+        DiaryEntry.objects.create(
+            student=student,
+            entry_date=today,
+            health_condition=5,  # ★★★★★（健康）
+            mental_condition=5,  # ★★★★★（良好）
+            reflection="元気です",
+            is_read=False  # 未読
+        )
+
+        result = alert_service.classify_students(classroom)
+
+        # 未読 = unread
+        assert student in result['unread']
+        assert student not in result['important']
+        assert student not in result['needs_attention']
+        assert student not in result['not_submitted']
+        assert student not in result['no_reaction']
+
+    def test_classify_no_reaction(self, setup_classroom):
+        """反応未選択の生徒はno_reactionに分類される"""
+        classroom = setup_classroom['classroom']
+        student = setup_classroom['students'][0]
+        today = timezone.now().date()
+
+        # 既読だが反応未選択のエントリー
+        DiaryEntry.objects.create(
+            student=student,
+            entry_date=today,
+            health_condition=5,  # ★★★★★（健康）
+            mental_condition=5,  # ★★★★★（良好）
+            reflection="元気です",
+            is_read=True,  # 既読
+            public_reaction=None  # 反応未選択
+        )
+
+        result = alert_service.classify_students(classroom)
+
+        # 反応未選択 = no_reaction
+        assert student in result['no_reaction']
+        assert student not in result['important']
+        assert student not in result['needs_attention']
+        assert student not in result['not_submitted']
+        assert student not in result['unread']
 
     def test_classify_multiple_students(self, setup_classroom):
-        """複数の生徒が正しく分類される"""
+        """複数の生徒が正しく分類される（6カテゴリ）"""
         classroom = setup_classroom['classroom']
         students = setup_classroom['students']
         today = timezone.now().date()
 
-        # 生徒1: Critical（メンタル★1）
+        # 生徒1: Important（メンタル★1）
         DiaryEntry.objects.create(
             student=students[0],
             entry_date=today,
@@ -167,29 +208,33 @@ class TestClassifyStudents:
             reflection="つらい"
         )
 
-        # 生徒2: High（メンタル★★）
+        # 生徒2: Unread（未読）
         DiaryEntry.objects.create(
             student=students[1],
             entry_date=today,
             health_condition=4,
-            mental_condition=2,
-            reflection="少し不安"
+            mental_condition=4,
+            reflection="元気です",
+            is_read=False  # 未読
         )
 
-        # 生徒3: Normal（健康）
+        # 生徒3: Completed（健康、既読・反応済み）
         DiaryEntry.objects.create(
             student=students[2],
             entry_date=today,
             health_condition=5,
             mental_condition=5,
-            reflection="元気"
+            reflection="元気",
+            is_read=True,  # 既読
+            public_reaction="承知しました"  # 反応済み
         )
 
         result = alert_service.classify_students(classroom)
 
-        assert students[0] in result['critical']
-        assert students[1] in result['high']
-        assert students[2] in result['normal']
+        assert students[0] in result['important']
+        assert students[1] in result['unread']
+        completed_students = [s for s, d in result['completed']]
+        assert students[2] in completed_students
 
     def test_no_n_plus_one_problem(self, setup_classroom, django_assert_num_queries):
         """N+1問題が発生しないことを確認（クエリ数=2）"""
@@ -212,6 +257,164 @@ class TestClassifyStudents:
         # Query 2: classroom.students.all()
         with django_assert_num_queries(2):
             alert_service.classify_students(classroom)
+
+
+@pytest.mark.django_db
+class TestCheckConsecutiveDecline:
+    """_check_consecutive_decline() のテスト（3日連続低下検出）"""
+
+    def test_check_consecutive_decline_true(self, setup_classroom):
+        """3日連続低下（5→4→3）はTrueを返す"""
+        student = setup_classroom['students'][0]
+        today = timezone.now().date()
+
+        # 3日分のエントリー作成（5→4→3）
+        entries = []
+        for i, mental in enumerate([5, 4, 3]):
+            date = today - timedelta(days=2-i)
+            entry = DiaryEntry.objects.create(
+                student=student,
+                entry_date=date,
+                health_condition=4,
+                mental_condition=mental,
+                reflection=f"Day {i}"
+            )
+            entries.append(entry)
+
+        # 最新順にソート（alert_serviceのentries_by_studentと同じ形式）
+        entries_sorted = sorted(entries, key=lambda e: e.entry_date, reverse=True)
+
+        result = alert_service._check_consecutive_decline(entries_sorted)
+        assert result is True
+
+    def test_check_consecutive_decline_false_flat(self, setup_classroom):
+        """横ばい（4→4→4）はFalseを返す"""
+        student = setup_classroom['students'][0]
+        today = timezone.now().date()
+
+        entries = []
+        for i in range(3):
+            date = today - timedelta(days=2-i)
+            entry = DiaryEntry.objects.create(
+                student=student,
+                entry_date=date,
+                health_condition=4,
+                mental_condition=4,  # 横ばい
+                reflection=f"Day {i}"
+            )
+            entries.append(entry)
+
+        entries_sorted = sorted(entries, key=lambda e: e.entry_date, reverse=True)
+        result = alert_service._check_consecutive_decline(entries_sorted)
+        assert result is False
+
+    def test_check_consecutive_decline_false_recovery(self, setup_classroom):
+        """回復傾向（2→3→4）はFalseを返す"""
+        student = setup_classroom['students'][0]
+        today = timezone.now().date()
+
+        entries = []
+        for i, mental in enumerate([2, 3, 4]):
+            date = today - timedelta(days=2-i)
+            entry = DiaryEntry.objects.create(
+                student=student,
+                entry_date=date,
+                health_condition=4,
+                mental_condition=mental,  # 回復
+                reflection=f"Day {i}"
+            )
+            entries.append(entry)
+
+        entries_sorted = sorted(entries, key=lambda e: e.entry_date, reverse=True)
+        result = alert_service._check_consecutive_decline(entries_sorted)
+        assert result is False
+
+    def test_check_consecutive_decline_false_v_shape(self, setup_classroom):
+        """V字回復（5→2→5）はFalseを返す"""
+        student = setup_classroom['students'][0]
+        today = timezone.now().date()
+
+        entries = []
+        for i, mental in enumerate([5, 2, 5]):
+            date = today - timedelta(days=2-i)
+            entry = DiaryEntry.objects.create(
+                student=student,
+                entry_date=date,
+                health_condition=4,
+                mental_condition=mental,  # V字回復
+                reflection=f"Day {i}"
+            )
+            entries.append(entry)
+
+        entries_sorted = sorted(entries, key=lambda e: e.entry_date, reverse=True)
+        result = alert_service._check_consecutive_decline(entries_sorted)
+        assert result is False
+
+    def test_check_consecutive_decline_insufficient_data(self, setup_classroom):
+        """データ不足（2件のみ）はFalseを返す"""
+        student = setup_classroom['students'][0]
+        today = timezone.now().date()
+
+        entries = []
+        for i in range(2):  # 2件のみ
+            date = today - timedelta(days=1-i)
+            entry = DiaryEntry.objects.create(
+                student=student,
+                entry_date=date,
+                health_condition=4,
+                mental_condition=4,
+                reflection=f"Day {i}"
+            )
+            entries.append(entry)
+
+        entries_sorted = sorted(entries, key=lambda e: e.entry_date, reverse=True)
+        result = alert_service._check_consecutive_decline(entries_sorted)
+        assert result is False
+
+    def test_classify_needs_attention_3day_decline(self, setup_classroom):
+        """3日連続低下の生徒はneeds_attentionに分類される"""
+        classroom = setup_classroom['classroom']
+        student = setup_classroom['students'][0]
+        today = timezone.now().date()
+
+        # 3日連続低下（5→4→3）
+        for i, mental in enumerate([5, 4, 3]):
+            date = today - timedelta(days=2-i)
+            DiaryEntry.objects.create(
+                student=student,
+                entry_date=date,
+                health_condition=4,
+                mental_condition=mental,
+                reflection=f"Day {i}"
+            )
+
+        result = alert_service.classify_students(classroom)
+
+        assert student in result['needs_attention']
+        assert student not in result['important']
+
+    def test_classify_priority_important_over_attention(self, setup_classroom):
+        """メンタル★1 + 3日連続低下の場合、importantが優先される"""
+        classroom = setup_classroom['classroom']
+        student = setup_classroom['students'][0]
+        today = timezone.now().date()
+
+        # 3日連続低下 + 最新日がメンタル★1
+        for i, mental in enumerate([5, 2, 1]):  # 5→2→1
+            date = today - timedelta(days=2-i)
+            DiaryEntry.objects.create(
+                student=student,
+                entry_date=date,
+                health_condition=4,
+                mental_condition=mental,
+                reflection=f"Day {i}"
+            )
+
+        result = alert_service.classify_students(classroom)
+
+        # メンタル★1が優先される（排他的分類）
+        assert student in result['important']
+        assert student not in result['needs_attention']
 
 
 @pytest.mark.django_db
@@ -284,3 +487,169 @@ class TestGetSnippet:
         assert len(result) <= 53  # 50文字 + "..."
         assert result.endswith("...")
         assert result.startswith("今日は部活で")
+
+
+@pytest.mark.django_db
+class TestClassifyStudentsWeekendHandling:
+    """土日を考慮した未提出判定のテスト（TDD: Red→Green→Refactor）"""
+
+    def setup_method(self):
+        """テストデータ準備"""
+        # 担任を作成
+        self.teacher = User.objects.create_user(
+            username="teacher_weekend",
+            email="teacher_weekend@example.com",
+            password="password123",
+            first_name="太郎",
+            last_name="先生",
+        )
+
+        # クラスを作成
+        self.classroom = ClassRoom.objects.create(
+            class_name="A",
+            grade=1,
+            academic_year=2025,
+            homeroom_teacher=self.teacher,
+        )
+
+        # 生徒を作成
+        self.student_a = User.objects.create_user(
+            username="student_a_weekend",
+            email="student_a@example.com",
+            password="password123",
+            first_name="花子",
+            last_name="生徒A",
+        )
+        self.student_a.classes.add(self.classroom)
+
+        self.student_b = User.objects.create_user(
+            username="student_b_weekend",
+            email="student_b@example.com",
+            password="password123",
+            first_name="次郎",
+            last_name="生徒B",
+        )
+        self.student_b.classes.add(self.classroom)
+
+    def test_monday_with_friday_entry_should_be_completed(self):
+        """月曜日: 金曜日に提出した生徒は「対応済み」に分類される"""
+        from datetime import datetime, date
+        from unittest.mock import patch
+
+        # 月曜日（2025-10-20）をモック
+        mock_datetime = datetime(2025, 10, 20, 9, 0, 0)
+
+        with patch('django.utils.timezone.now') as mock_now:
+            mock_now.return_value = mock_datetime
+
+            # 金曜日（2025-10-17）にエントリー作成、既読+反応済み
+            DiaryEntry.objects.create(
+                student=self.student_a,
+                entry_date=date(2025, 10, 17),  # 金曜日
+                reflection="金曜日の連絡帳",
+                health_condition=4,
+                mental_condition=4,
+                is_read=True,
+                read_by=self.teacher,
+                public_reaction="understood",
+            )
+
+            # 分類実行
+            result = alert_service.classify_students(self.classroom)
+
+            # 生徒Aは「対応済み」に分類される（金曜日=前登校日）
+            completed_ids = [s.id for s, d in result["completed"]]
+            assert self.student_a.id in completed_ids, \
+                "金曜日に提出した生徒Aは「対応済み」に分類されるべき"
+
+            # 生徒Aは「未提出」に分類されない
+            assert self.student_a not in result["not_submitted"], \
+                "金曜日に提出した生徒Aは「未提出」に分類されないべき"
+
+    def test_monday_without_friday_entry_should_be_not_submitted(self):
+        """月曜日: 金曜日に提出していない生徒は「未提出」に分類される"""
+        from datetime import datetime, date
+        from unittest.mock import patch
+
+        # 月曜日（2025-10-20）をモック
+        mock_datetime = datetime(2025, 10, 20, 9, 0, 0)
+
+        with patch('django.utils.timezone.now') as mock_now:
+            mock_now.return_value = mock_datetime
+
+            # 木曜日（2025-10-16）にエントリー作成（金曜日は未提出）
+            DiaryEntry.objects.create(
+                student=self.student_b,
+                entry_date=date(2025, 10, 16),  # 木曜日（金曜日より古い）
+                reflection="木曜日の連絡帳",
+                health_condition=4,
+                mental_condition=4,
+                is_read=True,
+                read_by=self.teacher,
+                public_reaction="understood",
+            )
+
+            # 分類実行
+            result = alert_service.classify_students(self.classroom)
+
+            # 生徒Bは「未提出」に分類される（前登校日=金曜日に提出なし）
+            assert self.student_b in result["not_submitted"], \
+                "金曜日に提出していない生徒Bは「未提出」に分類されるべき"
+
+            # 生徒Bは「対応済み」に分類されない
+            completed_ids = [s.id for s, d in result["completed"]]
+            assert self.student_b.id not in completed_ids, \
+                "金曜日に提出していない生徒Bは「対応済み」に分類されないべき"
+
+    def test_monday_integrated_multiple_students(self):
+        """月曜日: 複数生徒の分類が正しく動作する統合テスト"""
+        from datetime import datetime, date
+        from unittest.mock import patch
+
+        # 月曜日（2025-10-20）をモック
+        mock_datetime = datetime(2025, 10, 20, 9, 0, 0)
+
+        with patch('django.utils.timezone.now') as mock_now:
+            mock_now.return_value = mock_datetime
+
+            # 生徒A: 金曜日に提出（対応済み）
+            DiaryEntry.objects.create(
+                student=self.student_a,
+                entry_date=date(2025, 10, 17),  # 金曜日
+                reflection="金曜日の連絡帳",
+                health_condition=4,
+                mental_condition=4,
+                is_read=True,
+                read_by=self.teacher,
+                public_reaction="understood",
+            )
+
+            # 生徒B: 木曜日に提出（未提出扱い）
+            DiaryEntry.objects.create(
+                student=self.student_b,
+                entry_date=date(2025, 10, 16),  # 木曜日
+                reflection="木曜日の連絡帳",
+                health_condition=4,
+                mental_condition=4,
+                is_read=True,
+                read_by=self.teacher,
+                public_reaction="understood",
+            )
+
+            # 分類実行
+            result = alert_service.classify_students(self.classroom)
+
+            # 生徒Aは「対応済み」
+            completed_ids = [s.id for s, d in result["completed"]]
+            assert self.student_a.id in completed_ids, "生徒Aは対応済みに分類されるべき"
+
+            # 生徒Bは「未提出」
+            assert self.student_b in result["not_submitted"], "生徒Bは未提出に分類されるべき"
+
+            # カウント確認（「未対応」として表示される人数）
+            needs_response_count = (
+                len(result["not_submitted"]) +
+                len(result["unread"]) +
+                len(result["no_reaction"])
+            )
+            assert needs_response_count >= 1, "「未対応」が1名以上いるべき"

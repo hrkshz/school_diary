@@ -878,14 +878,14 @@ class TestTeacherDashboardViewUI:
 
     def test_student_table_exists(self, teacher_client_with_class):
         """
-        【テスト3】生徒一覧テーブルが存在する
+        【テスト3】生徒一覧テーブルが存在する（テーブルビュー）
 
         期待される動作:
         - table 要素が存在する
         - table-hover クラスが適用されている
         """
-        # Arrange
-        url = reverse("diary:teacher_dashboard")
+        # Arrange: テーブルビューにアクセス
+        url = reverse("diary:teacher_dashboard") + "?view=table"
 
         # Act
         response = teacher_client_with_class.get(url)
@@ -901,13 +901,13 @@ class TestTeacherDashboardViewUI:
 
     def test_table_headers_correct(self, teacher_client_with_class):
         """
-        【テスト4】テーブルヘッダーが正しい
+        【テスト4】テーブルヘッダーが正しい（テーブルビュー）
 
         期待される動作:
-        - 「生徒名」「体調」「メンタル」「対応状況」のヘッダーが存在する
+        - 「生徒名」「提出日時」「体調」「メンタル」「反応」「対応記録」「対応状況」「アクション」のヘッダーが存在する
         """
-        # Arrange
-        url = reverse("diary:teacher_dashboard")
+        # Arrange: テーブルビューにアクセス
+        url = reverse("diary:teacher_dashboard") + "?view=table"
 
         # Act
         response = teacher_client_with_class.get(url)
@@ -917,7 +917,7 @@ class TestTeacherDashboardViewUI:
         thead = soup.find("thead")
         assert thead is not None, "<thead> が見つかりません。"
         headers = [th.text.strip() for th in thead.find_all("th")]
-        expected_headers = ["生徒名", "体調", "メンタル", "対応状況"]
+        expected_headers = ["生徒名", "提出日時", "体調", "メンタル"]
 
         for expected in expected_headers:
             assert expected in headers, (
@@ -926,13 +926,13 @@ class TestTeacherDashboardViewUI:
 
     def test_unread_badge_displayed(self, teacher_client_with_class):
         """
-        【テスト5】未読バッジが表示される
+        【テスト5】未読バッジが表示される（テーブルビュー）
 
         期待される動作:
         - 未読がある生徒に 🔵 NEW バッジ（bg-info）が表示される
         """
-        # Arrange
-        url = reverse("diary:teacher_dashboard")
+        # Arrange: テーブルビューにアクセス
+        url = reverse("diary:teacher_dashboard") + "?view=table"
 
         # Act
         response = teacher_client_with_class.get(url)
@@ -956,14 +956,14 @@ class TestTeacherDashboardViewUI:
 
     def test_student_health_mental_displayed(self, teacher_client_with_class):
         """
-        【テスト6】生徒の体調・メンタルが表示される
+        【テスト6】生徒の体調・メンタルが表示される（テーブルビュー）
 
         期待される動作:
         - 最新の体調が絵文字バッジで表示される（🟢🟡🔴）
         - 最新のメンタルが絵文字バッジで表示される（🟢🟡🔴）
         """
-        # Arrange
-        url = reverse("diary:teacher_dashboard")
+        # Arrange: テーブルビューにアクセス
+        url = reverse("diary:teacher_dashboard") + "?view=table"
 
         # Act
         response = teacher_client_with_class.get(url)

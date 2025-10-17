@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inbox View モック v2 - 担任ダッシュボード（サブセクション化）</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .card {
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            transition: box-shadow 0.2s;
+        }
+        .card:hover {
+            box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+        }
+        .card-header {
+            font-weight: 600;
+        }
+        .badge {
+            font-size: 0.9em;
+        }
+        html {
+            scroll-behavior: smooth;
+        }
+        .subsection-title {
+            font-weight: 500;
+            color: #6c757d;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid mt-4 mb-5">
+        <div class="row">
+            <div class="col-12">
+                <h2 class="mb-3">📊 1年A組 - 担任ダッシュボード（Inbox View v2）</h2>
+                <p class="text-muted">本日: 2025年10月16日（水）</p>
+            </div>
+        </div>
+
+        <!-- 概況ライン -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="alert alert-info mb-0">
+                    <strong>📊 本日の概況:</strong>
+                    <a href="#important" class="alert-link">🔴 重要 3名</a> |
+                    <a href="#needs_attention" class="alert-link">🟡 要注意 2名</a> |
+                    <a href="#needs_response" class="alert-link">🔵 未対応 9名
+                        <small class="text-muted">(未提出2 | 未読4 | 反応未選択3)</small>
+                    </a> |
+                    <a href="#completed" class="alert-link">🟢 対応済み 21名</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 1. 重要セクション -->
+        <div class="row mb-4" id="important">
+            <div class="col-12">
+                <div class="card border-danger">
+                    <div class="card-header bg-danger text-white">
+                        <h5 class="mb-1">🔴 重要（3名）</h5>
+                        <small>P0: メンタル★1など、今すぐ対応が必要</small>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <!-- 生徒1: メンタル★1のみ -->
+                            <div class="col-12 col-md-6 col-lg-4 mb-3">
+                                <div class="card border-danger">
+                                    <div class="card-body">
+                                        <h6 class="card-title">
+                                            田中 太郎
+                                            <span class="badge bg-danger">★</span>
+                                        </h6>
+                                        <p class="text-muted small mb-2">
+                                            📈 履歴: 10/14(★★★★★) → 10/15(★★★) → 10/16(★)
+                                        </p>
+                                        <p class="card-text small">
+                                            "学校に行きたくない。友達と話すのが怖い。最近ずっと気分が沈んでいます..."
+                                        </p>
+                                        <div class="d-flex gap-2 flex-wrap">
+                                            <button class="btn btn-sm btn-primary">📖 連絡帳を確認</button>
+                                            <button class="btn btn-sm btn-outline-danger">🚨 緊急対応記録</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 生徒2: メンタル★1のみ -->
+                            <div class="col-12 col-md-6 col-lg-4 mb-3">
+                                <div class="card border-danger">
+                                    <div class="card-body">
+                                        <h6 class="card-title">
+                                            佐藤 花子
+                                            <span class="badge bg-danger">★</span>
+                                        </h6>
+                                        <p class="text-muted small mb-2">
+                                            📈 履歴: 10/14(★★★★) → 10/15(★★★★) → 10/16(★)
+                                        </p>
+                                        <p class="card-text small">
+                                            "今日、友達とケンカしてしまいました。すごく悲しいです..."
+                                        </p>
+                                        <div class="d-flex gap-2 flex-wrap">
+                                            <button class="btn btn-sm btn-primary">📖 連絡帳を確認</button>
+                                            <button class="btn btn-sm btn-outline-danger">🚨 緊急対応記録</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 生徒3: メンタル★1 + 体調不良 -->
+                            <div class="col-12 col-md-6 col-lg-4 mb-3">
+                                <div class="card border-danger">
+                                    <div class="card-body">
+                                        <h6 class="card-title">
+                                            鈴木 次郎
+                                            <span class="badge bg-danger">★</span>
+                                            <span class="badge bg-warning text-dark">体調★★</span>
+                                        </h6>
+                                        <p class="text-muted small mb-2">
+                                            📈 履歴: 10/14(★★★) → 10/15(★★) → 10/16(★)
+                                        </p>
+                                        <p class="card-text small">
+                                            "何もかも嫌になった。頭も痛いし、お腹も痛い。学校休みたい..."
+                                        </p>
+                                        <div class="d-flex gap-2 flex-wrap">
+                                            <button class="btn btn-sm btn-primary">📖 連絡帳を確認</button>
+                                            <button class="btn btn-sm btn-outline-danger">🚨 緊急対応記録</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. 要注意セクション（3日連続低下） -->
+        <div class="row mb-4" id="needs_attention">
+            <div class="col-12">
+                <div class="card border-warning">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-1">🟡 要注意（2名）</h5>
+                        <small>P1: 3日連続でメンタル低下、早期発見・継続観察が必要</small>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <!-- 生徒1: 5→4→3 -->
+                            <div class="col-12 col-md-6 col-lg-4 mb-3">
+                                <div class="card border-warning">
+                                    <div class="card-body">
+                                        <h6 class="card-title">
+                                            中村 美咲
+                                            <span class="badge bg-warning text-dark">★★★</span>
+                                        </h6>
+                                        <p class="text-muted small mb-2">
+                                            📉 3日連続低下: 10/14(★★★★★) → 10/15(★★★★) → 10/16(★★★)
+                                        </p>
+                                        <p class="card-text small">
+                                            "最近、少しずつ疲れてきました。部活も勉強も大変です..."
+                                        </p>
+                                        <div class="d-flex gap-2 flex-wrap">
+                                            <button class="btn btn-sm btn-primary">📖 連絡帳を確認</button>
+                                            <button class="btn btn-sm btn-outline-warning">👀 継続観察</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 生徒2: 4→3→2 -->
+                            <div class="col-12 col-md-6 col-lg-4 mb-3">
+                                <div class="card border-warning">
+                                    <div class="card-body">
+                                        <h6 class="card-title">
+                                            伊藤 翔太
+                                            <span class="badge bg-warning text-dark">★★</span>
+                                        </h6>
+                                        <p class="text-muted small mb-2">
+                                            📉 3日連続低下: 10/14(★★★★) → 10/15(★★★) → 10/16(★★)
+                                        </p>
+                                        <p class="card-text small">
+                                            "友達と話すのが少し辛いです。理由はよく分かりません..."
+                                        </p>
+                                        <div class="d-flex gap-2 flex-wrap">
+                                            <button class="btn btn-sm btn-primary">📖 連絡帳を確認</button>
+                                            <button class="btn btn-sm btn-outline-warning">👀 継続観察</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. 未対応セクション（サブセクション化） -->
+        <div class="row mb-4" id="needs_response">
+            <div class="col-12">
+                <div class="card border-primary">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-1">🔵 未対応（9名）</h5>
+                        <small>P2: 日常タスク - 上から順に対応を進めてください</small>
+                    </div>
+                    <div class="card-body">
+                        <!-- サブセクション1: 未提出 -->
+                        <h6 class="subsection-title">📅 未提出（2名）- 声かけを検討</h6>
+                        <div class="row mb-4">
+                            <div class="col-12 col-md-6 col-lg-4 mb-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6 class="card-title">
+                                            高橋 健太
+                                            <span class="badge bg-secondary">📅 未提出</span>
+                                        </h6>
+                                        <p class="text-muted small mb-2">
+                                            📅 最終提出: 10/14（2日前）
+                                        </p>
+                                        <p class="card-text small text-muted">
+                                            前回: メンタル★★★ | 体調★★★★
+                                        </p>
+                                        <button class="btn btn-sm btn-secondary w-100">📝 声かけ記録</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-12 col-md-6 col-lg-4 mb-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6 class="card-title">
+                                            田中 美月
+                                            <span class="badge bg-secondary">📅 未提出</span>
+                                        </h6>
+                                        <p class="text-muted small mb-2">
+                                            📅 最終提出: 10/14（2日前）
+                                        </p>
+                                        <p class="card-text small text-muted">
+                                            前回: メンタル★★★★ | 体調★★★★
+                                        </p>
+                                        <button class="btn btn-sm btn-secondary w-100">📝 声かけ記録</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <!-- サブセクション2: 未読 -->
+                        <h6 class="subsection-title">🔵 未読（4名）- 連絡帳を確認</h6>
+                        <div class="row mb-4">
+                            <div class="col-12 col-md-6 col-lg-4 mb-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6 class="card-title">
+                                            山田 三郎
+                                            <span class="badge bg-info">🔵 未読</span>
+                                        </h6>
+                                        <p class="text-muted small mb-2">
+                                            メンタル: ★★★★ | 体調: ★★★★
+                                        </p>
+                                        <p class="card-text small text-muted">
+                                            提出日時: 10/16 08:30
+                                        </p>
+                                        <button class="btn btn-sm btn-primary w-100">📖 連絡帳を確認</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-12 col-md-6 col-lg-4 mb-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6 class="card-title">
+                                            木村 愛
+                                            <span class="badge bg-info">🔵 未読</span>
+                                        </h6>
+                                        <p class="text-muted small mb-2">
+                                            メンタル: ★★★★★ | 体調: ★★★★★
+                                        </p>
+                                        <p class="card-text small text-muted">
+                                            提出日時: 10/16 07:45
+                                        </p>
+                                        <button class="btn btn-sm btn-primary w-100">📖 連絡帳を確認</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-12 col-md-6 col-lg-4 mb-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6 class="card-title">
+                                            斉藤 健太
+                                            <span class="badge bg-info">🔵 未読</span>
+                                        </h6>
+                                        <p class="text-muted small mb-2">
+                                            メンタル: ★★★ | 体調: ★★★★
+                                        </p>
+                                        <p class="card-text small text-muted">
+                                            提出日時: 10/16 09:00
+                                        </p>
+                                        <button class="btn btn-sm btn-primary w-100">📖 連絡帳を確認</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-12 col-md-6 col-lg-4 mb-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6 class="card-title">
+                                            渡辺 翔太
+                                            <span class="badge bg-info">🔵 未読</span>
+                                        </h6>
+                                        <p class="text-muted small mb-2">
+                                            メンタル: ★★★★ | 体調: ★★★★
+                                        </p>
+                                        <p class="card-text small text-muted">
+                                            提出日時: 10/16 08:15
+                                        </p>
+                                        <button class="btn btn-sm btn-primary w-100">📖 連絡帳を確認</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <!-- サブセクション3: 反応未選択 -->
+                        <h6 class="subsection-title">⚠️ 反応未選択（3名）- 反応を選択</h6>
+                        <div class="row">
+                            <div class="col-12 col-md-6 col-lg-4 mb-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6 class="card-title">
+                                            小林 優子
+                                            <span class="badge bg-warning text-dark">⚠️ 反応未選択</span>
+                                        </h6>
+                                        <p class="text-muted small mb-2">
+                                            メンタル: ★★★ | 体調: ★★★★
+                                        </p>
+                                        <p class="card-text small">
+                                            "部活の練習が大変でした。でも楽しかったです。"
+                                        </p>
+                                        <button class="btn btn-sm btn-success w-100">✅ 反応を選択</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-12 col-md-6 col-lg-4 mb-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6 class="card-title">
+                                            加藤 大輔
+                                            <span class="badge bg-warning text-dark">⚠️ 反応未選択</span>
+                                        </h6>
+                                        <p class="text-muted small mb-2">
+                                            メンタル: ★★★★ | 体調: ★★★★★
+                                        </p>
+                                        <p class="card-text small">
+                                            "今日は数学のテストがありました。まあまあでした。"
+                                        </p>
+                                        <button class="btn btn-sm btn-success w-100">✅ 反応を選択</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-12 col-md-6 col-lg-4 mb-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6 class="card-title">
+                                            吉田 さくら
+                                            <span class="badge bg-warning text-dark">⚠️ 反応未選択</span>
+                                        </h6>
+                                        <p class="text-muted small mb-2">
+                                            メンタル: ★★★★ | 体調: ★★★★
+                                        </p>
+                                        <p class="card-text small">
+                                            "友達と一緒に勉強しました。楽しかったです。"
+                                        </p>
+                                        <button class="btn btn-sm btn-success w-100">✅ 反応を選択</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. 対応済みセクション（日付区切り、折りたたみ） -->
+        <div class="row mb-4" id="completed">
+            <div class="col-12">
+                <div class="card border-success">
+                    <div class="card-header bg-success text-white" data-bs-toggle="collapse" data-bs-target="#completedSection" style="cursor: pointer;">
+                        <h5 class="mb-1">🟢 対応済み（21名）- 過去3日間 [クリックで展開 ▼]</h5>
+                        <small>既読 + 反応選択済み（Inbox Zero達成）</small>
+                    </div>
+                    <div id="completedSection" class="collapse">
+                        <div class="card-body">
+                            <p class="text-muted small mb-3">
+                                以下の生徒は連絡帳を確認済み、反応を選択済みです。
+                                4日前以前は <a href="#" class="text-decoration-none">過去記録閲覧</a> で確認できます。
+                            </p>
+
+                            <!-- 本日（10/16） -->
+                            <h6 class="text-muted mb-3">本日（10/16）- 8名</h6>
+                            <div class="row mb-4">
+                                <div class="col-12 col-md-4 col-lg-3 mb-2">
+                                    <div class="card bg-light">
+                                        <div class="card-body p-2">
+                                            <small><strong>山本 大樹</strong> (★★★★)</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-4 col-lg-3 mb-2">
+                                    <div class="card bg-light">
+                                        <div class="card-body p-2">
+                                            <small><strong>中島 結衣</strong> (★★★★★)</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-4 col-lg-3 mb-2">
+                                    <div class="card bg-light">
+                                        <div class="card-body p-2">
+                                            <small><strong>石井 拓海</strong> (★★★)</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-4 col-lg-3 mb-2">
+                                    <div class="card bg-light">
+                                        <div class="card-body p-2">
+                                            <small><strong>森田 さくら</strong> (★★★★)</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-4 col-lg-3 mb-2">
+                                    <div class="card bg-light">
+                                        <div class="card-body p-2">
+                                            <small><strong>藤田 陽向</strong> (★★★★★)</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-4 col-lg-3 mb-2">
+                                    <div class="card bg-light">
+                                        <div class="card-body p-2">
+                                            <small><strong>前田 颯太</strong> (★★★★)</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-4 col-lg-3 mb-2">
+                                    <div class="card bg-light">
+                                        <div class="card-body p-2">
+                                            <small><strong>岡田 莉子</strong> (★★★★★)</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-4 col-lg-3 mb-2">
+                                    <div class="card bg-light">
+                                        <div class="card-body p-2">
+                                            <small><strong>村上 蒼空</strong> (★★★)</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 昨日（10/15） -->
+                            <h6 class="text-muted mb-3">昨日（10/15）- 7名</h6>
+                            <div class="row mb-4">
+                                <div class="col-12 col-md-4 col-lg-3 mb-2">
+                                    <div class="card bg-light">
+                                        <div class="card-body p-2">
+                                            <small><strong>橋本 柚希</strong> (★★★★)</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-4 col-lg-3 mb-2">
+                                    <div class="card bg-light">
+                                        <div class="card-body p-2">
+                                            <small><strong>清水 悠斗</strong> (★★★★)</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-4 col-lg-3 mb-2">
+                                    <div class="card bg-light">
+                                        <div class="card-body p-2">
+                                            <small><strong>松本 桜</strong> (★★★★★)</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-4 col-lg-3 mb-2">
+                                    <div class="card bg-light">
+                                        <div class="card-body p-2">
+                                            <small><strong>井上 陸</strong> (★★★★)</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-4 col-lg-3 mb-2">
+                                    <div class="card bg-light">
+                                        <div class="card-body p-2">
+                                            <small><strong>木下 美羽</strong> (★★★★)</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-4 col-lg-3 mb-2">
+                                    <div class="card bg-light">
+                                        <div class="card-body p-2">
+                                            <small><strong>林 大和</strong> (★★★)</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-4 col-lg-3 mb-2">
+                                    <div class="card bg-light">
+                                        <div class="card-body p-2">
+                                            <small><strong>長谷川 咲希</strong> (★★★★★)</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 一昨日（10/14） -->
+                            <h6 class="text-muted mb-3">一昨日（10/14）- 6名</h6>
+                            <div class="row">
+                                <div class="col-12 col-md-4 col-lg-3 mb-2">
+                                    <div class="card bg-light">
+                                        <div class="card-body p-2">
+                                            <small><strong>山口 悠真</strong> (★★★★)</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-4 col-lg-3 mb-2">
+                                    <div class="card bg-light">
+                                        <div class="card-body p-2">
+                                            <small><strong>池田 陽菜</strong> (★★★★)</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-4 col-lg-3 mb-2">
+                                    <div class="card bg-light">
+                                        <div class="card-body p-2">
+                                            <small><strong>坂本 樹</strong> (★★★★)</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-4 col-lg-3 mb-2">
+                                    <div class="card bg-light">
+                                        <div class="card-body p-2">
+                                            <small><strong>佐々木 愛梨</strong> (★★★★★)</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-4 col-lg-3 mb-2">
+                                    <div class="card bg-light">
+                                        <div class="card-body p-2">
+                                            <small><strong>遠藤 蓮</strong> (★★★)</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-4 col-lg-3 mb-2">
+                                    <div class="card bg-light">
+                                        <div class="card-body p-2">
+                                            <small><strong>平野 優奈</strong> (★★★★)</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 説明 -->
+        <div class="row">
+            <div class="col-12">
+                <div class="alert alert-secondary">
+                    <h6>📖 このモックについて（v2: サブセクション化対応）</h6>
+                    <ul class="mb-0 small">
+                        <li><strong>🔴 重要（P0）</strong>: メンタル★1など、今すぐ対応が必要</li>
+                        <li><strong>🟡 要注意（P1）</strong>: 3日連続メンタル低下（5→4→3など）、早期発見・継続観察</li>
+                        <li><strong>🔵 未対応（P2）</strong>: 日常タスク - 上から順に対応
+                            <ul>
+                                <li>📅 未提出: 声かけを検討（家庭との連携断絶の可能性）</li>
+                                <li>🔵 未読: 連絡帳を確認（日常業務の核心）</li>
+                                <li>⚠️ 反応未選択: 反応を選択（仕上げ）</li>
+                            </ul>
+                        </li>
+                        <li><strong>🟢 対応済み</strong>: 既読 + 反応選択済み、過去3日間表示（日付区切り）</li>
+                    </ul>
+                    <hr>
+                    <p class="mb-0 small text-muted">
+                        <strong>動作確認</strong>: 「🟢 対応済み」のヘッダーをクリックすると、折りたたみが展開されます。<br>
+                        <strong>レスポンシブ</strong>: ブラウザの幅を変えて、スマホ・タブレット・PCでの表示を確認できます。<br>
+                        <strong>サブセクション化</strong>: 未対応セクション内で、未提出 → 未読 → 反応未選択の順に処理できます。
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
