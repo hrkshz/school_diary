@@ -28,6 +28,7 @@ from .models import DailyAttendance
 from .models import DiaryEntry
 from .models import InternalAction
 from .models import TeacherNote
+from .models import TeacherNoteReadStatus
 
 
 def get_students_with_consecutive_decline(classroom, days=3, threshold=2):
@@ -384,7 +385,7 @@ class TeacherDashboardView(LoginRequiredMixin, TemplateView):
         # completedは (student, date) のタプルのリストなので、studentのみ抽出してprefetch
         completed_tuples = classified_students['completed']
         if completed_tuples:
-            completed_student_ids = [s.id for s, d in completed_tuples]
+            completed_student_ids = [s.id for s, _ in completed_tuples]
             students_with_history = list(
                 classroom.students.filter(id__in=completed_student_ids).prefetch_related(
                     Prefetch(
@@ -420,6 +421,35 @@ class TeacherDashboardView(LoginRequiredMixin, TemplateView):
 
         context["classified_students"] = classified_students
         context["needs_response_count"] = needs_response_count
+
+        # 学年共有アラート: 同じ学年の他クラス担任からの共有メモを取得
+        # （Inbox View専用、Table Viewでは非表示）
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+
+        # 同じ学年・同じ年度のクラスIDリストを取得
+        same_grade_classrooms = ClassRoom.objects.filter(
+            grade=classroom.grade,
+            academic_year=classroom.academic_year,
+        ).values_list('id', flat=True)
+
+        # そのクラスの生徒IDリストを取得
+        same_grade_students = User.objects.filter(
+            classes__id__in=same_grade_classrooms
+        ).values_list('id', flat=True)
+
+        # その生徒の共有メモを取得（過去3日以内、自分が作成したもの以外、既読済み除外）
+        shared_notes = TeacherNote.objects.filter(
+            student_id__in=same_grade_students,
+            is_shared=True,
+            created_at__gte=timezone.now() - timedelta(days=3),
+        ).exclude(
+            teacher=self.request.user
+        ).exclude(
+            read_statuses__teacher=self.request.user  # 既読済みメモを除外
+        ).select_related('student', 'teacher').prefetch_related('student__classes').order_by('-created_at')[:5]
+
+        context["shared_notes"] = shared_notes
 
         return context
 
@@ -1384,4 +1414,34 @@ def teacher_save_attendance(request):
             )
 
     messages.success(request, f"{today.strftime('%Y年%m月%d日')}の出席データを保存しました")
+    return redirect("diary:teacher_dashboard")
+
+
+@login_required
+def mark_shared_note_read(request, note_id):
+    """学年共有アラートの既読処理
+
+    POSTリクエストで共有メモを既読にする。
+    権限チェック: 共有メモ（is_shared=True）のみ既読可能。
+    セキュリティ: 自分が作成したメモは既読にできない。
+    """
+    if request.method != "POST":
+        return HttpResponseNotAllowed(["POST"])
+
+    # 共有メモを取得（is_shared=Trueのみ）
+    note = get_object_or_404(TeacherNote, id=note_id, is_shared=True)
+
+    # 自分が作成したメモは既読にできない
+    if note.teacher == request.user:
+        messages.warning(request, "自分が作成したメモは既読にできません。")
+        return redirect("diary:teacher_dashboard")
+
+    # 既読状態を作成（冪等性保証）
+    TeacherNoteReadStatus.objects.get_or_create(
+        teacher=request.user,
+        note=note,
+    )
+
+    student_name = note.student.get_full_name()
+    messages.success(request, f"{student_name}さんの共有メモを既読にしました。")
     return redirect("diary:teacher_dashboard")

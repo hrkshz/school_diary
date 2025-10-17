@@ -12,6 +12,7 @@ from .models import ClassRoom
 from .models import DailyAttendance
 from .models import DiaryEntry
 from .models import TeacherNote
+from .models import TeacherNoteReadStatus
 from .models import UserProfile
 
 User = get_user_model()
@@ -249,6 +250,38 @@ class TeacherNoteAdmin(admin.ModelAdmin):
             },
         ),
     )
+
+
+@admin.register(TeacherNoteReadStatus)
+class TeacherNoteReadStatusAdmin(admin.ModelAdmin):
+    """担任メモ既読状態の管理画面"""
+
+    list_display = ("teacher", "note_student_display", "read_at")
+    list_filter = ("read_at",)
+    search_fields = (
+        "teacher__username",
+        "teacher__first_name",
+        "teacher__last_name",
+        "note__student__username",
+        "note__student__first_name",
+        "note__student__last_name",
+    )
+    readonly_fields = ("read_at",)
+    date_hierarchy = "read_at"
+
+    fieldsets = (
+        (
+            "既読情報",
+            {
+                "fields": ("teacher", "note", "read_at"),
+            },
+        ),
+    )
+
+    @admin.display(description="メモ対象生徒")
+    def note_student_display(self, obj):
+        """メモの対象生徒を表示"""
+        return obj.note.student.get_full_name()
 
 
 @admin.register(DailyAttendance)
