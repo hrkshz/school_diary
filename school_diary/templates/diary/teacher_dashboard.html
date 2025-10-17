@@ -29,11 +29,11 @@
             <div class="d-flex gap-2">
                 {% if request.GET.view == 'table' %}
                 <a href="?" class="btn btn-outline-primary btn-lg">
-                    📬 Inbox View<br><small>優先度別カード表示</small>
+                    📬 Inbox View<br><small>累積タスク管理</small>
                 </a>
                 {% else %}
                 <a href="?view=table" class="btn btn-outline-secondary btn-lg">
-                    📋 テーブルビュー<br><small>一覧表示に切替</small>
+                    📋 テーブルビュー<br><small>本日の出欠・提出確認</small>
                 </a>
                 {% endif %}
                 <a href="{% url 'diary:class_health_dashboard' %}" class="btn btn-primary btn-lg">
@@ -47,38 +47,25 @@
     </div>
 </div>
 
-{% if students or filter_type != 'all' %}
-
-<!-- 本日の概況（ワンライナー、常に表示） -->
+{% if classroom %}
+<!-- 本日の概況（Table View: 出欠・提出状況のみ） -->
+{% if request.GET.view == 'table' %}
 <div class="row mb-3">
     <div class="col-12">
         <div class="alert alert-info mb-0">
             <strong>📊 本日の概況:</strong>
-            <a href="?filter=absent" class="text-decoration-none ms-2">
+            <span class="ms-2">
                 🏠 欠席 <span class="badge {% if absence_data.total_absent >= 5 %}bg-danger{% elif absence_data.total_absent >= 3 %}bg-warning text-dark{% else %}bg-success{% endif %}">{{ absence_data.total_absent }}名</span>
                 <small class="text-muted">（うち病気{{ absence_data.absent_illness }}）</small>
-            </a>
-            {% if classified_students %}
+            </span>
             <span class="mx-2">|</span>
-            <a href="#important" class="text-decoration-none">
-                🔴 重要 <span class="badge bg-danger">{{ classified_students.important|length }}名</span>
-            </a>
-            <span class="mx-2">|</span>
-            <a href="#needs_attention" class="text-decoration-none">
-                🟡 要注意 <span class="badge bg-warning text-dark">{{ classified_students.needs_attention|length }}名</span>
-            </a>
-            <span class="mx-2">|</span>
-            <a href="#needs_response" class="text-decoration-none">
-                🔵 未対応 <span class="badge bg-primary">{{ needs_response_count }}名</span>
-            </a>
-            <span class="mx-2">|</span>
-            <a href="#completed" class="text-decoration-none">
-                ✅ 対応済み <span class="badge bg-success">{{ classified_students.completed|length }}名</span>
-            </a>
-            {% endif %}
+            <span>
+                📝 未提出 <span class="badge {% if today_not_submitted_count >= 5 %}bg-danger{% elif today_not_submitted_count >= 3 %}bg-warning text-dark{% else %}bg-success{% endif %}">{{ today_not_submitted_count }}名</span>
+            </span>
         </div>
     </div>
 </div>
+{% endif %}
 
 {% if request.GET.view == 'table' %}
 <!-- テーブルビュー: フィルタタブと生徒一覧テーブル -->
@@ -289,31 +276,7 @@
 {% endif %}
 {% endif %}
 
-<!-- テーブルビュー表示時のみ: フィルタタブ（3種類に削減） -->
-{% if request.GET.view == 'table' %}
-<div class="row mb-3">
-    <div class="col-12">
-        <ul class="nav nav-tabs">
-            <li class="nav-item">
-                <a class="nav-link {% if filter_type == 'all' %}active{% endif %}" href="?view=table&filter=all">
-                    すべて
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link {% if filter_type == 'important' %}active{% endif %}" href="?view=table&filter=important">
-                    🔴 重要 {% if classified_students.important|length > 0 %}<span class="badge bg-danger">{{ classified_students.important|length }}</span>{% endif %}
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link {% if filter_type == 'absent' %}active{% endif %}" href="?view=table&filter=absent">
-                    🏠 欠席 {% if absence_data.total_absent > 0 %}<span class="badge bg-danger">{{ absence_data.total_absent }}</span>{% endif %}
-                </a>
-            </li>
-        </ul>
-    </div>
-</div>
-
-<!-- 生徒一覧 -->
+<!-- 生徒一覧（Table View） -->
 {% if students %}
 <div class="row">
     <div class="col-12">
@@ -326,84 +289,17 @@
                     <table class="table table-hover mb-0 align-middle">
                         <thead class="table-light">
                             <tr>
-                                {% if filter_type == 'absent' %}
-                                <th style="width: 20%">生徒名</th>
-                                <th style="width: 15%">欠席理由</th>
-                                <th style="width: 15%" class="text-center">最終提出</th>
-                                <th style="width: 10%" class="text-center">体調</th>
-                                <th style="width: 10%" class="text-center">メンタル</th>
-                                <th style="width: 30%">アクション</th>
-                                {% else %}
                                 <th style="width: 15%">生徒名</th>
                                 <th style="width: 12%" class="text-center">出欠</th>
                                 <th style="width: 12%" class="text-center">提出</th>
                                 <th style="width: 46%">状態</th>
                                 <th style="width: 15%" class="text-center">アクション</th>
-                                {% endif %}
                             </tr>
                         </thead>
                         <tbody>
                             {% for data in students %}
                             <tr>
-                                {% if filter_type == 'absent' %}
-                                <!-- 欠席フィルタ専用の行 -->
-                                <td>
-                                    <a href="{% url 'diary:teacher_student_detail' student_id=data.student.id %}" class="text-decoration-none">
-                                        <strong>{{ data.student.get_full_name }}</strong>
-                                    </a>
-                                    <br><span class="badge bg-danger">🏠 欠席</span>
-                                </td>
-                                <td>
-                                    {% if data.absence_reason == 'illness' %}
-                                    <span class="badge bg-warning">🤒 病気</span>
-                                    {% elif data.absence_reason == 'family' %}
-                                    <span class="badge bg-info">🏠 家庭の都合</span>
-                                    {% elif data.absence_reason == 'other' %}
-                                    <span class="badge bg-secondary">その他</span>
-                                    {% else %}
-                                    <span class="text-muted">未設定</span>
-                                    {% endif %}
-                                </td>
-                                <td class="text-center small">
-                                    {% if data.latest_entry %}
-                                    {{ data.latest_entry.submission_date|date:"m/d H:i" }}
-                                    {% else %}
-                                    <span class="text-muted">提出なし</span>
-                                    {% endif %}
-                                </td>
-                                <td class="text-center">
-                                    {% if data.latest_entry %}
-                                        {% if data.latest_entry.health_condition <= 2 %}
-                                        <span class="badge bg-danger">🔴</span>
-                                        {% elif data.latest_entry.health_condition == 3 %}
-                                        <span class="badge bg-warning text-dark">🟡</span>
-                                        {% else %}
-                                        <span class="badge bg-success">🟢</span>
-                                        {% endif %}
-                                    {% else %}
-                                    <span class="text-muted">-</span>
-                                    {% endif %}
-                                </td>
-                                <td class="text-center">
-                                    {% if data.latest_entry %}
-                                        {% if data.latest_entry.mental_condition <= 2 %}
-                                        <span class="badge bg-danger">🔴</span>
-                                        {% elif data.latest_entry.mental_condition == 3 %}
-                                        <span class="badge bg-warning text-dark">🟡</span>
-                                        {% else %}
-                                        <span class="badge bg-success">🟢</span>
-                                        {% endif %}
-                                    {% else %}
-                                    <span class="text-muted">-</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <a href="{% url 'diary:teacher_student_detail' student_id=data.student.id %}" class="btn btn-sm btn-primary">
-                                        詳細を見る
-                                    </a>
-                                </td>
-                                {% else %}
-                                <!-- 通常のテーブル行（5列構成） -->
+                                <!-- Table View標準レイアウト（5列構成） -->
                                 <td>
                                     <a href="{% url 'diary:teacher_student_detail' student_id=data.student.id %}" class="text-decoration-none">
                                         <strong>{{ data.student.get_full_name }}</strong>
@@ -443,21 +339,29 @@
                                 <td>
                                     {% if data.latest_entry %}
                                     <div class="d-flex align-items-start gap-2">
-                                        <div>
-                                            {% if data.latest_entry.mental_condition == 1 %}
-                                            <span class="badge bg-danger">🔴 P0: メンタル★1</span>
-                                            {% elif data.latest_entry.mental_condition <= 2 or data.latest_entry.health_condition <= 2 %}
-                                            <span class="badge bg-warning text-dark">🟡 P1: 要注意</span>
-                                            {% elif not data.latest_entry.public_reaction %}
-                                            <span class="badge bg-primary">🔵 P2: 反応未選択</span>
+                                        <div class="d-flex gap-1">
+                                            <!-- 体調 -->
+                                            {% if data.latest_entry.health_condition <= 2 %}
+                                            <span class="badge bg-danger">体調🔴</span>
+                                            {% elif data.latest_entry.health_condition == 3 %}
+                                            <span class="badge bg-warning text-dark">体調🟡</span>
                                             {% else %}
-                                            <span class="badge bg-success">✅ P3: 正常</span>
+                                            <span class="badge bg-success">体調🟢</span>
+                                            {% endif %}
+
+                                            <!-- メンタル -->
+                                            {% if data.latest_entry.mental_condition <= 2 %}
+                                            <span class="badge bg-danger">メンタル🔴</span>
+                                            {% elif data.latest_entry.mental_condition == 3 %}
+                                            <span class="badge bg-warning text-dark">メンタル🟡</span>
+                                            {% else %}
+                                            <span class="badge bg-success">メンタル🟢</span>
                                             {% endif %}
                                         </div>
                                         <div class="flex-grow-1 small text-muted">
                                             {{ data.latest_entry.get_public_reaction_display|default:"反応未選択" }}
                                             {% if data.latest_entry.content %}
-                                            - {{ data.latest_entry.content|truncatechars:50 }}
+                                            - {{ data.latest_entry.content|truncatechars:30 }}
                                             {% endif %}
                                         </div>
                                     </div>
@@ -470,7 +374,6 @@
                                         詳細を見る
                                     </a>
                                 </td>
-                                {% endif %}
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -481,33 +384,16 @@
     </div>
 </div>
 {% else %}
-<!-- 空状態（テーブルビューのみ） -->
+<!-- 空状態（テーブルビュー） -->
 <div class="row">
     <div class="col-12">
         <div class="text-center py-5">
             <div class="display-1 text-muted">🎉</div>
-            <h3 class="mt-3">
-                {% if filter_type == 'important' %}
-                重要な案件はありません
-                {% elif filter_type == 'absent' %}
-                本日の欠席者はいません
-                {% else %}
-                該当する生徒がいません
-                {% endif %}
-            </h3>
-            <p class="text-muted">
-                {% if filter_type == 'important' %}
-                メンタル★1の生徒はいません。良好な状態です！
-                {% elif filter_type == 'absent' %}
-                全員出席です。素晴らしいですね！
-                {% else %}
-                フィルタを変更して他の生徒を確認できます。
-                {% endif %}
-            </p>
+            <h3 class="mt-3">該当する生徒がいません</h3>
+            <p class="text-muted">担当クラスに生徒が登録されていません。</p>
         </div>
     </div>
 </div>
-{% endif %}
 {% endif %}
 {% else %}
 <div class="alert alert-info">
