@@ -349,15 +349,11 @@
                                 <th style="width: 10%" class="text-center">メンタル</th>
                                 <th style="width: 30%">アクション</th>
                                 {% else %}
-                                <th style="width: 14%">生徒名</th>
-                                <th style="width: 9%" class="text-center">出欠</th>
-                                <th style="width: 9%" class="text-center">提出日時</th>
-                                <th style="width: 7%" class="text-center">体調</th>
-                                <th style="width: 7%" class="text-center">メンタル</th>
-                                <th style="width: 11%">反応</th>
-                                <th style="width: 11%">対応記録</th>
-                                <th style="width: 14%">対応状況</th>
-                                <th style="width: 18%">アクション</th>
+                                <th style="width: 15%">生徒名</th>
+                                <th style="width: 12%" class="text-center">出欠</th>
+                                <th style="width: 12%" class="text-center">提出</th>
+                                <th style="width: 46%">状態</th>
+                                <th style="width: 15%" class="text-center">アクション</th>
                                 {% endif %}
                             </tr>
                         </thead>
@@ -422,7 +418,7 @@
                                     </a>
                                 </td>
                                 {% else %}
-                                <!-- 通常のテーブル行 -->
+                                <!-- 通常のテーブル行（5列構成） -->
                                 <td>
                                     <a href="{% url 'diary:teacher_student_detail' student_id=data.student.id %}" class="text-decoration-none">
                                         <strong>{{ data.student.get_full_name }}</strong>
@@ -451,87 +447,43 @@
                                     <span class="text-muted">-</span>
                                     {% endif %}
                                 </td>
-                                <td class="text-center small">
+                                <td class="text-center">
                                     {% if data.latest_entry %}
-                                    {{ data.latest_entry.submission_date|date:"m/d H:i" }}
+                                    <span class="badge bg-success">✅ 提出済み</span>
+                                    <br><small class="text-muted">{{ data.latest_entry.submission_date|date:"H:i" }}</small>
                                     {% else %}
-                                    <span class="text-muted">-</span>
+                                    <span class="badge bg-secondary">📝 未提出</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if data.latest_entry %}
+                                    <div class="d-flex align-items-start gap-2">
+                                        <div>
+                                            {% if data.latest_entry.mental_condition == 1 %}
+                                            <span class="badge bg-danger">🔴 P0: メンタル★1</span>
+                                            {% elif data.latest_entry.mental_condition <= 2 or data.latest_entry.health_condition <= 2 %}
+                                            <span class="badge bg-warning text-dark">🟡 P1: 要注意</span>
+                                            {% elif not data.latest_entry.public_reaction %}
+                                            <span class="badge bg-primary">🔵 P2: 反応未選択</span>
+                                            {% else %}
+                                            <span class="badge bg-success">✅ P3: 正常</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="flex-grow-1 small text-muted">
+                                            {{ data.latest_entry.get_public_reaction_display|default:"反応未選択" }}
+                                            {% if data.latest_entry.content %}
+                                            - {{ data.latest_entry.content|truncatechars:50 }}
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {% else %}
+                                    <span class="text-muted">本日の連絡帳未提出</span>
                                     {% endif %}
                                 </td>
                                 <td class="text-center">
-                                    {% if data.latest_entry %}
-                                        {% if data.latest_entry.health_condition <= 2 %}
-                                        <span class="badge bg-danger">🔴</span>
-                                        {% elif data.latest_entry.health_condition == 3 %}
-                                        <span class="badge bg-warning text-dark">🟡</span>
-                                        {% else %}
-                                        <span class="badge bg-success">🟢</span>
-                                        {% endif %}
-                                    {% else %}
-                                    <span class="text-muted">-</span>
-                                    {% endif %}
-                                </td>
-                                <td class="text-center">
-                                    {% if data.latest_entry %}
-                                        {% if data.latest_entry.mental_condition <= 2 %}
-                                        <span class="badge bg-danger">🔴</span>
-                                        {% elif data.latest_entry.mental_condition == 3 %}
-                                        <span class="badge bg-warning text-dark">🟡</span>
-                                        {% else %}
-                                        <span class="badge bg-success">🟢</span>
-                                        {% endif %}
-                                    {% else %}
-                                    <span class="text-muted">-</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if data.latest_entry %}
-                                        {% if data.latest_entry.public_reaction %}
-                                        <span class="badge bg-success">{{ data.latest_entry.get_public_reaction_display }}</span>
-                                        {% else %}
-                                        <span class="badge bg-danger">⚠️ 未選択</span>
-                                        {% endif %}
-                                    {% else %}
-                                    <span class="text-muted">-</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if data.latest_entry and data.latest_entry.internal_action %}
-                                    <span class="badge
-                                        {% if data.latest_entry.internal_action == 'urgent' %}bg-danger
-                                        {% elif data.latest_entry.internal_action == 'needs_follow_up' %}bg-warning text-dark
-                                        {% else %}bg-info{% endif %}">
-                                        {{ data.latest_entry.get_internal_action_display }}
-                                    </span>
-                                    {% else %}
-                                    <span class="text-muted">-</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if data.latest_entry and data.latest_entry.internal_action %}
-                                        {% if data.latest_entry.action_status == 'pending' %}
-                                        <span class="badge bg-warning">⚠️ 未対応</span>
-                                        {% elif data.latest_entry.action_status == 'completed' %}
-                                        <span class="badge bg-success">✅ 対応済み</span>
-                                        <br><small class="text-muted">{{ data.latest_entry.action_completed_at|date:"m/d H:i" }}</small>
-                                        {% elif data.latest_entry.action_status == 'in_progress' %}
-                                        <span class="badge bg-primary">🔄 対応中</span>
-                                        {% else %}
-                                        <span class="badge bg-secondary">-</span>
-                                        {% endif %}
-                                    {% else %}
-                                    <span class="text-muted">-</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if data.latest_entry and data.latest_entry.internal_action and data.latest_entry.action_status == 'pending' %}
-                                    <form method="post" action="{% url 'diary:teacher_mark_action_completed' diary_id=data.latest_entry.id %}" class="d-inline">
-                                        {% csrf_token %}
-                                        <button type="submit" class="btn btn-sm btn-success">
-                                            ✓ 対応済みにする
-                                        </button>
-                                    </form>
-                                    {% endif %}
+                                    <a href="{% url 'diary:teacher_student_detail' student_id=data.student.id %}" class="btn btn-sm btn-primary">
+                                        詳細を見る
+                                    </a>
                                 </td>
                                 {% endif %}
                             </tr>

@@ -197,22 +197,27 @@ class TeacherDashboardView(LoginRequiredMixin, TemplateView):
         )
 
         # テンプレート用にデータ整形
+        today = timezone.now().date()
         student_data = []
 
         for student in students:
             latest_entry = (
                 student.latest_entry_list[0] if student.latest_entry_list else None
             )
+
+            # テーブルビュー用: 本日の連絡帳のみに絞る（時点統一）
+            # Inbox Viewは classified_students で別処理のため影響なし
+            today_entry = latest_entry if (latest_entry and latest_entry.entry_date == today) else None
+
             student_data.append(
                 {
                     "student": student,
                     "unread_count": student.unread_count,
-                    "latest_entry": latest_entry,
+                    "latest_entry": today_entry,  # 本日の連絡帳のみ
                 },
             )
 
         # フィルタ処理
-        today = timezone.now().date()
         filter_type = self.request.GET.get("filter", "all")
 
         if filter_type == "urgent":
