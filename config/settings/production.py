@@ -1,8 +1,6 @@
 # ruff: noqa: E501
 from .base import *  # noqa: F403
 from .base import DATABASES
-from .base import INSTALLED_APPS
-from .base import REDIS_URL
 from .base import env
 
 # GENERAL
@@ -10,7 +8,7 @@ from .base import env
 # https://docs.djangoproject.com/en/dev/ref/settings/#secret-key
 SECRET_KEY = env("DJANGO_SECRET_KEY")
 # https://docs.djangoproject.com/en/dev/ref/settings/#allowed-hosts
-ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", ["school_diary.example.com"])
+ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS")
 
 # DATABASES
 # ------------------------------------------------------------------------------
@@ -18,16 +16,11 @@ DATABASES["default"]["CONN_MAX_AGE"] = env.int("CONN_MAX_AGE", default=60)  # ty
 
 # CACHES
 # ------------------------------------------------------------------------------
+# Option D-Ultra: locmem cache (Redis削除)
 CACHES = {
     "default": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": REDIS_URL,
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
-            # Mimicking memcache behavior.
-            # https://github.com/jazzband/django-redis#memcached-exceptions-behavior
-            "IGNORE_EXCEPTIONS": True,
-        },
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "unique-snowflake",
     },
 }
 
@@ -127,7 +120,7 @@ ADMIN_URL = env("DJANGO_ADMIN_URL")
 # Anymail
 # ------------------------------------------------------------------------------
 # https://anymail.readthedocs.io/en/stable/installation/#installing-anymail
-INSTALLED_APPS += ["anymail"]
+# Note: anymail is already included in base.py INSTALLED_APPS
 # https://docs.djangoproject.com/en/dev/ref/settings/#email-backend
 # https://anymail.readthedocs.io/en/stable/installation/#anymail-settings-reference
 # https://anymail.readthedocs.io/en/stable/esps/amazon_ses/
