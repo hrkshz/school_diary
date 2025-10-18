@@ -4,9 +4,11 @@ from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.db.models import Max
+from django.db.models import Q
 from django.utils import timezone
 from django.utils.html import format_html
 
+from .forms import CustomUserCreationForm
 from .forms import UserProfileAdminForm
 from .models import ClassRoom
 from .models import DailyAttendance
@@ -140,10 +142,12 @@ class DiaryEntryAdmin(admin.ModelAdmin):
             # その生徒の全ての連絡帳（過去も含む）
             return qs.filter(student__in=students)
 
-        # 担任: 自分が担任のクラスの生徒のデータにアクセス可能（過去の連絡帳も含む）
+        # 担任: 自分が担任（主or副）のクラスの生徒のデータにアクセス可能（過去の連絡帳も含む）
         if profile.role == "teacher":
-            # 自分が担任のクラスの生徒を取得
-            my_classrooms = ClassRoom.objects.filter(homeroom_teacher=request.user)
+            # 自分が主担任または副担任のクラスの生徒を取得
+            my_classrooms = ClassRoom.objects.filter(
+                Q(homeroom_teacher=request.user) | Q(assistant_teachers=request.user),
+            )
             students = User.objects.filter(classes__in=my_classrooms)
 
             # その生徒の全ての連絡帳（過去も含む）
@@ -192,15 +196,22 @@ class ClassRoomAdmin(admin.ModelAdmin):
         "class_name",
         "academic_year",
         "homeroom_teacher",
+        "assistant_teachers_display",
         "student_count",
     )
-    list_filter = ("academic_year", "grade", "class_name")
+    list_filter = (
+        "academic_year",
+        "grade",
+        "class_name",
+        ("homeroom_teacher", admin.RelatedOnlyFieldListFilter),
+        ("assistant_teachers", admin.RelatedOnlyFieldListFilter),
+    )
     search_fields = (
         "homeroom_teacher__username",
         "homeroom_teacher__first_name",
         "homeroom_teacher__last_name",
     )
-    filter_horizontal = ("students",)
+    filter_horizontal = ("assistant_teachers", "students")
 
     fieldsets = (
         (
@@ -210,12 +221,50 @@ class ClassRoomAdmin(admin.ModelAdmin):
             },
         ),
         (
-            "担任・生徒",
+            "担任設定",
             {
-                "fields": ("homeroom_teacher", "students"),
+                "fields": ("homeroom_teacher", "assistant_teachers"),
+                "description": "主担任は1名、副担任は複数設定可能です。",
+            },
+        ),
+        (
+            "生徒",
+            {
+                "fields": ("students",),
+                "description": "このクラスに所属する生徒を選択してください。",
             },
         ),
     )
+
+    @admin.display(description="副担任")
+    def assistant_teachers_display(self, obj):
+        """副担任を見やすく表示"""
+        assistants = obj.assistant_teachers.all()
+        if not assistants:
+            return "-"
+        names = [a.get_full_name() or a.username for a in assistants]
+        return ", ".join(names)
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        """ForeignKeyの選択肢をフィルタリング（Phase 1）"""
+        if db_field.name == "homeroom_teacher":
+            # 担任権限を持つユーザーのみ表示
+            kwargs["queryset"] = User.objects.filter(
+                profile__role__in=["teacher", "grade_leader", "school_leader"],
+            )
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+    def formfield_for_manytomany(self, db_field, request, **kwargs):
+        """ManyToManyFieldの選択肢をフィルタリング（Phase 1 + Phase 2）"""
+        if db_field.name == "students":
+            # 生徒のみ表示
+            kwargs["queryset"] = User.objects.filter(profile__role="student")
+        elif db_field.name == "assistant_teachers":
+            # 担任権限を持つユーザーのみ表示
+            kwargs["queryset"] = User.objects.filter(
+                profile__role__in=["teacher", "grade_leader", "school_leader"],
+            )
+        return super().formfield_for_manytomany(db_field, request, **kwargs)
 
 
 @admin.register(TeacherNote)
@@ -328,31 +377,25 @@ class DailyAttendanceAdmin(admin.ModelAdmin):
     )
 
 
-class UserProfileInline(admin.StackedInline):
-    """ユーザープロフィール（Inline表示）"""
-
-    model = UserProfile
-    form = UserProfileAdminForm
-    can_delete = False
-    verbose_name = "プロフィール"
-    verbose_name_plural = "プロフィール"
-
-    fieldsets = (
-        (
-            "役割設定",
-            {
-                "fields": ("role", "managed_grade"),
-                "description": (
-                    "役割を設定すると、管理画面でのアクセス権限が自動的に変更されます。<br>"
-                    "<strong>管理学年</strong>は学年主任を選択した場合のみ入力してください。"
-                ),
-            },
-        ),
-    )
-
-
 # Userモデルの既存登録を解除
 admin.site.unregister(User)
+
+
+class UserProfileInline(admin.StackedInline):
+    """ユーザープロフィール編集インライン（ベストプラクティス実装）
+
+    新規作成時はSignalsで自動作成されるため非表示。
+    編集時のみ表示して役割・管理学年を変更可能にする。
+    """
+    model = UserProfile
+    can_delete = False  # UserProfileは必須（削除不可）
+    max_num = 1  # OneToOneFieldなので1つのみ
+    verbose_name_plural = "ユーザープロフィール"
+    fk_name = "user"
+    fields = ("role", "managed_grade")
+
+    # UserProfileAdminFormを使用して管理学年の入力制御を適用
+    form = UserProfileAdminForm
 
 
 @admin.register(User)
@@ -360,9 +403,8 @@ class CustomUserAdmin(BaseUserAdmin):
     """ユーザー管理画面（役割・認証状態を可視化）"""
 
     list_display = (
-        "username",
-        "email",
         "full_name_display",
+        "email",
         "role_display",
         "email_verified_display",
         "homeroom_class_display",
@@ -378,7 +420,11 @@ class CustomUserAdmin(BaseUserAdmin):
 
     actions = list(BaseUserAdmin.actions or []) + ["activate_email_for_selected"]  # type: ignore
 
-    inlines = [UserProfileInline]
+    # カスタムユーザー作成フォームを使用
+    add_form = CustomUserCreationForm
+
+    # UserProfileをインライン編集可能にする
+    inlines = (UserProfileInline,)
 
     # fieldsetsを明示的に定義（編集画面用）
     fieldsets = (
@@ -399,17 +445,57 @@ class CustomUserAdmin(BaseUserAdmin):
             None,
             {
                 "classes": ("wide",),
-                "fields": ("username", "email", "password1", "password2"),
+                "fields": ("email", "last_name", "first_name", "role", "managed_grade", "password1", "password2"),
                 "description": (
-                    "<strong>注意</strong>: メールアドレスは必須です。ログイン時に使用されます。"
+                    "<strong>新しいユーザーを作成します。</strong><br>"
+                    "ユーザー名は姓+名から自動生成されます。<br>"
+                    "メールアドレスでログインします。"
                 ),
             },
         ),
     )
 
+    def get_inline_instances(self, request, obj=None):
+        """インライン表示制御（ベストプラクティス）
+
+        新規作成時（obj=None）はSignalsでUserProfileが自動作成されるため、
+        インラインを非表示にしてSignalsとの競合を回避。
+        編集時のみUserProfileInlineを表示して役割変更を可能にする。
+        """
+        if not obj:
+            return list()
+        return super().get_inline_instances(request, obj)
+
+    def save_model(self, request, obj, form, change):
+        """ユーザー保存時の処理
+
+        新規作成時（change=False）:
+            CustomUserCreationFormのsave()メソッドが正しく実行されるようにする。
+            roleとmanaged_gradeをUserProfileに確実に保存する。
+
+        編集時（change=True）:
+            通常の保存処理（UserProfileはInlineAdminで処理される）
+        """
+        super().save_model(request, obj, form, change)
+
+        # 新規作成時のみ、roleとmanaged_gradeを明示的に設定
+        if not change and isinstance(form, CustomUserCreationForm):
+            role = form.cleaned_data.get("role")
+            managed_grade = form.cleaned_data.get("managed_grade")
+
+            # UserProfileを更新（Signalsで既に作成済み）
+            profile = obj.profile
+            if role:
+                profile.role = role
+            if managed_grade:
+                profile.managed_grade = managed_grade
+            profile.save()
+
     @admin.display(description="氏名")
     def full_name_display(self, obj):
-        """フルネーム表示"""
+        """フルネーム表示（日本語順: 姓 + 名）"""
+        if obj.last_name and obj.first_name:
+            return f"{obj.last_name} {obj.first_name}"
         return obj.get_full_name() or "-"
 
     @admin.display(description="役割")
@@ -562,21 +648,6 @@ try:
     admin.site.unregister(ImportHistory)
 except (ImportError, NotRegistered):
     pass  # io未インストール、またはadmin登録されていない
-
-try:
-    from django_celery_beat.models import ClockedSchedule
-    from django_celery_beat.models import CrontabSchedule
-    from django_celery_beat.models import IntervalSchedule
-    from django_celery_beat.models import PeriodicTask
-    from django_celery_beat.models import SolarSchedule
-
-    admin.site.unregister(PeriodicTask)
-    admin.site.unregister(ClockedSchedule)
-    admin.site.unregister(CrontabSchedule)
-    admin.site.unregister(SolarSchedule)
-    admin.site.unregister(IntervalSchedule)
-except (ImportError, NotRegistered):
-    pass  # celery未インストール、またはadmin登録されていない
 
 # 不要なモデルを削除（確実に存在するもの）
 try:

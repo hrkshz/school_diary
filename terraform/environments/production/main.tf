@@ -1,11 +1,12 @@
 module "vpc" {
   source = "../../modules/vpc"
 
-  project_name        = var.project_name
-  environment         = var.environment
-  vpc_cidr            = var.vpc_cidr
-  public_subnet_cidr  = var.public_subnet_cidr
-  private_subnet_cidr = var.private_subnet_cidr
+  project_name         = var.project_name
+  environment          = var.environment
+  vpc_cidr             = var.vpc_cidr
+  public_subnet_cidr   = var.public_subnet_cidr
+  private_subnet_cidr  = var.private_subnet_cidr
+  private_subnet_cidr_2 = var.private_subnet_cidr_2
 }
 
 module "security_groups" {
@@ -41,7 +42,7 @@ module "rds" {
   project_name       = var.project_name
   environment        = var.environment
   vpc_id             = module.vpc.vpc_id
-  subnet_ids         = [module.vpc.private_subnet_id]
+  subnet_ids         = module.vpc.private_subnet_ids
   security_group_ids = [module.security_groups.rds_security_group_id]
 
   db_name                    = var.db_name

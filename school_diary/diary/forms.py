@@ -1,3 +1,4 @@
+from allauth.account.models import EmailAddress
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import HTML
 from crispy_forms.layout import Column
@@ -6,12 +7,16 @@ from crispy_forms.layout import Layout
 from crispy_forms.layout import Row
 from crispy_forms.layout import Submit
 from django import forms
+from django.contrib.auth import get_user_model
+from django.contrib.auth.forms import UserCreationForm
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 
 from .models import DiaryEntry
 from .models import UserProfile
 from .utils import get_previous_school_day
+
+User = get_user_model()
 
 
 class DiaryEntryForm(forms.ModelForm):
@@ -128,3 +133,118 @@ class UserProfileAdminForm(forms.ModelForm):
             )
 
         return cleaned_data
+
+
+class CustomUserCreationForm(UserCreationForm):
+    """カスタムユーザー作成フォーム（管理画面用）
+
+    1画面で以下を設定可能:
+    - メールアドレス（ログイン用）
+    - 姓名（日本式）
+    - 役割（UserProfile）
+    - 管理学年（学年主任のみ）
+    - パスワード
+
+    ユーザー名は姓+名で自動生成されます。
+    """
+
+    email = forms.EmailField(
+        required=True,
+        label="メールアドレス",
+        help_text="ログイン時に使用されます",
+    )
+    last_name = forms.CharField(
+        required=True,
+        max_length=150,
+        label="姓",
+        help_text="例: 山田",
+    )
+    first_name = forms.CharField(
+        required=True,
+        max_length=150,
+        label="名",
+        help_text="例: 太郎",
+    )
+    role = forms.ChoiceField(
+        choices=UserProfile.ROLE_CHOICES,
+        required=True,
+        label="役割",
+    )
+    managed_grade = forms.TypedChoiceField(
+        choices=[("", "---"), (1, "1年"), (2, "2年"), (3, "3年")],
+        coerce=lambda x: int(x) if x and x != "" else None,
+        required=False,
+        empty_value=None,
+        label="管理学年",
+        help_text="学年主任の場合のみ選択してください",
+    )
+
+    class Meta:
+        model = User
+        fields = ("email", "last_name", "first_name", "role", "managed_grade", "password1", "password2")
+
+    def clean_email(self):
+        """メールアドレスの重複チェック"""
+        email = self.cleaned_data["email"]
+        if User.objects.filter(email=email).exists():
+            raise ValidationError("このメールアドレスは既に使用されています。")
+        return email
+
+    def clean(self):
+        """学年主任の場合、管理学年が必須"""
+        cleaned_data = super().clean()
+        role = cleaned_data.get("role")
+        managed_grade = cleaned_data.get("managed_grade")
+
+        if role == "grade_leader" and not managed_grade:
+            self.add_error("managed_grade", "学年主任の場合、管理学年の選択が必須です。")
+
+        return cleaned_data
+
+    def save(self, commit=True):
+        """ユーザーとUserProfileを作成
+
+        - username: 姓+名で自動生成（重複時は連番追加）
+        - is_staff: 生徒以外はTrue
+        - UserProfile.role: フォームで選択した役割
+        - EmailAddress: verified=True（管理者作成なので認証済み）
+        """
+        user = super().save(commit=False)
+        user.email = self.cleaned_data["email"]
+        user.last_name = self.cleaned_data["last_name"]
+        user.first_name = self.cleaned_data["first_name"]
+
+        # ユーザー名を姓+名で生成（重複時は連番追加）
+        base_username = f"{user.last_name}{user.first_name}"
+        username = base_username
+        counter = 2
+        while User.objects.filter(username=username).exists():
+            username = f"{base_username}{counter}"
+            counter += 1
+        user.username = username
+
+        # 生徒以外はis_staffをTrue
+        role = self.cleaned_data["role"]
+        if role != "student":
+            user.is_staff = True
+
+        if commit:
+            user.save()
+
+            # UserProfileを更新（signals.pyで自動作成済み）
+            profile = user.profile
+            profile.role = role
+            managed_grade = self.cleaned_data.get("managed_grade")
+            if managed_grade:
+                profile.managed_grade = managed_grade
+            profile.save()
+
+            # メールアドレスを認証済みとして登録
+            EmailAddress.objects.create(
+                user=user,
+                email=user.email,
+                verified=True,
+                primary=True,
+            )
+
+        return user

@@ -277,7 +277,14 @@ class ClassRoom(models.Model):
         related_name="homeroom_classes",
         null=True,
         blank=True,
-        verbose_name="担任",
+        verbose_name="主担任",
+    )
+    assistant_teachers = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        related_name="assistant_classes",
+        verbose_name="副担任",
+        blank=True,
+        help_text="副担任や学年主任など、このクラスの連絡帳を閲覧できる先生を設定",
     )
     students = models.ManyToManyField(
         settings.AUTH_USER_MODEL,
@@ -303,6 +310,21 @@ class ClassRoom(models.Model):
         """生徒数を返す"""
         return self.students.count()
 
+    @property
+    def all_teachers(self):
+        """主担任と副担任の全リストを返す"""
+        teachers = []
+        if self.homeroom_teacher:
+            teachers.append(self.homeroom_teacher)
+        teachers.extend(self.assistant_teachers.all())
+        return teachers
+
+    def is_teacher_of_class(self, user):
+        """指定ユーザーがこのクラスの担任（主or副）かチェック"""
+        if self.homeroom_teacher == user:
+            return True
+        return self.assistant_teachers.filter(id=user.id).exists()
+
 
 class UserProfile(AuditMixin):
     """ユーザープロフィール（役割ベースの権限管理、変更履歴を自動記録）"""
@@ -315,6 +337,7 @@ class UserProfile(AuditMixin):
     )
 
     ROLE_CHOICES = [
+        ("admin", "システム管理者"),
         ("student", "生徒"),
         ("teacher", "担任"),
         ("grade_leader", "学年主任"),

@@ -52,6 +52,12 @@ variable "private_subnet_cidr" {
   default     = "10.0.2.0/24"
 }
 
+variable "private_subnet_cidr_2" {
+  description = "CIDR block for private subnet 2 (RDS Multi-AZ)"
+  type        = string
+  default     = "10.0.3.0/24"
+}
+
 # RDS Variables
 variable "db_name" {
   description = "Database name"
@@ -86,7 +92,7 @@ variable "db_allocated_storage" {
 variable "db_engine_version" {
   description = "PostgreSQL engine version"
   type        = string
-  default     = "16.1"
+  default     = "16.10"
 }
 
 variable "db_multi_az" {

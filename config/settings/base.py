@@ -91,7 +91,7 @@ LOCAL_APPS = [
     "kits.accounts.apps.AccountsConfig",
     "kits.approvals.apps.ApprovalsConfig",
     "kits.audit.apps.AuditConfig",
-    "kits.notifications.apps.NotificationsConfig",
+    # "kits.notifications.apps.NotificationsConfig",  # Disabled: Celery dependency removed
     "kits.reports",
     "kits.io",
 ]
@@ -275,7 +275,7 @@ LOGGING = {
 # django-allauth
 # ------------------------------------------------------------------------------
 # https://docs.allauth.org/en/latest/account/configuration.html
-ACCOUNT_ALLOW_REGISTRATION = env.bool("DJANGO_ACCOUNT_ALLOW_REGISTRATION", default=True)  # type: ignore[arg-type]
+ACCOUNT_ALLOW_REGISTRATION = env.bool("DJANGO_ACCOUNT_ALLOW_REGISTRATION", default=False)  # type: ignore[arg-type]
 ACCOUNT_LOGIN_METHODS = {"email"}
 ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
 ACCOUNT_EMAIL_VERIFICATION = "mandatory"
@@ -299,10 +299,10 @@ REST_FRAMEWORK = {
     "PAGE_SIZE": 100,
 }
 
-# kits.notifications
+# kits.notifications (Disabled: Celery dependency removed in Option D-Ultra)
 # ------------------------------------------------------------------------------
 NOTIFICATIONS_CONFIG = {
-    "ENABLED": True,
+    "ENABLED": False,
     "DEFAULT_BACKEND": "email",  # email, in_app, push
     "BATCH_SIZE": 100,  # 一度に送信する通知の最大数
     "RETRY_ATTEMPTS": 3,  # 失敗時のリトライ回数
@@ -372,7 +372,6 @@ JAZZMIN_SETTINGS = {
         "socialaccount",  # 外部アカウント
         "mfa",  # 多要素認証
         "sites",  # サイト
-        "django_celery_beat",  # 定期タスク
         "demos",  # デモ・参考実装
     ],
 
@@ -391,7 +390,6 @@ JAZZMIN_SETTINGS = {
         "audit": "fas fa-history",
         "account": "fas fa-user-circle",
         "mfa": "fas fa-shield-alt",
-        "django_celery_beat": "fas fa-clock",
         "demos": "fas fa-flask",
     },
 

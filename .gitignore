@@ -300,3 +300,12 @@ docs/MCPサーバー推奨設定.md
 docs/VS_Code_拡張機能ガイド.md
 docs/kits*.md
 docs/通知機能テスト手順書.md
+
+# プロジェクトバックアップファイル
+*.tar.gz
+
+# モックアップHTML
+mock_*.html
+
+# Claude詳細ルールバックアップ
+CLAUDE_DETAILED_RULES.md

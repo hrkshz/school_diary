@@ -1104,8 +1104,8 @@ class GradeOverviewView(LoginRequiredMixin, TemplateView):
     template_name = "diary/grade_overview.html"
 
     def dispatch(self, request, *args, **kwargs):
-        # grade_leaderのみアクセス可能
-        if request.user.profile.role != "grade_leader":
+        # grade_leaderまたはスーパーユーザーのみアクセス可能
+        if not request.user.is_superuser and request.user.profile.role != "grade_leader":
             return redirect("home")
         return super().dispatch(request, *args, **kwargs)
 
@@ -1244,8 +1244,8 @@ class SchoolOverviewView(LoginRequiredMixin, TemplateView):
     template_name = "diary/school_overview.html"
 
     def dispatch(self, request, *args, **kwargs):
-        # school_leaderのみアクセス可能
-        if request.user.profile.role != "school_leader":
+        # school_leaderまたはスーパーユーザーのみアクセス可能
+        if not request.user.is_superuser and request.user.profile.role != "school_leader":
             return redirect("home")
         return super().dispatch(request, *args, **kwargs)
 
