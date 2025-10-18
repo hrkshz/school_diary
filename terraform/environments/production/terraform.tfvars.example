@@ -1,0 +1,30 @@
+# AWS Region
+aws_region = "ap-northeast-1"
+
+# Project Configuration
+project_name = "school-diary"
+environment  = "production"
+
+# Network Configuration
+vpc_cidr            = "10.0.0.0/16"
+public_subnet_cidr  = "10.0.1.0/24"
+private_subnet_cidr = "10.0.2.0/24"
+
+# EC2 Configuration
+instance_type = "t3.micro"
+key_name      = "your-ec2-key-pair-name"  # TODO: Replace with your EC2 key pair name
+admin_ip      = "0.0.0.0/0"                # TODO: Replace with your IP address (e.g., "203.0.113.0/32")
+
+# RDS Configuration
+db_name                    = "school_diary"
+db_username                = "postgres"
+db_password                = "CHANGE_ME_STRONG_PASSWORD_MIN_8_CHARS" # TODO: Set a strong password
+db_instance_class          = "db.t3.micro"
+db_allocated_storage       = 20
+db_engine_version          = "16.1"
+db_multi_az                = false
+db_backup_retention_period = 7
+
+# S3 Configuration
+s3_bucket_name        = "school-diary-prod-static-media-20250118" # TODO: Change to ensure global uniqueness
+s3_versioning_enabled = true
