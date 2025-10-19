@@ -51,8 +51,29 @@ class ActionStatus(models.TextChoices):
     NOT_REQUIRED = "not_required", "対応不要"
 
 
+class DiaryEntryQuerySet(models.QuerySet):
+    """DiaryEntry用の最適化されたQuerySet"""
+
+    def with_related(self):
+        """関連オブジェクトをprefetch（N+1クエリ解消）"""
+        return self.select_related("student", "classroom", "read_by", "action_completed_by")
+
+
+class DiaryEntryManager(models.Manager):
+    """DiaryEntry用のカスタムManager"""
+
+    def get_queryset(self):
+        return DiaryEntryQuerySet(self.model, using=self._db)
+
+    def with_related(self):
+        return self.get_queryset().with_related()
+
+
 class DiaryEntry(models.Model):
     """連絡帳エントリー"""
+
+    # カスタムManager
+    objects = DiaryEntryManager()
 
     # 体調・メンタルの選択肢
     CONDITION_CHOICES = [
@@ -228,8 +249,29 @@ class DiaryEntry(models.Model):
         return not self.is_read
 
 
+class ClassRoomQuerySet(models.QuerySet):
+    """ClassRoom用の最適化されたQuerySet"""
+
+    def with_related(self):
+        """関連オブジェクトをprefetch（N+1クエリ解消）"""
+        return self.select_related("homeroom_teacher").prefetch_related("assistant_teachers")
+
+
+class ClassRoomManager(models.Manager):
+    """ClassRoom用のカスタムManager"""
+
+    def get_queryset(self):
+        return ClassRoomQuerySet(self.model, using=self._db)
+
+    def with_related(self):
+        return self.get_queryset().with_related()
+
+
 class ClassRoom(models.Model):
     """クラス情報"""
+
+    # カスタムManager
+    objects = ClassRoomManager()
 
     CLASS_NAME_CHOICES = [
         ("A", "A組"),
@@ -345,8 +387,29 @@ class UserProfile(AuditMixin):
         return f"{self.user.username} - {self.get_role_display()}"
 
 
+class TeacherNoteQuerySet(models.QuerySet):
+    """TeacherNote用の最適化されたQuerySet"""
+
+    def with_related(self):
+        """関連オブジェクトをprefetch（N+1クエリ解消）"""
+        return self.select_related("teacher", "student")
+
+
+class TeacherNoteManager(models.Manager):
+    """TeacherNote用のカスタムManager"""
+
+    def get_queryset(self):
+        return TeacherNoteQuerySet(self.model, using=self._db)
+
+    def with_related(self):
+        return self.get_queryset().with_related()
+
+
 class TeacherNote(models.Model):
     """担任メモ（生徒の長期的な観察記録・引継ぎ情報）"""
+
+    # カスタムManager
+    objects = TeacherNoteManager()
 
     teacher = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -389,8 +452,29 @@ class TeacherNote(models.Model):
         return f"{teacher_name} → {student_name}"
 
 
+class TeacherNoteReadStatusQuerySet(models.QuerySet):
+    """TeacherNoteReadStatus用の最適化されたQuerySet"""
+
+    def with_related(self):
+        """関連オブジェクトをprefetch（N+1クエリ解消）"""
+        return self.select_related("teacher", "note", "note__teacher", "note__student")
+
+
+class TeacherNoteReadStatusManager(models.Manager):
+    """TeacherNoteReadStatus用のカスタムManager"""
+
+    def get_queryset(self):
+        return TeacherNoteReadStatusQuerySet(self.model, using=self._db)
+
+    def with_related(self):
+        return self.get_queryset().with_related()
+
+
 class TeacherNoteReadStatus(models.Model):
     """担任メモの既読状態管理（学年共有アラート用）"""
+
+    # カスタムManager
+    objects = TeacherNoteReadStatusManager()
 
     teacher = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -441,8 +525,29 @@ class AbsenceReason(models.TextChoices):
     OTHER = "other", "その他"
 
 
+class DailyAttendanceQuerySet(models.QuerySet):
+    """DailyAttendance用の最適化されたQuerySet"""
+
+    def with_related(self):
+        """関連オブジェクトをprefetch（N+1クエリ解消）"""
+        return self.select_related("student", "classroom", "noted_by")
+
+
+class DailyAttendanceManager(models.Manager):
+    """DailyAttendance用のカスタムManager"""
+
+    def get_queryset(self):
+        return DailyAttendanceQuerySet(self.model, using=self._db)
+
+    def with_related(self):
+        return self.get_queryset().with_related()
+
+
 class DailyAttendance(models.Model):
     """出席記録（学級閉鎖判断の基礎データ）"""
+
+    # カスタムManager
+    objects = DailyAttendanceManager()
 
     student = models.ForeignKey(
         settings.AUTH_USER_MODEL,

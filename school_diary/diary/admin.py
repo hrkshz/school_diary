@@ -107,8 +107,9 @@ class DiaryEntryAdmin(admin.ModelAdmin):
         )
 
     def get_queryset(self, request):
-        """役割に応じてアクセス可能なデータをフィルタ"""
-        qs = super().get_queryset(request)
+        """役割に応じてアクセス可能なデータをフィルタ（N+1クエリ最適化）"""
+        # N+1クエリ解消: with_related()を使用
+        qs = super().get_queryset(request).with_related()
 
         # スーパーユーザーは全てのデータにアクセス可能
         if request.user.is_superuser:
@@ -236,6 +237,10 @@ class ClassRoomAdmin(admin.ModelAdmin):
         ),
     )
 
+    def get_queryset(self, request):
+        """N+1クエリ解消: with_related()を使用"""
+        return super().get_queryset(request).with_related()
+
     @admin.display(description="副担任")
     def assistant_teachers_display(self, obj):
         """副担任を見やすく表示"""
@@ -300,6 +305,10 @@ class TeacherNoteAdmin(admin.ModelAdmin):
         ),
     )
 
+    def get_queryset(self, request):
+        """N+1クエリ解消: with_related()を使用"""
+        return super().get_queryset(request).with_related()
+
 
 @admin.register(TeacherNoteReadStatus)
 class TeacherNoteReadStatusAdmin(admin.ModelAdmin):
@@ -326,6 +335,10 @@ class TeacherNoteReadStatusAdmin(admin.ModelAdmin):
             },
         ),
     )
+
+    def get_queryset(self, request):
+        """N+1クエリ解消: with_related()を使用"""
+        return super().get_queryset(request).with_related()
 
     @admin.display(description="メモ対象生徒")
     def note_student_display(self, obj):
@@ -375,6 +388,10 @@ class DailyAttendanceAdmin(admin.ModelAdmin):
             },
         ),
     )
+
+    def get_queryset(self, request):
+        """N+1クエリ解消: with_related()を使用"""
+        return super().get_queryset(request).with_related()
 
 
 # Userモデルの既存登録を解除
