@@ -3,6 +3,7 @@
 from datetime import timedelta
 
 from django.contrib import messages
+from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Count
@@ -19,6 +20,11 @@ from django.views.generic import ListView
 from django.views.generic import TemplateView
 from django.views.generic import UpdateView
 
+from . import alert_service
+from .adapters import RoleBasedRedirectAdapter
+from .constants import DashboardSettings
+from .constants import HealthThresholds
+from .constants import NoteSettings
 from .forms import DiaryEntryForm
 from .models import AbsenceReason
 from .models import ActionStatus
@@ -29,9 +35,19 @@ from .models import DiaryEntry
 from .models import InternalAction
 from .models import TeacherNote
 from .models import TeacherNoteReadStatus
+from .utils import check_consecutive_decline
+from .utils import check_critical_mental_state
+from .utils import get_previous_school_day
+
+# グローバル変数として User を定義（関数内importを避けるため）
+User = get_user_model()
 
 
-def get_students_with_consecutive_decline(classroom, days=3, threshold=2):
+def get_students_with_consecutive_decline(
+    classroom,
+    days=HealthThresholds.CONSECUTIVE_DAYS,
+    threshold=HealthThresholds.POOR_CONDITION,
+):
     """3日連続で体調/メンタルが低下している生徒を検出
 
     いじめ・不登校の早期発見のため、継続的な不調を検知する。
@@ -107,8 +123,6 @@ class StudentDashboardView(LoginRequiredMixin, TemplateView):
         )
 
         # 今日の提出済みか確認（前登校日ベース）
-        from .utils import get_previous_school_day
-
         expected_date = get_previous_school_day(timezone.now().date())
         context["today_submitted"] = DiaryEntry.objects.filter(
             student=self.request.user,
@@ -288,8 +302,6 @@ class TeacherDashboardView(LoginRequiredMixin, TemplateView):
         context["all_students"] = all_students_with_attendance
 
         # アラート生成（MAP-2A: 早期警告システム）
-        from .utils import check_consecutive_decline, check_critical_mental_state, get_previous_school_day
-
         alerts = []
 
         # 全生徒をチェック（フィルタに依存しない早期警告）
@@ -326,10 +338,10 @@ class TeacherDashboardView(LoginRequiredMixin, TemplateView):
         poor_health_count = DiaryEntry.objects.filter(
             student__classes=classroom,
             entry_date=previous_date,
-            health_condition__lte=2,
+            health_condition__lte=HealthThresholds.POOR_CONDITION,
         ).count()
 
-        if poor_health_count >= 5:
+        if poor_health_count >= HealthThresholds.CLASS_ALERT_THRESHOLD:
             alerts.append({
                 "level": "warning",
                 "type": "class_health",
@@ -341,8 +353,6 @@ class TeacherDashboardView(LoginRequiredMixin, TemplateView):
         context["alerts"] = alerts
 
         # Inbox Pattern: 6カテゴリ分類（Important/NeedsAttention/NotSubmitted/Unread/NoReaction/Completed）
-        from . import alert_service
-
         classified_students = alert_service.classify_students(classroom)
 
         # 未対応の合計を計算（テンプレート側での複雑な計算を避ける）
@@ -424,9 +434,6 @@ class TeacherDashboardView(LoginRequiredMixin, TemplateView):
 
         # 学年共有アラート: 同じ学年の他クラス担任からの共有メモを取得
         # （Inbox View専用、Table Viewでは非表示）
-        from django.contrib.auth import get_user_model
-        User = get_user_model()
-
         # 同じ学年・同じ年度のクラスIDリストを取得
         same_grade_classrooms = ClassRoom.objects.filter(
             grade=classroom.grade,
@@ -438,16 +445,16 @@ class TeacherDashboardView(LoginRequiredMixin, TemplateView):
             classes__id__in=same_grade_classrooms
         ).values_list('id', flat=True)
 
-        # その生徒の共有メモを取得（過去3日以内、自分が作成したもの以外、既読済み除外）
+        # その生徒の共有メモを取得（過去N日以内、自分が作成したもの以外、既読済み除外）
         shared_notes = TeacherNote.objects.filter(
             student_id__in=same_grade_students,
             is_shared=True,
-            created_at__gte=timezone.now() - timedelta(days=3),
+            created_at__gte=timezone.now() - timedelta(days=NoteSettings.SHARED_NOTE_DAYS),
         ).exclude(
             teacher=self.request.user
         ).exclude(
             read_statuses__teacher=self.request.user  # 既読済みメモを除外
-        ).select_related('student', 'teacher').prefetch_related('student__classes').order_by('-created_at')[:5]
+        ).select_related('student', 'teacher').prefetch_related('student__classes').order_by('-created_at')[:NoteSettings.SHARED_NOTE_LIMIT]
 
         context["shared_notes"] = shared_notes
 
@@ -596,9 +603,6 @@ class TeacherStudentDetailView(LoginRequiredMixin, ListView):
         classroom = self.request.user.homeroom_classes.first()
 
         if classroom:
-            from django.contrib.auth import get_user_model
-
-            User = get_user_model()
             student = get_object_or_404(
                 User,
                 id=student_id,
@@ -751,8 +755,6 @@ def home_redirect_view(request):
         return redirect("/accounts/login/")
 
     # ログイン済みユーザー → RoleBasedRedirectAdapterのロジックを再利用
-    from .adapters import RoleBasedRedirectAdapter
-
     adapter = RoleBasedRedirectAdapter()
     redirect_url = adapter.get_login_redirect_url(request)
     return redirect(redirect_url)
@@ -774,8 +776,6 @@ def teacher_add_note(request, student_id):
         return HttpResponseForbidden()
 
     # 生徒を取得（自分のクラスの生徒のみ）
-    from django.contrib.auth import get_user_model
-    User = get_user_model()
     student = get_object_or_404(User, id=student_id, classes=classroom)
 
     # メモ内容を取得
@@ -783,8 +783,11 @@ def teacher_add_note(request, student_id):
     is_shared = request.POST.get("is_shared") == "on"
 
     # バリデーション
-    if not note or len(note) < 10:
-        messages.error(request, "メモは10文字以上で入力してください。")
+    if not note or len(note) < NoteSettings.MIN_NOTE_LENGTH:
+        messages.error(
+            request,
+            f"メモは{NoteSettings.MIN_NOTE_LENGTH}文字以上で入力してください。"
+        )
         return redirect("diary:teacher_student_detail", student_id=student_id)
 
     # メモを作成
@@ -822,8 +825,8 @@ def teacher_edit_note(request, note_id):
     is_shared = request.POST.get("is_shared") == "on"
 
     # バリデーション
-    if not note or len(note) < 10:
-        messages.error(request, "メモは10文字以上で入力してください。")
+    if not note or len(note) < NoteSettings.MIN_NOTE_LENGTH:
+        messages.error(request, f"メモは{NoteSettings.MIN_NOTE_LENGTH}文字以上で入力してください。")
         return redirect("diary:teacher_student_detail", student_id=teacher_note.student.id)
 
     # メモを更新
@@ -880,9 +883,9 @@ class ClassHealthDashboardView(LoginRequiredMixin, TemplateView):
         # - 7日間: 日常的な振り返りに最適
         # - 14日間: 週次レポート、2週間の推移確認
         # - 30日間: 削除理由: ヒートマップセルが小さすぎてUI破綻、実務的にも不要
-        days = int(self.request.GET.get("days", 7))
-        if days not in [7, 14]:
-            days = 7  # バリデーション（7日/14日以外は7日にフォールバック）
+        days = int(self.request.GET.get("days", DashboardSettings.HEALTH_DASHBOARD_DEFAULT_DAYS))
+        if days not in DashboardSettings.HEALTH_DASHBOARD_DAYS:
+            days = DashboardSettings.HEALTH_DASHBOARD_DEFAULT_DAYS  # バリデーション（サポート外の日数はデフォルトにフォールバック）
 
         # 担当クラスを取得
         classroom = self.request.user.homeroom_classes.first()
@@ -932,10 +935,10 @@ class ClassHealthDashboardView(LoginRequiredMixin, TemplateView):
                 total_submitted_entries += 1
 
                 # 体調・メンタル低下者をカウント（期間全体 + 日付別）
-                if entry.health_condition <= 2:
+                if entry.health_condition <= HealthThresholds.POOR_CONDITION:
                     poor_health_students.add(student.id)
                     daily_summary[entry.entry_date]["poor_health"] += 1
-                if entry.mental_condition <= 2:
+                if entry.mental_condition <= HealthThresholds.POOR_CONDITION:
                     poor_mental_students.add(student.id)
                     daily_summary[entry.entry_date]["poor_mental"] += 1
 
@@ -989,9 +992,9 @@ class ClassHealthDashboardView(LoginRequiredMixin, TemplateView):
 
                 # Pythonで集計（メモリ内処理）
                 for entry in grade_entries:
-                    if entry.health_condition <= 2:
+                    if entry.health_condition <= HealthThresholds.POOR_CONDITION:
                         grade_poor_health_students.add(entry.student_id)
-                    if entry.mental_condition <= 2:
+                    if entry.mental_condition <= HealthThresholds.POOR_CONDITION:
                         grade_poor_mental_students.add(entry.student_id)
 
             # 学年全体の本日の欠席者数を一括取得（1回のクエリ）
@@ -1072,15 +1075,15 @@ class ClassHealthDashboardView(LoginRequiredMixin, TemplateView):
 
         # アラート生成（閾値を5名に変更: MAP-2Aの2段階アラートと整合）
         alerts = []
-        if summary["poor_health_count"] >= 5:
+        if summary["poor_health_count"] >= HealthThresholds.CLASS_ALERT_THRESHOLD:
             alerts.append(
                 f"⚠️ 体調不良者が{summary['poor_health_count']}名います。クラス全体の健康状態に注意が必要です。",
             )
-        if summary["poor_mental_count"] >= 5:
+        if summary["poor_mental_count"] >= HealthThresholds.CLASS_ALERT_THRESHOLD:
             alerts.append(
                 f"💙 メンタル低下者が{summary['poor_mental_count']}名います。声かけやフォローを検討してください。",
             )
-        if submission_rate < 80:
+        if submission_rate < DashboardSettings.SUBMISSION_RATE_WARNING:
             alerts.append(
                 f"📝 提出率が{submission_rate}%です。未提出者への声かけをお願いします。",
             )
@@ -1159,17 +1162,17 @@ class GradeOverviewView(LoginRequiredMixin, TemplateView):
             )
 
             poor_health_count = (
-                entries.filter(health_condition__lte=2).values("student").distinct().count()
+                entries.filter(health_condition__lte=HealthThresholds.POOR_CONDITION).values("student").distinct().count()
             )
             poor_mental_count = (
-                entries.filter(mental_condition__lte=2).values("student").distinct().count()
+                entries.filter(mental_condition__lte=HealthThresholds.POOR_CONDITION).values("student").distinct().count()
             )
 
             # 警告レベル判定
             alert_level = "success"  # 緑
-            if absent_illness >= 5 or poor_health_count >= 5:
+            if absent_illness >= HealthThresholds.CLASS_ALERT_THRESHOLD or poor_health_count >= HealthThresholds.CLASS_ALERT_THRESHOLD:
                 alert_level = "danger"  # 赤
-            elif absent_illness >= 3 or poor_health_count >= 3:
+            elif absent_illness >= HealthThresholds.CONSECUTIVE_DAYS or poor_health_count >= HealthThresholds.CONSECUTIVE_DAYS:
                 alert_level = "warning"  # 黄
 
             classroom_stats.append(
@@ -1304,10 +1307,10 @@ class SchoolOverviewView(LoginRequiredMixin, TemplateView):
             )
 
             poor_health_count = (
-                entries.filter(health_condition__lte=2).values("student").distinct().count()
+                entries.filter(health_condition__lte=HealthThresholds.POOR_CONDITION).values("student").distinct().count()
             )
             poor_mental_count = (
-                entries.filter(mental_condition__lte=2).values("student").distinct().count()
+                entries.filter(mental_condition__lte=HealthThresholds.POOR_CONDITION).values("student").distinct().count()
             )
 
             # 警告レベル判定（学級閉鎖基準: 20%）
@@ -1381,9 +1384,6 @@ def teacher_save_attendance(request):
     today = timezone.now().date()
 
     # POSTデータから出席状況を取得（student_id_status, student_id_reason形式）
-    from django.contrib.auth import get_user_model
-    User = get_user_model()
-
     for key, value in request.POST.items():
         if key.startswith("student_") and key.endswith("_status"):
             student_id = int(key.replace("student_", "").replace("_status", ""))
