@@ -20,6 +20,14 @@ from .utils import get_previous_school_day
 User = get_user_model()
 
 
+# DiaryEntryFormの見出し定数
+DIARY_FORM_LABELS = {
+    "entry_date": "📅 記載日",
+    "conditions": "😊 体調とメンタル",
+    "reflection": "✍️ 今日の振り返り",
+}
+
+
 class DiaryEntryForm(forms.ModelForm):
     """連絡帳エントリーフォーム
 
@@ -51,13 +59,13 @@ class DiaryEntryForm(forms.ModelForm):
 
         self.helper.layout = Layout(
             Div(
-                HTML('<h4 class="mb-3">📅 記載日</h4>'),
+                HTML(f'<h4 class="mb-3">{DIARY_FORM_LABELS["entry_date"]}</h4>'),
                 "entry_date",
                 HTML('<p class="form-text">前日の日付を選択してください</p>'),
                 css_class="mb-4",
             ),
             Div(
-                HTML('<h4 class="mb-3">😊 体調とメンタル</h4>'),
+                HTML(f'<h4 class="mb-3">{DIARY_FORM_LABELS["conditions"]}</h4>'),
                 Row(
                     Column("health_condition", css_class="col-md-6"),
                     Column("mental_condition", css_class="col-md-6"),
@@ -65,7 +73,7 @@ class DiaryEntryForm(forms.ModelForm):
                 css_class="mb-4",
             ),
             Div(
-                HTML('<h4 class="mb-3">✍️ 今日の振り返り</h4>'),
+                HTML(f'<h4 class="mb-3">{DIARY_FORM_LABELS["reflection"]}</h4>'),
                 "reflection",
                 css_class="mb-4",
             ),
