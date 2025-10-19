@@ -30,6 +30,7 @@ from .models import DiaryEntry
 from .models import InternalAction
 from .models import TeacherNote
 from .models import TeacherNoteReadStatus
+from .services.diary_entry_service import DiaryEntryService
 
 
 def get_students_with_consecutive_decline(classroom, days=3, threshold=2):
@@ -474,10 +475,10 @@ class DiaryCreateView(LoginRequiredMixin, CreateView):
 
         生徒を設定し、一日一件制約をチェック。
         重複がある場合はエラーメッセージを表示してリダイレクト。
-        """
-        # 生徒を設定
-        form.instance.student = self.request.user
 
+        Note:
+            DiaryEntryServiceを使用してビジネスロジックを分離
+        """
         # 一日一件制約チェック
         entry_date = form.cleaned_data["entry_date"]
         if DiaryEntry.objects.filter(
@@ -490,9 +491,18 @@ class DiaryCreateView(LoginRequiredMixin, CreateView):
             )
             return redirect("diary:student_dashboard")
 
+        # DiaryEntryServiceを使用して作成（ビジネスロジック分離）
+        DiaryEntryService.create_entry(
+            student=self.request.user,
+            entry_date=entry_date,
+            health_condition=form.cleaned_data["health_condition"],
+            mental_condition=form.cleaned_data["mental_condition"],
+            reflection=form.cleaned_data["reflection"],
+        )
+
         # 保存成功メッセージ
         messages.success(self.request, "連絡帳を作成しました。")
-        return super().form_valid(form)
+        return redirect(self.success_url)
 
 
 class DiaryUpdateView(LoginRequiredMixin, UpdateView):
@@ -529,9 +539,21 @@ class DiaryUpdateView(LoginRequiredMixin, UpdateView):
         """フォーム送信時の処理
 
         編集成功メッセージを表示。
+
+        Note:
+            DiaryEntryServiceを使用してビジネスロジックを分離
         """
+        # DiaryEntryServiceを使用して更新（ビジネスロジック分離）
+        entry = self.get_object()
+        DiaryEntryService.update_entry(
+            entry=entry,
+            health_condition=form.cleaned_data["health_condition"],
+            mental_condition=form.cleaned_data["mental_condition"],
+            reflection=form.cleaned_data["reflection"],
+        )
+
         messages.success(self.request, "連絡帳を更新しました。")
-        return super().form_valid(form)
+        return redirect(self.success_url)
 
 
 class DiaryHistoryView(LoginRequiredMixin, ListView):
@@ -680,8 +702,9 @@ def teacher_mark_as_read(request, diary_id):
             # （NOT_REQUIRED、COMPLETED、PENDINGのいずれからでも更新可能）
             diary.action_status = ActionStatus.PENDING
         else:
-            # 対応記録が削除された場合、ステータスもクリア
-            diary.action_status = None
+            # 対応記録が削除された場合、ステータスをNOT_REQUIREDに設定
+            # （以前はsave()メソッドに依存していたが、明示的に設定するように変更）
+            diary.action_status = ActionStatus.NOT_REQUIRED
 
     diary.save()
 

@@ -198,30 +198,12 @@ class DiaryEntry(models.Model):
         return f"{student_name} - {self.entry_date}"
 
     def save(self, *args, **kwargs):
-        """保存時の自動処理"""
-        # 新規作成時にclassroomを自動設定
-        if not self.pk and not self.classroom:
-            from .utils import get_current_classroom
+        """保存処理
 
-            self.classroom = get_current_classroom(self.student)
-
-        # 既存データの場合、internal_actionの変更を検知
-        if self.pk:
-            try:
-                old = DiaryEntry.objects.get(pk=self.pk)
-                # internal_actionが変更され、まだ対応済みでない場合はリセット
-                if old.internal_action != self.internal_action and self.action_status == ActionStatus.COMPLETED:
-                    self.action_status = ActionStatus.PENDING
-                    self.action_completed_at = None
-                    self.action_completed_by = None
-            except DiaryEntry.DoesNotExist:
-                pass
-
-        # internal_actionの値に応じて自動設定
-        if not self.internal_action or self.internal_action == "":
-            # 対応記録がない場合は「対応不要」
-            self.action_status = ActionStatus.NOT_REQUIRED
-
+        Note:
+            ビジネスロジックはDiaryEntryServiceに移動済み。
+            新規作成・更新時はDiaryEntryService.create_entry() / update_entry()を使用してください。
+        """
         super().save(*args, **kwargs)
 
     def mark_as_read(self, teacher):

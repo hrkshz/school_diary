@@ -77,8 +77,8 @@ class RoleBasedRedirectAdapter(DefaultAccountAdapter):
         """
         user = request.user
 
-        # 管理者（スーパーユーザーのみ、profileアクセス不要）
-        if user.is_staff and user.is_superuser:
+        # 管理者（is_staff=Trueで管理画面にアクセス可能）
+        if user.is_staff:
             return "/admin/"
 
         # プロファイルを安全に取得（存在しない場合はNone）
