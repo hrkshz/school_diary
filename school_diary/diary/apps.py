@@ -15,14 +15,6 @@ class DiaryConfig(AppConfig):
         from django.contrib import admin
         from django.contrib.admin.exceptions import NotRegistered
 
-        # AuditLog（HistoricalUserProfileで代替）
-        try:
-            from kits.audit.models import AuditLog
-
-            admin.site.unregister(AuditLog)
-        except (ImportError, NotRegistered):
-            pass
-
         # kits.reports（レポート管理: 3モデル）
         try:
             from kits.reports.models import Report
