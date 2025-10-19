@@ -37,6 +37,7 @@ from .models import InternalAction
 from .models import TeacherNote
 from .models import TeacherNoteReadStatus
 from .services.diary_entry_service import DiaryEntryService
+from .services.teacher_dashboard_service import TeacherDashboardService
 from .utils import check_consecutive_decline
 from .utils import check_critical_mental_state
 from .utils import get_previous_school_day
@@ -168,70 +169,32 @@ class TeacherDashboardView(LoginRequiredMixin, TemplateView):
             context["filter_type"] = "all"
             return context
 
-        # サマリー統計を一括計算（最適化: 1つのクエリで全て集計）
-        summary_stats = DiaryEntry.objects.filter(
-            student__classes=classroom,
-        ).aggregate(
-            unread_total=Count("id", filter=Q(is_read=False)),
-            pending_action_count=Count(
-                "id",
-                filter=Q(
-                    internal_action__isnull=False,
-                    action_status=ActionStatus.PENDING,
-                ),
-            ),
-            urgent_action_count=Count(
-                "id",
-                filter=Q(internal_action=InternalAction.URGENT),
-            ),
-            no_reaction_count=Count(
-                "id",
-                filter=Q(
-                    is_read=True,
-                    public_reaction__isnull=True,
-                ),
-            ),
-        )
+        today = timezone.now().date()
 
-        # 生徒一覧を取得（未読件数をアノテーション、N+1回避）
-        students = (
-            classroom.students.annotate(
-                unread_count=Count(
-                    "diary_entries",
-                    filter=Q(diary_entries__is_read=False),
-                ),
-            )
-            .prefetch_related(
-                Prefetch(
-                    "diary_entries",
-                    queryset=DiaryEntry.objects.select_related(
-                        "action_completed_by",
-                    ).order_by("-entry_date")[:1],
-                    to_attr="latest_entry_list",
-                ),
-            )
-            .order_by("last_name", "first_name")
-        )
+        # サマリー統計を取得（Service層）
+        summary_stats = TeacherDashboardService.get_classroom_summary(classroom)
+
+        # 生徒一覧を取得（Service層）
+        students = TeacherDashboardService.get_student_list_with_unread_count(classroom)
 
         # テンプレート用にデータ整形
-        today = timezone.now().date()
         student_data = []
-
         for student in students:
             latest_entry = (
                 student.latest_entry_list[0] if student.latest_entry_list else None
             )
-
             # テーブルビュー用: 本日の連絡帳のみに絞る（時点統一）
-            # Inbox Viewは classified_students で別処理のため影響なし
-            today_entry = latest_entry if (latest_entry and latest_entry.entry_date == today) else None
-
+            today_entry = (
+                latest_entry
+                if (latest_entry and latest_entry.entry_date == today)
+                else None
+            )
             student_data.append(
                 {
                     "student": student,
                     "unread_count": student.unread_count,
-                    "latest_entry": today_entry,  # 本日の連絡帳のみ
-                },
+                    "latest_entry": today_entry,
+                }
             )
 
         # Table View用: 本日の未提出者数を計算
@@ -239,69 +202,21 @@ class TeacherDashboardView(LoginRequiredMixin, TemplateView):
             1 for s in student_data if s["latest_entry"] is None
         )
 
+        # 欠席者情報を取得（Service層）
+        absence_data = TeacherDashboardService.get_absence_data(classroom, today)
+
+        # 出席データを取得（Service層）
+        student_data, all_students = TeacherDashboardService.get_attendance_data_for_modal(
+            classroom, today, student_data
+        )
+
         context["classroom"] = classroom
         context["students"] = student_data
         context["today"] = today
-        context["summary"] = {
-            "unread_total": summary_stats["unread_total"],
-            "pending_action_count": summary_stats["pending_action_count"],
-            "urgent_action_count": summary_stats["urgent_action_count"],
-            "no_reaction_count": summary_stats["no_reaction_count"],
-        }
-        context["today_not_submitted_count"] = today_not_submitted_count  # Table View用
-
-        # 本日の欠席者情報を集計
-        today_attendance = DailyAttendance.objects.filter(
-            classroom=classroom,
-            date=today,
-        )
-        absent_students = []
-        for attendance in today_attendance.filter(status=AttendanceStatus.ABSENT).select_related("student"):
-            absent_students.append({
-                "student": attendance.student,
-                "absence_reason": attendance.get_absence_reason_display() if attendance.absence_reason else "未設定",
-                "absence_reason_code": attendance.absence_reason,
-            })
-
-        absence_data = {
-            "total_absent": len(absent_students),
-            "absent_illness": today_attendance.filter(
-                status=AttendanceStatus.ABSENT,
-                absence_reason=AbsenceReason.ILLNESS,
-            ).count(),
-            "absent_students": absent_students,
-        }
+        context["summary"] = summary_stats
+        context["today_not_submitted_count"] = today_not_submitted_count
         context["absence_data"] = absence_data
-
-        # 今日の出席データを取得（モーダル初期表示用）
-        today_attendance_records = DailyAttendance.objects.filter(
-            classroom=classroom,
-            date=today,
-        ).select_related("student")
-
-        # 生徒IDをキーとした辞書に変換
-        attendance_by_student_id = {}
-        for record in today_attendance_records:
-            attendance_by_student_id[record.student_id] = {
-                "status": record.status,
-                "absence_reason": record.absence_reason,
-            }
-
-        # 出席情報をstudent_dataに追加（テーブル表示用、N+1問題回避済み）
-        for data in student_data:
-            attendance_data = attendance_by_student_id.get(data["student"].id)
-            data["attendance_status"] = attendance_data["status"] if attendance_data else "present"
-            data["absence_reason"] = attendance_data["absence_reason"] if attendance_data else None
-
-        # 全生徒リストに出席データを付加（テンプレートで簡単にアクセスできるように）
-        all_students_with_attendance = []
-        for student in classroom.students.all().order_by("last_name", "first_name"):
-            attendance_data = attendance_by_student_id.get(student.id)
-            student.attendance_status = attendance_data["status"] if attendance_data else "present"
-            student.attendance_absence_reason = attendance_data["absence_reason"] if attendance_data else None
-            all_students_with_attendance.append(student)
-
-        context["all_students"] = all_students_with_attendance
+        context["all_students"] = all_students
 
         # アラート生成（MAP-2A: 早期警告システム）
         alerts = []
@@ -434,30 +349,8 @@ class TeacherDashboardView(LoginRequiredMixin, TemplateView):
         context["classified_students"] = classified_students
         context["needs_response_count"] = needs_response_count
 
-        # 学年共有アラート: 同じ学年の他クラス担任からの共有メモを取得
-        # （Inbox View専用、Table Viewでは非表示）
-        # 同じ学年・同じ年度のクラスIDリストを取得
-        same_grade_classrooms = ClassRoom.objects.filter(
-            grade=classroom.grade,
-            academic_year=classroom.academic_year,
-        ).values_list("id", flat=True)
-
-        # そのクラスの生徒IDリストを取得
-        same_grade_students = User.objects.filter(
-            classes__id__in=same_grade_classrooms,
-        ).values_list("id", flat=True)
-
-        # その生徒の共有メモを取得（過去N日以内、自分が作成したもの以外、既読済み除外）
-        shared_notes = TeacherNote.objects.filter(
-            student_id__in=same_grade_students,
-            is_shared=True,
-            created_at__gte=timezone.now() - timedelta(days=NoteSettings.SHARED_NOTE_DAYS),
-        ).exclude(
-            teacher=self.request.user,
-        ).exclude(
-            read_statuses__teacher=self.request.user,  # 既読済みメモを除外
-        ).select_related('student', 'teacher').prefetch_related('student__classes').order_by('-created_at')[:NoteSettings.SHARED_NOTE_LIMIT]
-
+        # 学年共有メモを取得（Service層）
+        shared_notes = TeacherDashboardService.get_shared_notes(classroom, self.request.user)
         context["shared_notes"] = shared_notes
 
         return context
