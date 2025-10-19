@@ -12,6 +12,7 @@ from django.contrib.auth.forms import UserCreationForm
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 
+from .constants import GRADE_CHOICES_WITH_EMPTY
 from .models import DiaryEntry
 from .models import UserProfile
 from .utils import get_previous_school_day
@@ -100,7 +101,7 @@ class UserProfileAdminForm(forms.ModelForm):
     """
 
     managed_grade = forms.TypedChoiceField(
-        choices=[("", "---"), (1, "1年"), (2, "2年"), (3, "3年")],
+        choices=GRADE_CHOICES_WITH_EMPTY,
         coerce=lambda x: int(x) if x and x != "" else None,
         required=False,
         empty_value=None,
@@ -118,18 +119,18 @@ class UserProfileAdminForm(forms.ModelForm):
         if not cleaned_data:
             return cleaned_data
 
-        role = cleaned_data.get('role')
-        managed_grade = cleaned_data.get('managed_grade')
+        role = cleaned_data.get("role")
+        managed_grade = cleaned_data.get("managed_grade")
 
         # 学年主任以外の場合、managed_gradeを自動的にNoneにクリア
-        if role != 'grade_leader':
-            cleaned_data['managed_grade'] = None
+        if role != "grade_leader":
+            cleaned_data["managed_grade"] = None
 
         # 学年主任の場合、managed_gradeが必須
-        elif role == 'grade_leader' and not managed_grade:
+        elif role == "grade_leader" and not managed_grade:
             self.add_error(
-                'managed_grade',
-                '学年主任の場合、管理学年の入力が必須です'
+                "managed_grade",
+                "学年主任の場合、管理学年の入力が必須です",
             )
 
         return cleaned_data
@@ -171,7 +172,7 @@ class CustomUserCreationForm(UserCreationForm):
         label="役割",
     )
     managed_grade = forms.TypedChoiceField(
-        choices=[("", "---"), (1, "1年"), (2, "2年"), (3, "3年")],
+        choices=GRADE_CHOICES_WITH_EMPTY,
         coerce=lambda x: int(x) if x and x != "" else None,
         required=False,
         empty_value=None,

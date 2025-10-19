@@ -23,6 +23,7 @@ from django.views.generic import UpdateView
 from . import alert_service
 from .adapters import RoleBasedRedirectAdapter
 from .constants import DashboardSettings
+from .constants import GradeLevel
 from .constants import HealthThresholds
 from .constants import NoteSettings
 from .forms import DiaryEntryForm
@@ -35,6 +36,7 @@ from .models import DiaryEntry
 from .models import InternalAction
 from .models import TeacherNote
 from .models import TeacherNoteReadStatus
+from .services.diary_entry_service import DiaryEntryService
 from .utils import check_consecutive_decline
 from .utils import check_critical_mental_state
 from .utils import get_previous_school_day
@@ -295,8 +297,8 @@ class TeacherDashboardView(LoginRequiredMixin, TemplateView):
         all_students_with_attendance = []
         for student in classroom.students.all().order_by("last_name", "first_name"):
             attendance_data = attendance_by_student_id.get(student.id)
-            student.attendance_status = attendance_data['status'] if attendance_data else 'present'
-            student.attendance_absence_reason = attendance_data['absence_reason'] if attendance_data else None
+            student.attendance_status = attendance_data["status"] if attendance_data else "present"
+            student.attendance_absence_reason = attendance_data["absence_reason"] if attendance_data else None
             all_students_with_attendance.append(student)
 
         context["all_students"] = all_students_with_attendance
@@ -357,13 +359,13 @@ class TeacherDashboardView(LoginRequiredMixin, TemplateView):
 
         # 未対応の合計を計算（テンプレート側での複雑な計算を避ける）
         needs_response_count = (
-            len(classified_students['not_submitted']) +
-            len(classified_students['unread']) +
-            len(classified_students['no_reaction'])
+            len(classified_students["not_submitted"]) +
+            len(classified_students["unread"]) +
+            len(classified_students["no_reaction"])
         )
 
         # 各分類の生徒に最新3件の連絡帳をprefetch（N+1問題回避、履歴表示用）
-        for tier in ['important', 'needs_attention', 'not_submitted', 'unread', 'no_reaction']:
+        for tier in ["important", "needs_attention", "not_submitted", "unread", "no_reaction"]:
             student_ids = [s.id for s in classified_students[tier]]
             if student_ids:
                 # prefetch_relatedで最新3件を取得（履歴統合用）
@@ -373,18 +375,18 @@ class TeacherDashboardView(LoginRequiredMixin, TemplateView):
                             "diary_entries",
                             queryset=DiaryEntry.objects.order_by("-entry_date")[:3],
                             to_attr="recent_entries_for_history",
-                        )
-                    )
+                        ),
+                    ),
                 )
 
                 # 各生徒に履歴文字列を追加
                 for student in students_with_history:
-                    if hasattr(student, 'recent_entries_for_history') and student.recent_entries_for_history:
+                    if hasattr(student, "recent_entries_for_history") and student.recent_entries_for_history:
                         student.inline_history = alert_service.format_inline_history(
-                            student.recent_entries_for_history
+                            student.recent_entries_for_history,
                         )
                         student.latest_snippet = alert_service.get_snippet(
-                            student.recent_entries_for_history[0]
+                            student.recent_entries_for_history[0],
                         )
                     else:
                         student.inline_history = ""
@@ -393,7 +395,7 @@ class TeacherDashboardView(LoginRequiredMixin, TemplateView):
                 classified_students[tier] = students_with_history
 
         # completedは (student, date) のタプルのリストなので、studentのみ抽出してprefetch
-        completed_tuples = classified_students['completed']
+        completed_tuples = classified_students["completed"]
         if completed_tuples:
             completed_student_ids = [s.id for s, _ in completed_tuples]
             students_with_history = list(
@@ -402,8 +404,8 @@ class TeacherDashboardView(LoginRequiredMixin, TemplateView):
                         "diary_entries",
                         queryset=DiaryEntry.objects.order_by("-entry_date")[:3],
                         to_attr="recent_entries_for_history",
-                    )
-                )
+                    ),
+                ),
             )
 
             # 各生徒に履歴文字列を追加 + 日付情報を保持
@@ -412,12 +414,12 @@ class TeacherDashboardView(LoginRequiredMixin, TemplateView):
                 # タプルから日付を取得
                 entry_date = [d for s, d in completed_tuples if s.id == student.id][0]
 
-                if hasattr(student, 'recent_entries_for_history') and student.recent_entries_for_history:
+                if hasattr(student, "recent_entries_for_history") and student.recent_entries_for_history:
                     student.inline_history = alert_service.format_inline_history(
-                        student.recent_entries_for_history
+                        student.recent_entries_for_history,
                     )
                     student.latest_snippet = alert_service.get_snippet(
-                        student.recent_entries_for_history[0]
+                        student.recent_entries_for_history[0],
                     )
                 else:
                     student.inline_history = ""
@@ -427,7 +429,7 @@ class TeacherDashboardView(LoginRequiredMixin, TemplateView):
                 student.completed_date = entry_date
                 students_with_dates.append(student)
 
-            classified_students['completed'] = students_with_dates
+            classified_students["completed"] = students_with_dates
 
         context["classified_students"] = classified_students
         context["needs_response_count"] = needs_response_count
@@ -438,12 +440,12 @@ class TeacherDashboardView(LoginRequiredMixin, TemplateView):
         same_grade_classrooms = ClassRoom.objects.filter(
             grade=classroom.grade,
             academic_year=classroom.academic_year,
-        ).values_list('id', flat=True)
+        ).values_list("id", flat=True)
 
         # そのクラスの生徒IDリストを取得
         same_grade_students = User.objects.filter(
-            classes__id__in=same_grade_classrooms
-        ).values_list('id', flat=True)
+            classes__id__in=same_grade_classrooms,
+        ).values_list("id", flat=True)
 
         # その生徒の共有メモを取得（過去N日以内、自分が作成したもの以外、既読済み除外）
         shared_notes = TeacherNote.objects.filter(
@@ -451,9 +453,9 @@ class TeacherDashboardView(LoginRequiredMixin, TemplateView):
             is_shared=True,
             created_at__gte=timezone.now() - timedelta(days=NoteSettings.SHARED_NOTE_DAYS),
         ).exclude(
-            teacher=self.request.user
+            teacher=self.request.user,
         ).exclude(
-            read_statuses__teacher=self.request.user  # 既読済みメモを除外
+            read_statuses__teacher=self.request.user,  # 既読済みメモを除外
         ).select_related('student', 'teacher').prefetch_related('student__classes').order_by('-created_at')[:NoteSettings.SHARED_NOTE_LIMIT]
 
         context["shared_notes"] = shared_notes
@@ -478,10 +480,10 @@ class DiaryCreateView(LoginRequiredMixin, CreateView):
 
         生徒を設定し、一日一件制約をチェック。
         重複がある場合はエラーメッセージを表示してリダイレクト。
-        """
-        # 生徒を設定
-        form.instance.student = self.request.user
 
+        Note:
+            DiaryEntryServiceを使用してビジネスロジックを分離
+        """
         # 一日一件制約チェック
         entry_date = form.cleaned_data["entry_date"]
         if DiaryEntry.objects.filter(
@@ -494,9 +496,18 @@ class DiaryCreateView(LoginRequiredMixin, CreateView):
             )
             return redirect("diary:student_dashboard")
 
+        # DiaryEntryServiceを使用して作成（ビジネスロジック分離）
+        DiaryEntryService.create_entry(
+            student=self.request.user,
+            entry_date=entry_date,
+            health_condition=form.cleaned_data["health_condition"],
+            mental_condition=form.cleaned_data["mental_condition"],
+            reflection=form.cleaned_data["reflection"],
+        )
+
         # 保存成功メッセージ
         messages.success(self.request, "連絡帳を作成しました。")
-        return super().form_valid(form)
+        return redirect(self.success_url)
 
 
 class DiaryUpdateView(LoginRequiredMixin, UpdateView):
@@ -533,9 +544,21 @@ class DiaryUpdateView(LoginRequiredMixin, UpdateView):
         """フォーム送信時の処理
 
         編集成功メッセージを表示。
+
+        Note:
+            DiaryEntryServiceを使用してビジネスロジックを分離
         """
+        # DiaryEntryServiceを使用して更新（ビジネスロジック分離）
+        entry = self.get_object()
+        DiaryEntryService.update_entry(
+            entry=entry,
+            health_condition=form.cleaned_data["health_condition"],
+            mental_condition=form.cleaned_data["mental_condition"],
+            reflection=form.cleaned_data["reflection"],
+        )
+
         messages.success(self.request, "連絡帳を更新しました。")
-        return super().form_valid(form)
+        return redirect(self.success_url)
 
 
 class DiaryHistoryView(LoginRequiredMixin, ListView):
@@ -681,8 +704,9 @@ def teacher_mark_as_read(request, diary_id):
             # （NOT_REQUIRED、COMPLETED、PENDINGのいずれからでも更新可能）
             diary.action_status = ActionStatus.PENDING
         else:
-            # 対応記録が削除された場合、ステータスもクリア
-            diary.action_status = None
+            # 対応記録が削除された場合、ステータスをNOT_REQUIREDに設定
+            # （以前はsave()メソッドに依存していたが、明示的に設定するように変更）
+            diary.action_status = ActionStatus.NOT_REQUIRED
 
     diary.save()
 
@@ -966,7 +990,7 @@ class ClassHealthDashboardView(LoginRequiredMixin, TemplateView):
         grade_classrooms = ClassRoom.objects.filter(
             grade=classroom.grade,
             academic_year=classroom.academic_year,
-        ).exclude(id=classroom.id).prefetch_related('students')
+        ).exclude(id=classroom.id).prefetch_related("students")
 
         if grade_classrooms.exists():
             # 学年全体（自分のクラスを除く）の統計
@@ -1257,7 +1281,7 @@ class SchoolOverviewView(LoginRequiredMixin, TemplateView):
 
         # 全学年の統計
         grade_stats = []
-        for grade in [1, 2, 3]:
+        for grade in [GradeLevel.GRADE_1, GradeLevel.GRADE_2, GradeLevel.GRADE_3]:
             classrooms = ClassRoom.objects.filter(
                 grade=grade,
                 academic_year=2025,

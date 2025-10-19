@@ -4,7 +4,10 @@ django-allauth 65.xで`login`パラメータが正しく処理されない問題
 """
 
 import logging
-from allauth.account.auth_backends import AuthenticationBackend as AllauthAuthenticationBackend
+
+from allauth.account.auth_backends import (
+    AuthenticationBackend as AllauthAuthenticationBackend,
+)
 
 logger = logging.getLogger(__name__)
 

@@ -15,7 +15,6 @@ Phase 2: 副担任機能
 
 from django.contrib.admin.sites import AdminSite
 from django.contrib.auth import get_user_model
-from django.test import RequestFactory
 from django.test import TestCase
 
 from school_diary.diary.admin import ClassRoomAdmin
@@ -237,8 +236,9 @@ class AssistantTeacherFieldTest(TestCase):
 
     def test_assistant_teachers_filter_in_admin(self):
         """管理画面で副担任フィールドに担任権限を持つユーザーのみ表示されることを確認"""
-        from school_diary.diary.admin import ClassRoomAdmin
         from django.contrib.admin.sites import AdminSite
+
+        from school_diary.diary.admin import ClassRoomAdmin
 
         site = AdminSite()
         admin = ClassRoomAdmin(ClassRoom, site)
@@ -338,9 +338,10 @@ class AssistantTeacherPermissionsTest(TestCase):
 
     def setUp(self):
         """テストデータ準備"""
+        from django.contrib.admin.sites import AdminSite
+
         from school_diary.diary.admin import DiaryEntryAdmin
         from school_diary.diary.models import DiaryEntry
-        from django.contrib.admin.sites import AdminSite
 
         # 担任・副担任・生徒を作成
         self.homeroom_teacher = User.objects.create_user(

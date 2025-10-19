@@ -6,6 +6,9 @@ from django.utils import timezone
 
 from kits.audit.models import AuditMixin
 
+from .constants import GRADE_CHOICES
+from .constants import ConditionLevel
+
 
 class TeacherReaction(models.TextChoices):
     """担任の対応アクション（非推奨: public_reaction と internal_action を使用）"""
@@ -53,19 +56,19 @@ class DiaryEntry(models.Model):
 
     # 体調・メンタルの選択肢
     CONDITION_CHOICES = [
-        (1, "とても悪い"),
-        (2, "悪い"),
-        (3, "普通"),
-        (4, "良い"),
-        (5, "とても良い"),
+        (ConditionLevel.VERY_BAD, "とても悪い"),
+        (ConditionLevel.BAD, "悪い"),
+        (ConditionLevel.NORMAL, "普通"),
+        (ConditionLevel.GOOD, "良い"),
+        (ConditionLevel.VERY_GOOD, "とても良い"),
     ]
 
     MENTAL_CHOICES = [
-        (1, "とても落ち込んでいる"),
-        (2, "落ち込んでいる"),
-        (3, "普通"),
-        (4, "元気"),
-        (5, "とても元気"),
+        (ConditionLevel.VERY_BAD, "とても落ち込んでいる"),
+        (ConditionLevel.BAD, "落ち込んでいる"),
+        (ConditionLevel.NORMAL, "普通"),
+        (ConditionLevel.GOOD, "元気"),
+        (ConditionLevel.VERY_GOOD, "とても元気"),
     ]
 
     student = models.ForeignKey(
@@ -95,12 +98,12 @@ class DiaryEntry(models.Model):
     health_condition = models.IntegerField(
         "体調",
         choices=CONDITION_CHOICES,
-        default=3,
+        default=ConditionLevel.NORMAL,
     )
     mental_condition = models.IntegerField(
         "メンタル",
         choices=MENTAL_CHOICES,
-        default=3,
+        default=ConditionLevel.NORMAL,
     )
     reflection = models.TextField(
         "今日の振り返り",
@@ -195,30 +198,12 @@ class DiaryEntry(models.Model):
         return f"{student_name} - {self.entry_date}"
 
     def save(self, *args, **kwargs):
-        """保存時の自動処理"""
-        # 新規作成時にclassroomを自動設定
-        if not self.pk and not self.classroom:
-            from .utils import get_current_classroom
+        """保存処理
 
-            self.classroom = get_current_classroom(self.student)
-
-        # 既存データの場合、internal_actionの変更を検知
-        if self.pk:
-            try:
-                old = DiaryEntry.objects.get(pk=self.pk)
-                # internal_actionが変更され、まだ対応済みでない場合はリセット
-                if old.internal_action != self.internal_action and self.action_status == ActionStatus.COMPLETED:
-                    self.action_status = ActionStatus.PENDING
-                    self.action_completed_at = None
-                    self.action_completed_by = None
-            except DiaryEntry.DoesNotExist:
-                pass
-
-        # internal_actionの値に応じて自動設定
-        if not self.internal_action or self.internal_action == "":
-            # 対応記録がない場合は「対応不要」
-            self.action_status = ActionStatus.NOT_REQUIRED
-
+        Note:
+            ビジネスロジックはDiaryEntryServiceに移動済み。
+            新規作成・更新時はDiaryEntryService.create_entry() / update_entry()を使用してください。
+        """
         super().save(*args, **kwargs)
 
     def mark_as_read(self, teacher):
@@ -250,12 +235,6 @@ class ClassRoom(models.Model):
         ("A", "A組"),
         ("B", "B組"),
         ("C", "C組"),
-    ]
-
-    GRADE_CHOICES = [
-        (1, "1年"),
-        (2, "2年"),
-        (3, "3年"),
     ]
 
     grade = models.IntegerField(

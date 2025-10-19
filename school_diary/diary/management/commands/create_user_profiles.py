@@ -31,6 +31,6 @@ class Command(BaseCommand):
 
         self.stdout.write(
             self.style.SUCCESS(
-                f"完了: {created_count}件のUserProfileを作成しました（スキップ: {skipped_count}件）"
-            )
+                f"完了: {created_count}件のUserProfileを作成しました（スキップ: {skipped_count}件）",
+            ),
         )

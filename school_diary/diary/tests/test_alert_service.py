@@ -6,13 +6,16 @@ TDD Implementation:
 - Refactor: Optimize for N+1 problem
 """
 
-import pytest
 from datetime import timedelta
-from django.utils import timezone
-from django.contrib.auth import get_user_model
 
-from school_diary.diary.models import DiaryEntry, ClassRoom
+import pytest
+from django.contrib.auth import get_user_model
+from django.utils import timezone
+
 from school_diary.diary import alert_service
+from school_diary.diary.models import ClassRoom
+from school_diary.diary.models import DiaryEntry
+from school_diary.diary.utils import get_previous_school_day
 
 User = get_user_model()
 
@@ -24,7 +27,7 @@ def setup_classroom(db):
     classroom = ClassRoom.objects.create(
         class_name="A",
         grade=1,
-        academic_year=2025
+        academic_year=2025,
     )
 
     # 担任作成
@@ -33,7 +36,7 @@ def setup_classroom(db):
         email="teacher@example.com",
         password="password123",
         first_name="太郎",
-        last_name="先生"
+        last_name="先生",
     )
     teacher.profile.role = "teacher"
     teacher.profile.save()
@@ -48,7 +51,7 @@ def setup_classroom(db):
             email=f"student{i+1}@example.com",
             password="password123",
             first_name=f"生徒{i+1}",
-            last_name="テスト"
+            last_name="テスト",
         )
         student.profile.role = "student"
         student.profile.save()
@@ -56,9 +59,9 @@ def setup_classroom(db):
         students.append(student)
 
     return {
-        'classroom': classroom,
-        'teacher': teacher,
-        'students': students
+        "classroom": classroom,
+        "teacher": teacher,
+        "students": students,
     }
 
 
@@ -68,8 +71,8 @@ class TestClassifyStudents:
 
     def test_classify_important_mental_star_1(self, setup_classroom):
         """メンタル★1の生徒はimportantに分類される"""
-        classroom = setup_classroom['classroom']
-        student = setup_classroom['students'][0]
+        classroom = setup_classroom["classroom"]
+        student = setup_classroom["students"][0]
         today = timezone.now().date()
 
         # メンタル★1のエントリー作成
@@ -78,21 +81,21 @@ class TestClassifyStudents:
             entry_date=today,
             health_condition=4,
             mental_condition=1,  # ★1 = Important
-            reflection="つらい"
+            reflection="つらい",
         )
 
         result = alert_service.classify_students(classroom)
 
-        assert student in result['important']
-        assert student not in result['needs_attention']
-        assert student not in result['not_submitted']
-        assert student not in result['unread']
-        assert student not in result['no_reaction']
+        assert student in result["important"]
+        assert student not in result["needs_attention"]
+        assert student not in result["not_submitted"]
+        assert student not in result["unread"]
+        assert student not in result["no_reaction"]
 
     def test_classify_completed(self, setup_classroom):
         """既読・反応済みの生徒はcompletedに分類される"""
-        classroom = setup_classroom['classroom']
-        student = setup_classroom['students'][0]
+        classroom = setup_classroom["classroom"]
+        student = setup_classroom["students"][0]
         today = timezone.now().date()
 
         # 健康なエントリー作成（既読・反応済み）
@@ -103,49 +106,49 @@ class TestClassifyStudents:
             mental_condition=5,  # ★★★★★
             reflection="元気です",
             is_read=True,  # 既読
-            public_reaction="承知しました"  # 反応済み
+            public_reaction="承知しました",  # 反応済み
         )
 
         result = alert_service.classify_students(classroom)
 
         # completedは(student, date)のタプルのリスト
-        completed_students = [s for s, d in result['completed']]
+        completed_students = [s for s, d in result["completed"]]
         assert student in completed_students
-        assert student not in result['important']
-        assert student not in result['needs_attention']
-        assert student not in result['not_submitted']
-        assert student not in result['unread']
-        assert student not in result['no_reaction']
+        assert student not in result["important"]
+        assert student not in result["needs_attention"]
+        assert student not in result["not_submitted"]
+        assert student not in result["unread"]
+        assert student not in result["no_reaction"]
 
     def test_classify_not_submitted(self, setup_classroom):
         """昨日未提出の生徒はnot_submittedに分類される"""
-        classroom = setup_classroom['classroom']
-        student = setup_classroom['students'][0]
+        classroom = setup_classroom["classroom"]
+        student = setup_classroom["students"][0]
         today = timezone.now().date()
-        yesterday = today - timedelta(days=1)
+        yesterday = get_previous_school_day(today)
 
-        # 2日前のエントリーのみ（昨日は未提出）
+        # 前々登校日のエントリーのみ（昨日は未提出）
         DiaryEntry.objects.create(
             student=student,
-            entry_date=yesterday - timedelta(days=1),
+            entry_date=get_previous_school_day(yesterday),
             health_condition=4,
             mental_condition=4,
-            reflection="元気"
+            reflection="元気",
         )
 
         result = alert_service.classify_students(classroom)
 
         # 昨日未提出 = not_submitted
-        assert student in result['not_submitted']
-        assert student not in result['important']
-        assert student not in result['needs_attention']
-        assert student not in result['unread']
-        assert student not in result['no_reaction']
+        assert student in result["not_submitted"]
+        assert student not in result["important"]
+        assert student not in result["needs_attention"]
+        assert student not in result["unread"]
+        assert student not in result["no_reaction"]
 
     def test_classify_unread(self, setup_classroom):
         """未読の生徒はunreadに分類される"""
-        classroom = setup_classroom['classroom']
-        student = setup_classroom['students'][0]
+        classroom = setup_classroom["classroom"]
+        student = setup_classroom["students"][0]
         today = timezone.now().date()
 
         # 健康だが未読のエントリー
@@ -155,22 +158,22 @@ class TestClassifyStudents:
             health_condition=5,  # ★★★★★（健康）
             mental_condition=5,  # ★★★★★（良好）
             reflection="元気です",
-            is_read=False  # 未読
+            is_read=False,  # 未読
         )
 
         result = alert_service.classify_students(classroom)
 
         # 未読 = unread
-        assert student in result['unread']
-        assert student not in result['important']
-        assert student not in result['needs_attention']
-        assert student not in result['not_submitted']
-        assert student not in result['no_reaction']
+        assert student in result["unread"]
+        assert student not in result["important"]
+        assert student not in result["needs_attention"]
+        assert student not in result["not_submitted"]
+        assert student not in result["no_reaction"]
 
     def test_classify_no_reaction(self, setup_classroom):
         """反応未選択の生徒はno_reactionに分類される"""
-        classroom = setup_classroom['classroom']
-        student = setup_classroom['students'][0]
+        classroom = setup_classroom["classroom"]
+        student = setup_classroom["students"][0]
         today = timezone.now().date()
 
         # 既読だが反応未選択のエントリー
@@ -181,22 +184,22 @@ class TestClassifyStudents:
             mental_condition=5,  # ★★★★★（良好）
             reflection="元気です",
             is_read=True,  # 既読
-            public_reaction=None  # 反応未選択
+            public_reaction=None,  # 反応未選択
         )
 
         result = alert_service.classify_students(classroom)
 
         # 反応未選択 = no_reaction
-        assert student in result['no_reaction']
-        assert student not in result['important']
-        assert student not in result['needs_attention']
-        assert student not in result['not_submitted']
-        assert student not in result['unread']
+        assert student in result["no_reaction"]
+        assert student not in result["important"]
+        assert student not in result["needs_attention"]
+        assert student not in result["not_submitted"]
+        assert student not in result["unread"]
 
     def test_classify_multiple_students(self, setup_classroom):
         """複数の生徒が正しく分類される（6カテゴリ）"""
-        classroom = setup_classroom['classroom']
-        students = setup_classroom['students']
+        classroom = setup_classroom["classroom"]
+        students = setup_classroom["students"]
         today = timezone.now().date()
 
         # 生徒1: Important（メンタル★1）
@@ -205,7 +208,7 @@ class TestClassifyStudents:
             entry_date=today,
             health_condition=4,
             mental_condition=1,
-            reflection="つらい"
+            reflection="つらい",
         )
 
         # 生徒2: Unread（未読）
@@ -215,7 +218,7 @@ class TestClassifyStudents:
             health_condition=4,
             mental_condition=4,
             reflection="元気です",
-            is_read=False  # 未読
+            is_read=False,  # 未読
         )
 
         # 生徒3: Completed（健康、既読・反応済み）
@@ -226,20 +229,20 @@ class TestClassifyStudents:
             mental_condition=5,
             reflection="元気",
             is_read=True,  # 既読
-            public_reaction="承知しました"  # 反応済み
+            public_reaction="承知しました",  # 反応済み
         )
 
         result = alert_service.classify_students(classroom)
 
-        assert students[0] in result['important']
-        assert students[1] in result['unread']
-        completed_students = [s for s, d in result['completed']]
+        assert students[0] in result["important"]
+        assert students[1] in result["unread"]
+        completed_students = [s for s, d in result["completed"]]
         assert students[2] in completed_students
 
     def test_no_n_plus_one_problem(self, setup_classroom, django_assert_num_queries):
         """N+1問題が発生しないことを確認（クエリ数=2）"""
-        classroom = setup_classroom['classroom']
-        students = setup_classroom['students']
+        classroom = setup_classroom["classroom"]
+        students = setup_classroom["students"]
         today = timezone.now().date()
 
         # 全生徒にエントリー作成
@@ -249,7 +252,7 @@ class TestClassifyStudents:
                 entry_date=today,
                 health_condition=4,
                 mental_condition=3,
-                reflection="普通"
+                reflection="普通",
             )
 
         # クエリ数を確認（生徒数に関わらず2クエリ）
@@ -265,7 +268,7 @@ class TestCheckConsecutiveDecline:
 
     def test_check_consecutive_decline_true(self, setup_classroom):
         """3日連続低下（5→4→3）はTrueを返す"""
-        student = setup_classroom['students'][0]
+        student = setup_classroom["students"][0]
         today = timezone.now().date()
 
         # 3日分のエントリー作成（5→4→3）
@@ -277,7 +280,7 @@ class TestCheckConsecutiveDecline:
                 entry_date=date,
                 health_condition=4,
                 mental_condition=mental,
-                reflection=f"Day {i}"
+                reflection=f"Day {i}",
             )
             entries.append(entry)
 
@@ -289,7 +292,7 @@ class TestCheckConsecutiveDecline:
 
     def test_check_consecutive_decline_false_flat(self, setup_classroom):
         """横ばい（4→4→4）はFalseを返す"""
-        student = setup_classroom['students'][0]
+        student = setup_classroom["students"][0]
         today = timezone.now().date()
 
         entries = []
@@ -300,7 +303,7 @@ class TestCheckConsecutiveDecline:
                 entry_date=date,
                 health_condition=4,
                 mental_condition=4,  # 横ばい
-                reflection=f"Day {i}"
+                reflection=f"Day {i}",
             )
             entries.append(entry)
 
@@ -310,7 +313,7 @@ class TestCheckConsecutiveDecline:
 
     def test_check_consecutive_decline_false_recovery(self, setup_classroom):
         """回復傾向（2→3→4）はFalseを返す"""
-        student = setup_classroom['students'][0]
+        student = setup_classroom["students"][0]
         today = timezone.now().date()
 
         entries = []
@@ -321,7 +324,7 @@ class TestCheckConsecutiveDecline:
                 entry_date=date,
                 health_condition=4,
                 mental_condition=mental,  # 回復
-                reflection=f"Day {i}"
+                reflection=f"Day {i}",
             )
             entries.append(entry)
 
@@ -331,7 +334,7 @@ class TestCheckConsecutiveDecline:
 
     def test_check_consecutive_decline_false_v_shape(self, setup_classroom):
         """V字回復（5→2→5）はFalseを返す"""
-        student = setup_classroom['students'][0]
+        student = setup_classroom["students"][0]
         today = timezone.now().date()
 
         entries = []
@@ -342,7 +345,7 @@ class TestCheckConsecutiveDecline:
                 entry_date=date,
                 health_condition=4,
                 mental_condition=mental,  # V字回復
-                reflection=f"Day {i}"
+                reflection=f"Day {i}",
             )
             entries.append(entry)
 
@@ -352,7 +355,7 @@ class TestCheckConsecutiveDecline:
 
     def test_check_consecutive_decline_insufficient_data(self, setup_classroom):
         """データ不足（2件のみ）はFalseを返す"""
-        student = setup_classroom['students'][0]
+        student = setup_classroom["students"][0]
         today = timezone.now().date()
 
         entries = []
@@ -363,7 +366,7 @@ class TestCheckConsecutiveDecline:
                 entry_date=date,
                 health_condition=4,
                 mental_condition=4,
-                reflection=f"Day {i}"
+                reflection=f"Day {i}",
             )
             entries.append(entry)
 
@@ -373,8 +376,8 @@ class TestCheckConsecutiveDecline:
 
     def test_classify_needs_attention_3day_decline(self, setup_classroom):
         """3日連続低下の生徒はneeds_attentionに分類される"""
-        classroom = setup_classroom['classroom']
-        student = setup_classroom['students'][0]
+        classroom = setup_classroom["classroom"]
+        student = setup_classroom["students"][0]
         today = timezone.now().date()
 
         # 3日連続低下（5→4→3）
@@ -385,18 +388,18 @@ class TestCheckConsecutiveDecline:
                 entry_date=date,
                 health_condition=4,
                 mental_condition=mental,
-                reflection=f"Day {i}"
+                reflection=f"Day {i}",
             )
 
         result = alert_service.classify_students(classroom)
 
-        assert student in result['needs_attention']
-        assert student not in result['important']
+        assert student in result["needs_attention"]
+        assert student not in result["important"]
 
     def test_classify_priority_important_over_attention(self, setup_classroom):
         """メンタル★1 + 3日連続低下の場合、importantが優先される"""
-        classroom = setup_classroom['classroom']
-        student = setup_classroom['students'][0]
+        classroom = setup_classroom["classroom"]
+        student = setup_classroom["students"][0]
         today = timezone.now().date()
 
         # 3日連続低下 + 最新日がメンタル★1
@@ -407,14 +410,14 @@ class TestCheckConsecutiveDecline:
                 entry_date=date,
                 health_condition=4,
                 mental_condition=mental,
-                reflection=f"Day {i}"
+                reflection=f"Day {i}",
             )
 
         result = alert_service.classify_students(classroom)
 
         # メンタル★1が優先される（排他的分類）
-        assert student in result['important']
-        assert student not in result['needs_attention']
+        assert student in result["important"]
+        assert student not in result["needs_attention"]
 
 
 @pytest.mark.django_db
@@ -423,7 +426,7 @@ class TestFormatInlineHistory:
 
     def test_format_inline_history_3_days(self, setup_classroom):
         """直近3日の履歴が正しくフォーマットされる"""
-        student = setup_classroom['students'][0]
+        student = setup_classroom["students"][0]
         today = timezone.now().date()
 
         # 3日分のエントリー作成
@@ -435,7 +438,7 @@ class TestFormatInlineHistory:
                 entry_date=date,
                 health_condition=4 - i,  # 4, 3, 2（低下）
                 mental_condition=4 - i,
-                reflection=f"Day {i}"
+                reflection=f"Day {i}",
             )
             entries.append(entry)
 
@@ -453,7 +456,7 @@ class TestGetSnippet:
 
     def test_get_snippet_short_text(self, setup_classroom):
         """50文字以下のテキストはそのまま返す"""
-        student = setup_classroom['students'][0]
+        student = setup_classroom["students"][0]
         today = timezone.now().date()
 
         entry = DiaryEntry.objects.create(
@@ -461,7 +464,7 @@ class TestGetSnippet:
             entry_date=today,
             health_condition=4,
             mental_condition=3,
-            reflection="今日は元気です。"
+            reflection="今日は元気です。",
         )
 
         result = alert_service.get_snippet(entry)
@@ -470,7 +473,7 @@ class TestGetSnippet:
 
     def test_get_snippet_long_text(self, setup_classroom):
         """50文字を超えるテキストは省略される"""
-        student = setup_classroom['students'][0]
+        student = setup_classroom["students"][0]
         today = timezone.now().date()
 
         long_text = "今日は部活で先輩に怒られてしまいました。理由がよく分からないのでとても悲しいです。明日はもっと頑張りたいです。"
@@ -479,7 +482,7 @@ class TestGetSnippet:
             entry_date=today,
             health_condition=4,
             mental_condition=3,
-            reflection=long_text
+            reflection=long_text,
         )
 
         result = alert_service.get_snippet(entry)
@@ -533,13 +536,14 @@ class TestClassifyStudentsWeekendHandling:
 
     def test_monday_with_friday_entry_should_be_completed(self):
         """月曜日: 金曜日に提出した生徒は「対応済み」に分類される"""
-        from datetime import datetime, date
+        from datetime import date
+        from datetime import datetime
         from unittest.mock import patch
 
         # 月曜日（2025-10-20）をモック
         mock_datetime = datetime(2025, 10, 20, 9, 0, 0)
 
-        with patch('django.utils.timezone.now') as mock_now:
+        with patch("django.utils.timezone.now") as mock_now:
             mock_now.return_value = mock_datetime
 
             # 金曜日（2025-10-17）にエントリー作成、既読+反応済み
@@ -568,13 +572,14 @@ class TestClassifyStudentsWeekendHandling:
 
     def test_monday_without_friday_entry_should_be_not_submitted(self):
         """月曜日: 金曜日に提出していない生徒は「未提出」に分類される"""
-        from datetime import datetime, date
+        from datetime import date
+        from datetime import datetime
         from unittest.mock import patch
 
         # 月曜日（2025-10-20）をモック
         mock_datetime = datetime(2025, 10, 20, 9, 0, 0)
 
-        with patch('django.utils.timezone.now') as mock_now:
+        with patch("django.utils.timezone.now") as mock_now:
             mock_now.return_value = mock_datetime
 
             # 木曜日（2025-10-16）にエントリー作成（金曜日は未提出）
@@ -603,13 +608,14 @@ class TestClassifyStudentsWeekendHandling:
 
     def test_monday_integrated_multiple_students(self):
         """月曜日: 複数生徒の分類が正しく動作する統合テスト"""
-        from datetime import datetime, date
+        from datetime import date
+        from datetime import datetime
         from unittest.mock import patch
 
         # 月曜日（2025-10-20）をモック
         mock_datetime = datetime(2025, 10, 20, 9, 0, 0)
 
-        with patch('django.utils.timezone.now') as mock_now:
+        with patch("django.utils.timezone.now") as mock_now:
             mock_now.return_value = mock_datetime
 
             # 生徒A: 金曜日に提出（対応済み）

@@ -38,12 +38,12 @@ class RoleBasedRedirectAdapter(DefaultAccountAdapter):
         # 大文字が含まれている場合はエラー
         if email != email.lower():
             raise ValidationError(
-                "メールアドレスは小文字のみ使用できます。"
+                "メールアドレスは小文字のみ使用できます。",
             )
 
         return email
 
-    def is_open_for_signup(self, request):  # noqa: ARG002
+    def is_open_for_signup(self, request):
         """ユーザー登録を無効化
 
         管理画面からのみユーザー作成を許可するため、
@@ -77,30 +77,29 @@ class RoleBasedRedirectAdapter(DefaultAccountAdapter):
         """
         user = request.user
 
-        # 管理者（スーパーユーザーのみ、profileアクセス不要）
-        if user.is_staff and user.is_superuser:
+        # 管理者（is_staff=Trueで管理画面にアクセス可能）
+        if user.is_staff:
             return "/admin/"
 
         # プロファイルを安全に取得（存在しない場合はNone）
-        profile = getattr(user, 'profile', None)
+        profile = getattr(user, "profile", None)
 
         if profile:
             # 校長/教頭
-            if profile.role == 'school_leader':
+            if profile.role == "school_leader":
                 return reverse("diary:school_overview")
 
             # 学年主任（担任と兼任の場合もこちら優先）
-            if profile.role == 'grade_leader':
+            if profile.role == "grade_leader":
                 return reverse("diary:grade_overview")
 
             # 担任（roleが'teacher'またはhomeroom_teacherとして登録）
-            if profile.role == 'teacher' or user.homeroom_classes.exists():
+            if profile.role == "teacher" or user.homeroom_classes.exists():
                 return reverse("diary:teacher_dashboard")
-        else:
-            # プロファイルが存在しない場合でも担任チェック
-            # （既存ユーザー互換性のため）
-            if user.homeroom_classes.exists():
-                return reverse("diary:teacher_dashboard")
+        # プロファイルが存在しない場合でも担任チェック
+        # （既存ユーザー互換性のため）
+        elif user.homeroom_classes.exists():
+            return reverse("diary:teacher_dashboard")
 
         # 生徒（デフォルト）
         return reverse("diary:student_dashboard")

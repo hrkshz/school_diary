@@ -15,7 +15,7 @@ User = get_user_model()
 
 
 @receiver(post_save, sender=User)
-def create_user_profile(sender, instance, created, **kwargs):  # noqa: ARG001
+def create_user_profile(sender, instance, created, **kwargs):
     """User作成時にUserProfileを自動作成する
 
     Args:
