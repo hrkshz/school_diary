@@ -218,6 +218,21 @@ class DiaryEntry(models.Model):
         student_name = self.student.get_full_name() or self.student.username
         return f"{student_name} - {self.entry_date}"
 
+    def clean(self):
+        """バリデーション"""
+        from django.core.exceptions import ValidationError
+
+        # 対応完了の場合は対応日時・対応者必須
+        if self.action_status == ActionStatus.COMPLETED:
+            if not self.action_completed_at:
+                raise ValidationError({
+                    'action_completed_at': '対応完了の場合は対応完了日時が必要です'
+                })
+            if not self.action_completed_by:
+                raise ValidationError({
+                    'action_completed_by': '対応完了の場合は対応者が必要です'
+                })
+
     def save(self, *args, **kwargs):
         """保存処理
 
@@ -385,6 +400,22 @@ class UserProfile(AuditMixin):
 
     def __str__(self):
         return f"{self.user.username} - {self.get_role_display()}"
+
+    def clean(self):
+        """バリデーション"""
+        from django.core.exceptions import ValidationError
+
+        # 学年主任の場合は管理学年必須
+        if self.role == 'grade_leader' and not self.managed_grade:
+            raise ValidationError({
+                'managed_grade': '学年主任の場合は管理学年を選択してください'
+            })
+
+        # 学年主任以外の場合は管理学年不要
+        if self.role != 'grade_leader' and self.managed_grade:
+            raise ValidationError({
+                'managed_grade': '学年主任以外の場合は管理学年を選択しないでください'
+            })
 
 
 class TeacherNoteQuerySet(models.QuerySet):
@@ -600,6 +631,22 @@ class DailyAttendance(models.Model):
     def __str__(self):
         student_name = self.student.get_full_name() or self.student.username
         return f"{student_name} - {self.date} ({self.get_status_display()})"
+
+    def clean(self):
+        """バリデーション"""
+        from django.core.exceptions import ValidationError
+
+        # 欠席の場合は理由必須
+        if self.status == AttendanceStatus.ABSENT and not self.absence_reason:
+            raise ValidationError({
+                'absence_reason': '欠席の場合は理由を選択してください'
+            })
+
+        # 欠席以外の場合は理由不要
+        if self.status != AttendanceStatus.ABSENT and self.absence_reason:
+            raise ValidationError({
+                'absence_reason': '欠席以外の場合は理由を選択しないでください'
+            })
 
     @classmethod
     def get_or_create_for_date(cls, classroom, date, teacher):
