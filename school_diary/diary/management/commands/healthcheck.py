@@ -9,12 +9,11 @@ Usage:
     dj healthcheck
 """
 
+from allauth.account.models import EmailAddress
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 from django.db import connection
-
-from allauth.account.models import EmailAddress
 
 User = get_user_model()
 
@@ -57,18 +56,17 @@ class Command(BaseCommand):
                         f"✅ ALLOWED_HOSTS: {settings.ALLOWED_HOSTS}",
                     ),
                 )
+        elif settings.ALLOWED_HOSTS == ["*"]:
+            errors.append(
+                "❌ 本番環境で ALLOWED_HOSTS=['*'] は危険です",
+            )
+            self.stdout.write(self.style.ERROR(errors[-1]))
         else:
-            if settings.ALLOWED_HOSTS == ["*"]:
-                errors.append(
-                    "❌ 本番環境で ALLOWED_HOSTS=['*'] は危険です",
-                )
-                self.stdout.write(self.style.ERROR(errors[-1]))
-            else:
-                self.stdout.write(
-                    self.style.SUCCESS(
-                        f"✅ ALLOWED_HOSTS: {settings.ALLOWED_HOSTS}",
-                    ),
-                )
+            self.stdout.write(
+                self.style.SUCCESS(
+                    f"✅ ALLOWED_HOSTS: {settings.ALLOWED_HOSTS}",
+                ),
+            )
 
         # 3. EmailAddress整合性チェック
         users_without_email = []
@@ -113,4 +111,3 @@ class Command(BaseCommand):
                 self.style.SUCCESS("\n✅ すべてのチェックが正常です"),
             )
 
-        return

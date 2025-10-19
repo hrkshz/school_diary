@@ -606,7 +606,6 @@ class TestRootURLRedirect:
         - Location ヘッダーが /diary/dashboard/ を指している
         """
         # Arrange: 生徒ユーザー + UserProfileを作成
-        from school_diary.diary.models import UserProfile
         student_user = User.objects.create_user(
             username="student",
             email="student@example.com",
@@ -650,7 +649,6 @@ class TestAuthenticationFlow:
         - 未認証なので /accounts/login/ にリダイレクト
         """
         # Arrange: 認証済みユーザー + UserProfile作成
-        from school_diary.diary.models import UserProfile
         user = User.objects.create_user(
             username="logout_test",
             email="logout@example.com",
@@ -676,8 +674,8 @@ class TestAuthenticationFlow:
             f"リダイレクトが発生していません。リダイレクトチェーン: {redirect_chain}"
         )
         # 最終的なURLが /accounts/login/ であることを確認
-        final_url = redirect_chain[-1][0] if redirect_chain else response.request['PATH_INFO']
-        assert "/accounts/login/" in final_url or response.request['PATH_INFO'] == "/accounts/login/", (
+        final_url = redirect_chain[-1][0] if redirect_chain else response.request["PATH_INFO"]
+        assert "/accounts/login/" in final_url or response.request["PATH_INFO"] == "/accounts/login/", (
             f"最終的に /accounts/login/ にリダイレクトされていません。最終URL: {final_url}, リダイレクトチェーン: {redirect_chain}"
         )
 
@@ -1010,7 +1008,8 @@ def teacher_with_student_entry(db):
 
     反応・対応記録フロー検証用のテストデータセット
     """
-    from datetime import date, timedelta
+    from datetime import date
+    from datetime import timedelta
 
     # 担任ユーザー作成
     teacher = User.objects.create_user(

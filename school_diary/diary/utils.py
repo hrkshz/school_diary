@@ -15,7 +15,6 @@ def get_current_classroom(user):
     Returns:
         ClassRoomオブジェクト or None
     """
-    from .models import ClassRoom
 
     if not user or not hasattr(user, "classes"):
         return None
@@ -99,19 +98,21 @@ def check_consecutive_decline(student, field_name="health_condition", days=3):
         - 欠席日は除外
     """
     from datetime import date as date_class
-    from .models import DailyAttendance, AttendanceStatus
+
+    from .models import AttendanceStatus
+    from .models import DailyAttendance
 
     # 過去N日分のエントリーを取得（欠席日を除外）
     # Prefetchで最適化: N+1問題回避
     entries = (
         student.diary_entries.filter(
-            entry_date__lt=date_class.today()
+            entry_date__lt=date_class.today(),
         )
         .exclude(
             entry_date__in=DailyAttendance.objects.filter(
                 student=student,
-                status=AttendanceStatus.ABSENT
-            ).values_list("date", flat=True)
+                status=AttendanceStatus.ABSENT,
+            ).values_list("date", flat=True),
         )
         .order_by("-entry_date")[:days]
     )

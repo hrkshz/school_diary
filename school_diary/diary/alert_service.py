@@ -18,9 +18,10 @@ Design principles:
 - Subsection pattern (Gmail/Trello/Jira style)
 """
 
-from datetime import timedelta
-from django.utils import timezone
 from collections import defaultdict
+from datetime import timedelta
+
+from django.utils import timezone
 
 from .models import DiaryEntry
 from .utils import get_previous_school_day
@@ -52,8 +53,8 @@ def classify_students(classroom):
     # 1. 全生徒の過去7日分を一括取得（N+1問題回避）
     all_recent_entries = DiaryEntry.objects.filter(
         student__classes=classroom,
-        entry_date__gte=today - timedelta(days=7)
-    ).select_related('student').order_by('student', '-entry_date')
+        entry_date__gte=today - timedelta(days=7),
+    ).select_related("student").order_by("student", "-entry_date")
 
     # 2. Pythonで生徒ごとに分類（メモリ内処理）
     entries_by_student = defaultdict(list)
@@ -102,12 +103,12 @@ def classify_students(classroom):
             completed.append((student, latest_entry.entry_date))
 
     return {
-        'important': important,
-        'needs_attention': needs_attention,
-        'not_submitted': not_submitted,
-        'unread': unread,
-        'no_reaction': no_reaction,
-        'completed': completed
+        "important": important,
+        "needs_attention": needs_attention,
+        "not_submitted": not_submitted,
+        "unread": unread,
+        "no_reaction": no_reaction,
+        "completed": completed,
     }
 
 
