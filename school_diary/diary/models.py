@@ -379,6 +379,17 @@ class UserProfile(AuditMixin):
         ("grade_leader", "学年主任"),
         ("school_leader", "教頭/校長"),
     ]
+
+    # ロール定数（マジックストリング解消）
+    ROLE_ADMIN = 'admin'
+    ROLE_STUDENT = 'student'
+    ROLE_TEACHER = 'teacher'
+    ROLE_GRADE_LEADER = 'grade_leader'
+    ROLE_SCHOOL_LEADER = 'school_leader'
+
+    # 担任権限を持つロール（admin.pyでも使用）
+    TEACHER_ROLES = [ROLE_TEACHER, ROLE_GRADE_LEADER, ROLE_SCHOOL_LEADER]
+
     role = models.CharField(
         "役割",
         max_length=20,
@@ -406,13 +417,13 @@ class UserProfile(AuditMixin):
         from django.core.exceptions import ValidationError
 
         # 学年主任の場合は管理学年必須
-        if self.role == 'grade_leader' and not self.managed_grade:
+        if self.role == self.ROLE_GRADE_LEADER and not self.managed_grade:
             raise ValidationError({
                 'managed_grade': '学年主任の場合は管理学年を選択してください'
             })
 
         # 学年主任以外の場合は管理学年不要
-        if self.role != 'grade_leader' and self.managed_grade:
+        if self.role != self.ROLE_GRADE_LEADER and self.managed_grade:
             raise ValidationError({
                 'managed_grade': '学年主任以外の場合は管理学年を選択しないでください'
             })

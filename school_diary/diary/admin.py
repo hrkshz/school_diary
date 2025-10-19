@@ -122,11 +122,11 @@ class DiaryEntryAdmin(admin.ModelAdmin):
         profile = request.user.profile
 
         # 教頭/校長: 全校生徒のデータにアクセス可能
-        if profile.role == "school_leader":
+        if profile.role == UserProfile.ROLE_SCHOOL_LEADER:
             return qs
 
         # 学年主任: 管理学年の生徒のデータにアクセス可能（過去の連絡帳も含む）
-        if profile.role == "grade_leader":
+        if profile.role == UserProfile.ROLE_GRADE_LEADER:
             # 最新年度の管理学年のクラスを取得
             latest_year = ClassRoom.objects.aggregate(Max("academic_year"))["academic_year__max"]
 
@@ -144,7 +144,7 @@ class DiaryEntryAdmin(admin.ModelAdmin):
             return qs.filter(student__in=students)
 
         # 担任: 自分が担任（主or副）のクラスの生徒のデータにアクセス可能（過去の連絡帳も含む）
-        if profile.role == "teacher":
+        if profile.role == UserProfile.ROLE_TEACHER:
             # 自分が主担任または副担任のクラスの生徒を取得
             my_classrooms = ClassRoom.objects.filter(
                 Q(homeroom_teacher=request.user) | Q(assistant_teachers=request.user),
@@ -255,7 +255,7 @@ class ClassRoomAdmin(admin.ModelAdmin):
         if db_field.name == "homeroom_teacher":
             # 担任権限を持つユーザーのみ表示
             kwargs["queryset"] = User.objects.filter(
-                profile__role__in=["teacher", "grade_leader", "school_leader"],
+                profile__role__in=UserProfile.TEACHER_ROLES,
             )
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
@@ -263,11 +263,11 @@ class ClassRoomAdmin(admin.ModelAdmin):
         """ManyToManyFieldの選択肢をフィルタリング（Phase 1 + Phase 2）"""
         if db_field.name == "students":
             # 生徒のみ表示
-            kwargs["queryset"] = User.objects.filter(profile__role="student")
+            kwargs["queryset"] = User.objects.filter(profile__role=UserProfile.ROLE_STUDENT)
         elif db_field.name == "assistant_teachers":
             # 担任権限を持つユーザーのみ表示
             kwargs["queryset"] = User.objects.filter(
-                profile__role__in=["teacher", "grade_leader", "school_leader"],
+                profile__role__in=UserProfile.TEACHER_ROLES,
             )
         return super().formfield_for_manytomany(db_field, request, **kwargs)
 
@@ -541,7 +541,7 @@ class CustomUserAdmin(BaseUserAdmin):
             role_name = profile.get_role_display()
 
             # 学年主任の場合、管理学年を表示
-            if profile.role == "grade_leader" and profile.managed_grade:
+            if profile.role == UserProfile.ROLE_GRADE_LEADER and profile.managed_grade:
                 role_name = f"{role_name}（{profile.managed_grade}年）"
 
             return format_html(

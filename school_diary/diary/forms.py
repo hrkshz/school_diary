@@ -123,11 +123,11 @@ class UserProfileAdminForm(forms.ModelForm):
         managed_grade = cleaned_data.get("managed_grade")
 
         # 学年主任以外の場合、managed_gradeを自動的にNoneにクリア
-        if role != "grade_leader":
+        if role != UserProfile.ROLE_GRADE_LEADER:
             cleaned_data["managed_grade"] = None
 
         # 学年主任の場合、managed_gradeが必須
-        elif role == "grade_leader" and not managed_grade:
+        elif role == UserProfile.ROLE_GRADE_LEADER and not managed_grade:
             self.add_error(
                 "managed_grade",
                 "学年主任の場合、管理学年の入力が必須です",
@@ -197,7 +197,7 @@ class CustomUserCreationForm(UserCreationForm):
         role = cleaned_data.get("role")
         managed_grade = cleaned_data.get("managed_grade")
 
-        if role == "grade_leader" and not managed_grade:
+        if role == UserProfile.ROLE_GRADE_LEADER and not managed_grade:
             self.add_error("managed_grade", "学年主任の場合、管理学年の選択が必須です。")
 
         return cleaned_data
@@ -226,7 +226,7 @@ class CustomUserCreationForm(UserCreationForm):
 
         # 生徒以外はis_staffをTrue
         role = self.cleaned_data["role"]
-        if role != "student":
+        if role != UserProfile.ROLE_STUDENT:
             user.is_staff = True
 
         if commit:
