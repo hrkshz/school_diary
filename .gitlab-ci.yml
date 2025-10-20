@@ -29,15 +29,15 @@ variables:
 
 # ステージ定義（実行順序）
 stages:
-  - test    # テスト実行
-  - build   # Dockerイメージビルド
-  - deploy  # EC2デプロイ
+  - test # テスト実行
+  - build # Dockerイメージビルド
+  - deploy # EC2デプロイ
 
 # 依存関係キャッシュ（ビルド高速化）
 cache:
   key:
     files:
-      - uv.lock  # uv.lockが変更されたらキャッシュ無効化
+      - uv.lock # uv.lockが変更されたらキャッシュ無効化
   paths:
     - .venv/
     - .cache/pip/
@@ -79,13 +79,13 @@ type-check:
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-  allow_failure: true  # mypyエラーは警告扱い
+  allow_failure: true # mypyエラーは警告扱い
 
 # Unit Test
 unit-test:
   stage: test
   services:
-    - postgres:16-alpine  # テスト用PostgreSQL
+    - postgres:16-alpine # テスト用PostgreSQL
   variables:
     POSTGRES_DB: test_db
     POSTGRES_USER: test_user
@@ -116,7 +116,7 @@ unit-test:
 
 build-image:
   stage: build
-  image: docker:24-dind  # Docker in Docker
+  image: docker:24-dind # Docker in Docker
   services:
     - docker:24-dind
   before_script:
@@ -159,7 +159,7 @@ build-image:
     # - docker push: レジストリにイメージをアップロード
 
   rules:
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH  # mainブランチのみ
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH # mainブランチのみ
   tags:
     - docker
 
@@ -237,10 +237,7 @@ deploy-production:
 
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-      when: manual  # 手動実行（安全のため）
-
-  only:
-    - main
+      when: manual # 手動実行（安全のため）
 
 # 📚 学習ポイント:
 # - environment: GitLabのEnvironments機能
