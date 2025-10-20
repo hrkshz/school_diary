@@ -51,6 +51,7 @@ cache:
 before_script:
   - python -V
   - pip install uv
+  - apt-get update && apt-get install -y libpq-dev
 
 #━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # Stage 1: Test（並列実行）
