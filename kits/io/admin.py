@@ -218,6 +218,6 @@ class ImportHistoryAdmin(admin.ModelAdmin):
         """エラー詳細を整形表示"""
         if obj.error_details:
             return mark_safe(
-                f"<pre>{json.dumps(obj.error_details, indent=2, ensure_ascii=False)}</pre>"
+                f"<pre>{json.dumps(obj.error_details, indent=2, ensure_ascii=False)}</pre>",
             )
         return "-"

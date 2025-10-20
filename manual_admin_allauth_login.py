@@ -8,15 +8,16 @@ DJANGO_ADMIN_FORCE_ALLAUTH = True の動作確認テスト
 4. 「もう一度ログイン」(/admin/) → /accounts/login/ にリダイレクト
 """
 
-import django
 import os
+
+import django
 import pytest
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.local")
 django.setup()
 
-from django.test import Client
 from django.contrib.auth import get_user_model
+from django.test import Client
 
 User = get_user_model()
 
@@ -64,7 +65,7 @@ def test_admin_login_flow():
     print(f"  Final URL: {response.request['PATH_INFO']}")
 
     # ログアウト後のテンプレート確認
-    content_str = response.content.decode('utf-8')
+    content_str = response.content.decode("utf-8")
     if "Thanks for spending some quality time" in content_str or "ようこそ" in content_str:
         print("  ✅ jazzmin logged_out.html 表示")
 

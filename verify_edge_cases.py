@@ -6,21 +6,21 @@ QA Phase 4のテストケースを自動検証します。
 
 import os
 import sys
-import django
 from datetime import date
 
+import django
+
 # Django設定
-sys.path.append('/app')
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings.local')
+sys.path.append("/app")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.local")
 django.setup()
 
 from django.contrib.auth import get_user_model
-from school_diary.diary.models import DiaryEntry, ClassRoom
-from school_diary.diary.utils import (
-    check_consecutive_decline,
-    check_critical_mental_state,
-    get_previous_school_day,
-)
+
+from school_diary.diary.models import ClassRoom
+from school_diary.diary.models import DiaryEntry
+from school_diary.diary.utils import check_consecutive_decline
+from school_diary.diary.utils import check_critical_mental_state
 
 User = get_user_model()
 
@@ -51,7 +51,7 @@ def verify_bva_tests():
     test_results.append(result_bva1)
 
     print(f"  BVA-1B: 1-B組の体調不良 {poor_health_count}名")
-    print(f"  期待: アラートあり（5名以上）")
+    print("  期待: アラートあり（5名以上）")
     print(f"  実際: アラート{'あり' if expected_alert else 'なし'}")
     print(f"  結果: {'✅ PASS' if result_bva1 else '❌ FAIL'}")
 
@@ -59,7 +59,7 @@ def verify_bva_tests():
     print("\n📌 BVA-2: メンタル連続低下の日数テスト")
 
     classroom_2a = ClassRoom.objects.get(grade=2, class_name="A", academic_year=2025)
-    students_2a = list(classroom_2a.students.all().order_by('id'))
+    students_2a = list(classroom_2a.students.all().order_by("id"))
 
     # BVA-2A: 2日連続低下 → アラートなし
     student_2a_1 = students_2a[0]
@@ -68,7 +68,7 @@ def verify_bva_tests():
     test_results.append(result_bva2a)
 
     print(f"  BVA-2A: {student_2a_1.username} (2日連続)")
-    print(f"  期待: アラートなし")
+    print("  期待: アラートなし")
     print(f"  実際: アラート{'あり' if decline_2a_1['has_alert'] else 'なし'}")
     print(f"  結果: {'✅ PASS' if result_bva2a else '❌ FAIL'}")
 
@@ -79,7 +79,7 @@ def verify_bva_tests():
     test_results.append(result_bva2b)
 
     print(f"  BVA-2B: {student_2a_2.username} (3日連続)")
-    print(f"  期待: アラートあり")
+    print("  期待: アラートあり")
     print(f"  実際: アラート{'あり' if decline_2a_2['has_alert'] else 'なし'}")
     if decline_2a_2["has_alert"]:
         print(f"  推移: {decline_2a_2['trend']}")
@@ -92,7 +92,7 @@ def verify_bva_tests():
     test_results.append(result_bva2c)
 
     print(f"  BVA-2C: {student_2a_3.username} (4日連続、最新3日評価)")
-    print(f"  期待: アラートあり（最新3日: 4→3→2）")
+    print("  期待: アラートあり（最新3日: 4→3→2）")
     print(f"  実際: アラート{'あり' if decline_2a_3['has_alert'] else 'なし'}")
     if decline_2a_3["has_alert"]:
         print(f"  推移: {decline_2a_3['trend']}")
@@ -110,13 +110,13 @@ def verify_negative_tests():
     test_results = []
 
     classroom_2a = ClassRoom.objects.get(grade=2, class_name="A", academic_year=2025)
-    students_2a = list(classroom_2a.students.all().order_by('id'))
+    students_2a = list(classroom_2a.students.all().order_by("id"))
 
     classroom_2b = ClassRoom.objects.get(grade=2, class_name="B", academic_year=2025)
-    students_2b = list(classroom_2b.students.all().order_by('id'))
+    students_2b = list(classroom_2b.students.all().order_by("id"))
 
     classroom_3a = ClassRoom.objects.get(grade=3, class_name="A", academic_year=2025)
-    students_3a = list(classroom_3a.students.all().order_by('id'))
+    students_3a = list(classroom_3a.students.all().order_by("id"))
 
     # NEG-1: 非連続パターン
     print("\n📌 NEG-1: 非連続パターン（アラート非表示確認）")
@@ -128,7 +128,7 @@ def verify_negative_tests():
     test_results.append(result_neg1a)
 
     print(f"  NEG-1A: {student_neg1a.username} (V字回復 1→5→1)")
-    print(f"  期待: アラートなし")
+    print("  期待: アラートなし")
     print(f"  実際: アラート{'あり' if decline_neg1a['has_alert'] else 'なし'}")
     print(f"  結果: {'✅ PASS' if result_neg1a else '❌ FAIL'}")
 
@@ -139,7 +139,7 @@ def verify_negative_tests():
     test_results.append(result_neg1b)
 
     print(f"  NEG-1B: {student_neg1b.username} (一時的低下 5→3→5)")
-    print(f"  期待: アラートなし")
+    print("  期待: アラートなし")
     print(f"  実際: アラート{'あり' if decline_neg1b['has_alert'] else 'なし'}")
     print(f"  結果: {'✅ PASS' if result_neg1b else '❌ FAIL'}")
 
@@ -150,7 +150,7 @@ def verify_negative_tests():
     test_results.append(result_neg1c)
 
     print(f"  NEG-1C: {student_neg1c.username} (横ばい 3→3→3)")
-    print(f"  期待: アラートなし")
+    print("  期待: アラートなし")
     print(f"  実際: アラート{'あり' if decline_neg1c['has_alert'] else 'なし'}")
     print(f"  結果: {'✅ PASS' if result_neg1c else '❌ FAIL'}")
 
@@ -165,7 +165,7 @@ def verify_negative_tests():
     test_results.append(result_neg2a)
 
     print(f"  NEG-2A: {student_neg2a.username} (0日分)")
-    print(f"  期待: 全アラートなし")
+    print("  期待: 全アラートなし")
     print(f"  実際: 連続低下={'あり' if decline_neg2a['has_alert'] else 'なし'}, Critical={'あり' if critical_neg2a['has_alert'] else 'なし'}")
     print(f"  結果: {'✅ PASS' if result_neg2a else '❌ FAIL'}")
 
@@ -177,7 +177,7 @@ def verify_negative_tests():
     test_results.append(result_neg2b)
 
     print(f"  NEG-2B: {student_neg2b.username} (1日分のみ, mental=1)")
-    print(f"  期待: 連続低下なし、Criticalあり（★1なので）")
+    print("  期待: 連続低下なし、Criticalあり（★1なので）")
     print(f"  実際: 連続低下={'あり' if decline_neg2b['has_alert'] else 'なし'}, Critical={'あり' if critical_neg2b['has_alert'] else 'なし'}")
     print(f"  結果: {'✅ PASS' if result_neg2b else '❌ FAIL'}")
 
@@ -188,7 +188,7 @@ def verify_negative_tests():
     test_results.append(result_neg2c)
 
     print(f"  NEG-2C: {student_neg2c.username} (2日分のみ)")
-    print(f"  期待: アラートなし")
+    print("  期待: アラートなし")
     print(f"  実際: アラート{'あり' if decline_neg2c['has_alert'] else 'なし'}")
     print(f"  結果: {'✅ PASS' if result_neg2c else '❌ FAIL'}")
 
@@ -202,7 +202,7 @@ def verify_negative_tests():
     test_results.append(result_neg3a)
 
     print(f"  NEG-3A: {student_neg3a.username} (金月火 5→4→3、土日挟む)")
-    print(f"  期待: アラートあり")
+    print("  期待: アラートあり")
     print(f"  実際: アラート{'あり' if decline_neg3a['has_alert'] else 'なし'}")
     if decline_neg3a["has_alert"]:
         print(f"  推移: {decline_neg3a['trend']}")
@@ -215,7 +215,7 @@ def verify_negative_tests():
     test_results.append(result_neg3b)
 
     print(f"  NEG-3B: {student_neg3b.username} (金月 5→4、2日のみ)")
-    print(f"  期待: アラートなし")
+    print("  期待: アラートなし")
     print(f"  実際: アラート{'あり' if decline_neg3b['has_alert'] else 'なし'}")
     print(f"  結果: {'✅ PASS' if result_neg3b else '❌ FAIL'}")
 
@@ -259,7 +259,7 @@ def verify_isolation_tests():
 
     # ISO-3A: 1-B組のstudent_006が表示されるか
     classroom_1b = ClassRoom.objects.get(grade=1, class_name="B", academic_year=2025)
-    students_1b = list(classroom_1b.students.all().order_by('id'))
+    students_1b = list(classroom_1b.students.all().order_by("id"))
     student_1b_escalation = students_1b[0]  # student_006
 
     found_1b = any(alert["student"] == student_1b_escalation for alert in escalation_alerts_grade1)
@@ -267,13 +267,13 @@ def verify_isolation_tests():
     test_results.append(result_iso3a)
 
     print(f"  ISO-3A: {student_1b_escalation.username} (1-B組)")
-    print(f"  期待: 学年主任に表示される")
+    print("  期待: 学年主任に表示される")
     print(f"  実際: {'表示される' if found_1b else '表示されない'}")
     print(f"  結果: {'✅ PASS' if result_iso3a else '❌ FAIL'}")
 
     # ISO-3B: 2-A組の生徒が表示されないか
     classroom_2a = ClassRoom.objects.get(grade=2, class_name="A", academic_year=2025)
-    students_2a = list(classroom_2a.students.all().order_by('id'))
+    students_2a = list(classroom_2a.students.all().order_by("id"))
     student_2a_escalation = students_2a[3]  # NEG-1Aを上書きしたstudent
 
     found_2a = any(alert["student"] == student_2a_escalation for alert in escalation_alerts_grade1)
@@ -281,7 +281,7 @@ def verify_isolation_tests():
     test_results.append(result_iso3b)
 
     print(f"  ISO-3B: {student_2a_escalation.username} (2-A組)")
-    print(f"  期待: 1年学年主任に表示されない（2年生のため）")
+    print("  期待: 1年学年主任に表示されない（2年生のため）")
     print(f"  実際: {'表示される' if found_2a else '表示されない'}")
     print(f"  結果: {'✅ PASS' if result_iso3b else '❌ FAIL'}")
 

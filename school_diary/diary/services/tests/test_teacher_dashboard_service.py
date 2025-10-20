@@ -5,12 +5,10 @@ from django.test import TestCase
 from django.utils import timezone
 
 from school_diary.diary.constants import ConditionLevel
-from school_diary.diary.models import (
-    ActionStatus,
-    ClassRoom,
-    DiaryEntry,
-    InternalAction,
-)
+from school_diary.diary.models import ActionStatus
+from school_diary.diary.models import ClassRoom
+from school_diary.diary.models import DiaryEntry
+from school_diary.diary.models import InternalAction
 from school_diary.diary.services.teacher_dashboard_service import (
     TeacherDashboardService,
 )
@@ -25,15 +23,15 @@ class TestGetClassroomSummary(TestCase):
         """テストデータ準備"""
         # テストクラス作成
         self.classroom = ClassRoom.objects.create(
-            grade=1, class_name="A", academic_year=2025
+            grade=1, class_name="A", academic_year=2025,
         )
 
         # テスト生徒作成
         self.student1 = User.objects.create_user(
-            username="student1", email="student1@example.com"
+            username="student1", email="student1@example.com",
         )
         self.student2 = User.objects.create_user(
-            username="student2", email="student2@example.com"
+            username="student2", email="student2@example.com",
         )
         self.classroom.students.add(self.student1, self.student2)
 
@@ -146,7 +144,7 @@ class TestGetStudentListWithUnreadCount(TestCase):
         """テストデータ準備"""
         # テストクラス作成
         self.classroom = ClassRoom.objects.create(
-            grade=1, class_name="A", academic_year=2025
+            grade=1, class_name="A", academic_year=2025,
         )
 
         # テスト生徒作成
@@ -171,7 +169,7 @@ class TestGetStudentListWithUnreadCount(TestCase):
 
         # Act
         result = TeacherDashboardService.get_student_list_with_unread_count(
-            self.classroom
+            self.classroom,
         )
 
         # Assert
@@ -183,7 +181,7 @@ class TestGetStudentListWithUnreadCount(TestCase):
 
         # Act
         result = TeacherDashboardService.get_student_list_with_unread_count(
-            self.classroom
+            self.classroom,
         )
 
         # Assert
@@ -217,7 +215,7 @@ class TestGetStudentListWithUnreadCount(TestCase):
 
         # Act
         result = TeacherDashboardService.get_student_list_with_unread_count(
-            self.classroom
+            self.classroom,
         )
 
         # Assert
@@ -234,7 +232,7 @@ class TestGetStudentListWithUnreadCount(TestCase):
 
         # Act
         result = TeacherDashboardService.get_student_list_with_unread_count(
-            self.classroom
+            self.classroom,
         )
 
         # Assert

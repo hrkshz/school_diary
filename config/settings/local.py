@@ -15,7 +15,7 @@ SECRET_KEY = env.str(
 # https://docs.djangoproject.com/en/dev/ref/settings/#allowed-hosts
 # 開発環境では全ホスト許可（WSL2の動的IPアドレス対応）
 # 本番環境（production.py）では厳格な設定を維持
-ALLOWED_HOSTS = ["*"]  # noqa: S104
+ALLOWED_HOSTS = ["*"]
 
 # CACHES
 # ------------------------------------------------------------------------------

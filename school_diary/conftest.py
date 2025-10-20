@@ -1,6 +1,7 @@
-import pytest  # type: ignore[import-untyped]
-from datetime import date, timedelta
+from datetime import date
+from datetime import timedelta
 
+import pytest  # type: ignore[import-untyped]
 from django.contrib.auth import get_user_model
 
 User = get_user_model()

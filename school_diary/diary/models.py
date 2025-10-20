@@ -226,11 +226,11 @@ class DiaryEntry(models.Model):
         if self.action_status == ActionStatus.COMPLETED:
             if not self.action_completed_at:
                 raise ValidationError({
-                    'action_completed_at': '対応完了の場合は対応完了日時が必要です'
+                    "action_completed_at": "対応完了の場合は対応完了日時が必要です",
                 })
             if not self.action_completed_by:
                 raise ValidationError({
-                    'action_completed_by': '対応完了の場合は対応者が必要です'
+                    "action_completed_by": "対応完了の場合は対応者が必要です",
                 })
 
     def save(self, *args, **kwargs):
@@ -381,11 +381,11 @@ class UserProfile(AuditMixin):
     ]
 
     # ロール定数（マジックストリング解消）
-    ROLE_ADMIN = 'admin'
-    ROLE_STUDENT = 'student'
-    ROLE_TEACHER = 'teacher'
-    ROLE_GRADE_LEADER = 'grade_leader'
-    ROLE_SCHOOL_LEADER = 'school_leader'
+    ROLE_ADMIN = "admin"
+    ROLE_STUDENT = "student"
+    ROLE_TEACHER = "teacher"
+    ROLE_GRADE_LEADER = "grade_leader"
+    ROLE_SCHOOL_LEADER = "school_leader"
 
     # 担任権限を持つロール（admin.pyでも使用）
     TEACHER_ROLES = [ROLE_TEACHER, ROLE_GRADE_LEADER, ROLE_SCHOOL_LEADER]
@@ -419,13 +419,13 @@ class UserProfile(AuditMixin):
         # 学年主任の場合は管理学年必須
         if self.role == self.ROLE_GRADE_LEADER and not self.managed_grade:
             raise ValidationError({
-                'managed_grade': '学年主任の場合は管理学年を選択してください'
+                "managed_grade": "学年主任の場合は管理学年を選択してください",
             })
 
         # 学年主任以外の場合は管理学年不要
         if self.role != self.ROLE_GRADE_LEADER and self.managed_grade:
             raise ValidationError({
-                'managed_grade': '学年主任以外の場合は管理学年を選択しないでください'
+                "managed_grade": "学年主任以外の場合は管理学年を選択しないでください",
             })
 
 
@@ -650,13 +650,13 @@ class DailyAttendance(models.Model):
         # 欠席の場合は理由必須
         if self.status == AttendanceStatus.ABSENT and not self.absence_reason:
             raise ValidationError({
-                'absence_reason': '欠席の場合は理由を選択してください'
+                "absence_reason": "欠席の場合は理由を選択してください",
             })
 
         # 欠席以外の場合は理由不要
         if self.status != AttendanceStatus.ABSENT and self.absence_reason:
             raise ValidationError({
-                'absence_reason': '欠席以外の場合は理由を選択しないでください'
+                "absence_reason": "欠席以外の場合は理由を選択しないでください",
             })
 
     @classmethod

@@ -22,11 +22,11 @@ def example_1_simple_notification():
     """例1: シンプルな通知送信"""
     # テンプレートを作成
     template, created = NotificationTemplate.objects.get_or_create(
-        code='welcome_email',
+        code="welcome_email",
         defaults={
-            'name': 'ウェルカムメール',
-            'subject_template': '{{ site_name }}へようこそ、{{ user.name }}様！',
-            'body_template': '''
+            "name": "ウェルカムメール",
+            "subject_template": "{{ site_name }}へようこそ、{{ user.name }}様！",
+            "body_template": """
 # ようこそ！
 
 {{ user.name }}様、{{ site_name }}へのご登録ありがとうございます。
@@ -38,9 +38,9 @@ def example_1_simple_notification():
 3. チームメンバーを招待する
 
 ご不明な点がございましたら、お気軽にお問い合わせください。
-            ''',
-            'notification_types': [NotificationType.EMAIL],
-        }
+            """,
+            "notification_types": [NotificationType.EMAIL],
+        },
     )
 
     # ユーザーを取得
@@ -52,11 +52,11 @@ def example_1_simple_notification():
     # 通知を作成して送信
     service = NotificationService()
     notification = service.create_from_template(
-        template_code='welcome_email',
+        template_code="welcome_email",
         recipient=user,
         context={
-            'site_name': 'school_diary',
-        }
+            "site_name": "school_diary",
+        },
     )
 
     # 同期送信
@@ -70,11 +70,11 @@ def example_2_approval_request():
     """例2: 承認依頼通知"""
     # テンプレートを作成
     template, created = NotificationTemplate.objects.get_or_create(
-        code='approval_request',
+        code="approval_request",
         defaults={
-            'name': '承認依頼',
-            'subject_template': '【要承認】{{ request_title }}',
-            'body_template': '''
+            "name": "承認依頼",
+            "subject_template": "【要承認】{{ request_title }}",
+            "body_template": """
 # 承認依頼
 
 {{ approver.name }}様
@@ -93,9 +93,9 @@ def example_2_approval_request():
 **承認期限:** {{ deadline }}
 
 [承認画面を開く]({{ approval_url }})
-            ''',
-            'notification_types': [NotificationType.EMAIL, NotificationType.IN_APP],
-        }
+            """,
+            "notification_types": [NotificationType.EMAIL, NotificationType.IN_APP],
+        },
     )
 
     # 承認者と申請者を取得
@@ -110,21 +110,21 @@ def example_2_approval_request():
     # 通知を作成
     service = NotificationService()
     notification = service.create_from_template(
-        template_code='approval_request',
+        template_code="approval_request",
         recipient=approver,
         context={
-            'approver': approver,
-            'requester': requester,
-            'request_title': '残業申請(2025年10月分)',
-            'request_date': '2025-10-04',
-            'request_description': '緊急案件対応のため、10月に20時間の残業を申請します。',
-            'deadline': '2025-10-07',
-            'approval_url': 'https://school_diary.example.com/approvals/123',
+            "approver": approver,
+            "requester": requester,
+            "request_title": "残業申請(2025年10月分)",
+            "request_date": "2025-10-04",
+            "request_description": "緊急案件対応のため、10月に20時間の残業を申請します。",
+            "deadline": "2025-10-07",
+            "approval_url": "https://school_diary.example.com/approvals/123",
         },
         notification_type=NotificationType.IN_APP,
-        priority='high',
-        related_object_type='approval_request',
-        related_object_id='123',
+        priority="high",
+        related_object_type="approval_request",
+        related_object_id="123",
     )
 
     # 非同期送信
@@ -134,15 +134,14 @@ def example_2_approval_request():
 def example_3_bulk_reminder():
     """例3: 一括リマインダー送信"""
     # 返却期限が近い図書館利用者に一括通知
-    from datetime import datetime, timedelta
 
     # テンプレート作成
     template, created = NotificationTemplate.objects.get_or_create(
-        code='library_return_reminder',
+        code="library_return_reminder",
         defaults={
-            'name': '返却リマインダー',
-            'subject_template': '【図書館】返却期限のお知らせ',
-            'body_template': '''
+            "name": "返却リマインダー",
+            "subject_template": "【図書館】返却期限のお知らせ",
+            "body_template": """
 {{ user.name }}様
 
 以下の資料の返却期限が近づいています。
@@ -152,9 +151,9 @@ def example_3_bulk_reminder():
 {% endfor %}
 
 期限までに返却をお願いいたします。
-            ''',
-            'notification_types': [NotificationType.EMAIL],
-        }
+            """,
+            "notification_types": [NotificationType.EMAIL],
+        },
     )
 
     # 返却期限が3日以内のユーザーを取得(仮)
@@ -165,10 +164,10 @@ def example_3_bulk_reminder():
 
     due_soon_users = [
         {
-            'user': user,
-            'books': [
-                {'title': 'Djangoの教科書', 'due_date': '2025-10-07'},
-                {'title': 'Pythonクックブック', 'due_date': '2025-10-08'},
+            "user": user,
+            "books": [
+                {"title": "Djangoの教科書", "due_date": "2025-10-07"},
+                {"title": "Pythonクックブック", "due_date": "2025-10-08"},
             ],
         },
         # ... 他のユーザー
@@ -179,11 +178,11 @@ def example_3_bulk_reminder():
     notifications = []
 
     for data in due_soon_users:
-        user_obj: User = data['user']
+        user_obj: User = data["user"]
         notification = service.create_from_template(
-            template_code='library_return_reminder',
+            template_code="library_return_reminder",
             recipient=user_obj,
-            context={'books': data['books']},
+            context={"books": data["books"]},
         )
         notifications.append(notification)
 

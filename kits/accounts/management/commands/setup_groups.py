@@ -1,7 +1,10 @@
-from django.contrib.auth.models import Group, Permission
+from django.contrib.auth.models import Group
+from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 from django.core.management.base import BaseCommand
+
 from kits.demos.models import DemoRequest
+
 
 class Command(BaseCommand):
     help = "Initializes user groups and assigns permissions."
@@ -46,9 +49,9 @@ class Command(BaseCommand):
 
             group.permissions.clear()
             permissions = Permission.objects.filter(
-                content_type=content_type, codename__in=perm_codenames
+                content_type=content_type, codename__in=perm_codenames,
             )
             group.permissions.add(*permissions)
             self.stdout.write(
-                self.style.SUCCESS(f'Permissions for "{group_name}" set.')
+                self.style.SUCCESS(f'Permissions for "{group_name}" set.'),
             )

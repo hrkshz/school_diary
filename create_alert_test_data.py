@@ -13,16 +13,19 @@
 
 import os
 import sys
+from datetime import date
+
 import django
-from datetime import date, timedelta
 
 # Django設定
-sys.path.append('/app')
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings.local')
+sys.path.append("/app")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.local")
 django.setup()
 
 from django.contrib.auth import get_user_model
-from school_diary.diary.models import DiaryEntry, ClassRoom
+
+from school_diary.diary.models import ClassRoom
+from school_diary.diary.models import DiaryEntry
 
 User = get_user_model()
 
@@ -39,7 +42,7 @@ def create_alert_test_data():
 
     # 1年A組の生徒を取得
     classroom_1a = ClassRoom.objects.get(grade=1, class_name="A", academic_year=2025)
-    students = list(classroom_1a.students.all().order_by('id')[:5])
+    students = list(classroom_1a.students.all().order_by("id")[:5])
 
     if len(students) < 5:
         print("❌ エラー: 1年A組の生徒が5名未満です")
@@ -97,7 +100,7 @@ def create_alert_test_data():
 
     # student_003: TC-C1（連続低下パターン 5→4→3 - Warning Alert） + TC-D1（体調不良）
     student_003 = students[2]
-    for i, (d, mental_val) in enumerate(zip([date1, date2, date3], [5, 4, 3]), 1):
+    for i, (d, mental_val) in enumerate(zip([date1, date2, date3], [5, 4, 3], strict=False), 1):
         # 最終日（date3）のみ体調不良を追加
         health_val = 2 if d == date3 else 4
         DiaryEntry.objects.create(
@@ -125,7 +128,7 @@ def create_alert_test_data():
 
     # 1年B組から3名取得（別のテスト用）
     classroom_1b = ClassRoom.objects.get(grade=1, class_name="B", academic_year=2025)
-    students_1b = list(classroom_1b.students.all().order_by('id'))
+    students_1b = list(classroom_1b.students.all().order_by("id"))
 
     # 1年B組の生徒にもデータ作成（1年B組の担任のテスト用）
     for i, student in enumerate(students_1b[:3], 1):
@@ -134,16 +137,16 @@ def create_alert_test_data():
             entry_date=date3,
             health_condition=2,  # 体調不良
             mental_condition=3,
-            reflection=f"体調不良です（1年B組）",
+            reflection="体調不良です（1年B組）",
         )
         print(f"✅ {student.username}: 体調不良 ★★ (1年B組データ)")
 
-    print(f"\n✅ 1年A組の体調不良: 5名（student_001, 002, 003, 004, 005 の最終日）→ Class Health Alert表示")
+    print("\n✅ 1年A組の体調不良: 5名（student_001, 002, 003, 004, 005 の最終日）→ Class Health Alert表示")
 
     # TC-E1: 未提出生徒（student_006 = 1年B組の4人目）
     # 何もデータを作らない → 未提出 → Student Reminder表示
     if len(classroom_1b.students.all()) >= 4:
-        student_no_entry = list(classroom_1b.students.all().order_by('id'))[3]
+        student_no_entry = list(classroom_1b.students.all().order_by("id"))[3]
         print(f"\n✅ {student_no_entry.username}: 未提出（Student Reminder表示）")
 
     print("\n" + "=" * 60)
@@ -152,7 +155,7 @@ def create_alert_test_data():
     print("\n📊 作成データサマリー:")
     print(f"  - 連絡帳エントリー: {DiaryEntry.objects.count()}件")
     print(f"  - 対象生徒: {len(students) + len(students_1b)}名")
-    print(f"  - 対象クラス: 1年A組 + 1年B組")
+    print("  - 対象クラス: 1年A組 + 1年B組")
     print("\n🎯 期待されるアラート:")
     print("  1. ✅ Critical Alert: 1件（student_001）")
     print("  2. ✅ Escalation Alert: 1件（student_002、学年主任へ）")

@@ -7,7 +7,6 @@ kits.approvals使用例。
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 
-from kits.approvals.models import ApprovalRequest
 from kits.approvals.models import ApprovalWorkflow
 from kits.approvals.services import ApprovalService
 
@@ -129,7 +128,7 @@ def example_3_submit_and_approve_request(workflow, content_object, requester, ap
             approver=approver,
             comment="内容を確認しました。承認します。",
         )
-        print(f"✓ Approved step 1")
+        print("✓ Approved step 1")
         print(f"  Status: {request.status}")
         print(f"  Current step: {request.current_step}")
 
@@ -168,7 +167,7 @@ def example_4_reject_request(workflow, content_object, requester, approver):
             approver=approver,
             comment="要件を満たしていないため、否認します。",
         )
-        print(f"✓ Rejected request")
+        print("✓ Rejected request")
         print(f"  Status: {request.status}")
         print(f"  Completed at: {request.completed_at}")
 
@@ -207,7 +206,7 @@ def example_5_return_to_requester(workflow, content_object, requester, approver)
             approver=approver,
             comment="記載内容に不足があるため、修正して再提出してください。",
         )
-        print(f"✓ Returned to requester")
+        print("✓ Returned to requester")
         print(f"  Status: {request.status}")
         print(f"  Current step: {request.current_step}")
 

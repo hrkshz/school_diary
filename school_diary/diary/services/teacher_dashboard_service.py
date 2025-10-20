@@ -3,19 +3,19 @@
 from datetime import timedelta
 
 from django.contrib.auth import get_user_model
-from django.db.models import Count, Prefetch, Q
+from django.db.models import Count
+from django.db.models import Prefetch
+from django.db.models import Q
 from django.utils import timezone
 
 from school_diary.diary.constants import NoteSettings
-from school_diary.diary.models import (
-    AbsenceReason,
-    ActionStatus,
-    AttendanceStatus,
-    DailyAttendance,
-    DiaryEntry,
-    InternalAction,
-    TeacherNote,
-)
+from school_diary.diary.models import AbsenceReason
+from school_diary.diary.models import ActionStatus
+from school_diary.diary.models import AttendanceStatus
+from school_diary.diary.models import DailyAttendance
+from school_diary.diary.models import DiaryEntry
+from school_diary.diary.models import InternalAction
+from school_diary.diary.models import TeacherNote
 
 User = get_user_model()
 
@@ -120,7 +120,7 @@ class TeacherDashboardService:
 
         absent_students = []
         for attendance in today_attendance.filter(
-            status=AttendanceStatus.ABSENT
+            status=AttendanceStatus.ABSENT,
         ).select_related("student"):
             absent_students.append(
                 {
@@ -131,7 +131,7 @@ class TeacherDashboardService:
                         else "未設定"
                     ),
                     "absence_reason_code": attendance.absence_reason,
-                }
+                },
             )
 
         return {

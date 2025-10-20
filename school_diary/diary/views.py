@@ -6,7 +6,6 @@ from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db.models import Count
 from django.db.models import Prefetch
 from django.db.models import Q
 from django.http import HttpResponseForbidden
@@ -33,7 +32,6 @@ from .models import AttendanceStatus
 from .models import ClassRoom
 from .models import DailyAttendance
 from .models import DiaryEntry
-from .models import InternalAction
 from .models import TeacherNote
 from .models import TeacherNoteReadStatus
 from .services.diary_entry_service import DiaryEntryService
@@ -194,7 +192,7 @@ class TeacherDashboardView(LoginRequiredMixin, TemplateView):
                     "student": student,
                     "unread_count": student.unread_count,
                     "latest_entry": today_entry,
-                }
+                },
             )
 
         # Table View用: 本日の未提出者数を計算
@@ -207,7 +205,7 @@ class TeacherDashboardView(LoginRequiredMixin, TemplateView):
 
         # 出席データを取得（Service層）
         student_data, all_students = TeacherDashboardService.get_attendance_data_for_modal(
-            classroom, today, student_data
+            classroom, today, student_data,
         )
 
         context["classroom"] = classroom
@@ -703,7 +701,7 @@ def teacher_add_note(request, student_id):
     if not note or len(note) < NoteSettings.MIN_NOTE_LENGTH:
         messages.error(
             request,
-            f"メモは{NoteSettings.MIN_NOTE_LENGTH}文字以上で入力してください。"
+            f"メモは{NoteSettings.MIN_NOTE_LENGTH}文字以上で入力してください。",
         )
         return redirect("diary:teacher_student_detail", student_id=student_id)
 

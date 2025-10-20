@@ -4,12 +4,13 @@ Celeryタスク
 通知の非同期送信を担当します。
 """
 import logging
-from typing import List
-from celery import shared_task
-from django.utils import timezone
-from django.db.models import Q
 
-from .models import Notification, NotificationStatus
+from celery import shared_task
+from django.db.models import Q
+from django.utils import timezone
+
+from .models import Notification
+from .models import NotificationStatus
 from .services import NotificationService
 
 logger = logging.getLogger(__name__)
@@ -37,17 +38,17 @@ def send_notification_task(self, notification_id: int):
             raise self.retry(countdown=60 * (notification.retry_count + 1))
 
         return {
-            'notification_id': notification_id,
-            'status': notification.status,
-            'success': success,
+            "notification_id": notification_id,
+            "status": notification.status,
+            "success": success,
         }
 
     except Notification.DoesNotExist:
         logger.error(f"通知が見つかりません: ID={notification_id}")
-        return {'error': 'Notification not found'}
+        return {"error": "Notification not found"}
 
     except Exception as e:
-        logger.error(f"通知送信エラー: {notification_id} - {str(e)}")
+        logger.error(f"通知送信エラー: {notification_id} - {e!s}")
         raise
 
 
@@ -65,7 +66,7 @@ def send_scheduled_notifications():
     notifications = Notification.objects.filter(
         Q(scheduled_at__lte=now) | Q(scheduled_at__isnull=True),
         status=NotificationStatus.PENDING,
-    ).order_by('priority', 'created_at')[:100]  # 最大100件
+    ).order_by("priority", "created_at")[:100]  # 最大100件
 
     logger.info(f"送信対象の通知: {notifications.count()}件")
 
@@ -74,8 +75,8 @@ def send_scheduled_notifications():
         send_notification_task.delay(notification.id)  # type: ignore[misc]
 
     return {
-        'processed': notifications.count(),
-        'timestamp': now.isoformat(),
+        "processed": notifications.count(),
+        "timestamp": now.isoformat(),
     }
 
 
@@ -99,8 +100,8 @@ def cleanup_old_notifications(retention_days: int = 90):
     logger.info(f"古い通知を削除: {deleted_count}件")
 
     return {
-        'deleted': deleted_count,
-        'cutoff_date': cutoff_date.isoformat(),
+        "deleted": deleted_count,
+        "cutoff_date": cutoff_date.isoformat(),
     }
 
 
@@ -112,7 +113,7 @@ def retry_failed_notifications():
     リトライ可能な失敗通知を再送信します。
     """
     from django.conf import settings
-    max_retries = settings.NOTIFICATIONS_CONFIG.get('RETRY_ATTEMPTS', 3)
+    max_retries = settings.NOTIFICATIONS_CONFIG.get("RETRY_ATTEMPTS", 3)
 
     # リトライ対象の通知を取得
     failed_notifications = Notification.objects.filter(
@@ -126,5 +127,5 @@ def retry_failed_notifications():
         send_notification_task.delay(notification.id)  # type: ignore[misc]
 
     return {
-        'retried': failed_notifications.count(),
+        "retried": failed_notifications.count(),
     }

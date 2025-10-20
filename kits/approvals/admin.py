@@ -229,7 +229,7 @@ class ApprovalRequestAdmin(SimpleHistoryAdmin):
 
         if obj.is_overdue():
             return format_html(
-                '<span style="color: red; font-weight: bold;">⚠ Overdue</span>'
+                '<span style="color: red; font-weight: bold;">⚠ Overdue</span>',
             )
 
         return obj.deadline.strftime("%Y-%m-%d %H:%M")

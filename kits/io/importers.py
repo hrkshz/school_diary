@@ -7,7 +7,6 @@ CSV/TSV/Excelファイルを読み込み、Djangoモデルに保存します。
 import logging
 from pathlib import Path
 from typing import Any
-from typing import Optional
 
 import chardet
 import pandas as pd
@@ -33,9 +32,9 @@ class BaseImporter:
     def __init__(
         self,
         model_name: str,
-        mapping: Optional[dict[str, str]] = None,
-        mapping_code: Optional[str] = None,
-        unique_fields: Optional[list[str]] = None,
+        mapping: dict[str, str] | None = None,
+        mapping_code: str | None = None,
+        unique_fields: list[str] | None = None,
         duplicate_strategy: str = DuplicateStrategy.SKIP,
         encoding: str = "utf-8",
         auto_detect_encoding: bool = True,
@@ -316,7 +315,7 @@ class CSVImporter(BaseImporter):
                 result = chardet.detect(f.read())
                 detected_encoding = result["encoding"]
                 logger.info(
-                    f"文字コード検出: {detected_encoding} (confidence: {result['confidence']})"
+                    f"文字コード検出: {detected_encoding} (confidence: {result['confidence']})",
                 )
                 encoding = detected_encoding or self.encoding
         else:

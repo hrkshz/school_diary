@@ -7,7 +7,6 @@ from django.contrib.auth.models import Group
 from django.test import TestCase
 
 from kits.approvals.models import ApprovalAction
-from kits.approvals.models import ApprovalRequest
 from kits.approvals.models import ApprovalStep
 from kits.approvals.models import ApprovalWorkflow
 from kits.approvals.services import ApprovalService
@@ -24,7 +23,7 @@ class ApprovalServiceTest(TestCase):
 
         # ワークフロー作成
         self.workflow = ApprovalWorkflow.objects.create(
-            name="2 Step Workflow", default_deadline_hours=48
+            name="2 Step Workflow", default_deadline_hours=48,
         )
 
         # グループ作成
@@ -47,21 +46,21 @@ class ApprovalServiceTest(TestCase):
 
         # ユーザー作成
         self.requester = User.objects.create_user(
-            email="requester@example.com", password="password"
+            email="requester@example.com", password="password",
         )
         self.manager = User.objects.create_user(
-            email="manager@example.com", password="password"
+            email="manager@example.com", password="password",
         )
         self.manager.groups.add(self.manager_group)
 
         self.director = User.objects.create_user(
-            email="director@example.com", password="password"
+            email="director@example.com", password="password",
         )
         self.director.groups.add(self.director_group)
 
         # 承認対象
         self.demo = DemoRequest.objects.create(
-            title="Test Demo", created_by=self.requester
+            title="Test Demo", created_by=self.requester,
         )
 
     def test_create_request(self):
@@ -130,13 +129,13 @@ class ApprovalServiceTest(TestCase):
 
         # 第1ステップを承認
         request = self.service.approve_step(
-            request=request, step=self.step1, approver=self.manager
+            request=request, step=self.step1, approver=self.manager,
         )
         self.assertEqual(request.current_step, self.step2)
 
         # 第2ステップを承認
         request = self.service.approve_step(
-            request=request, step=self.step2, approver=self.director
+            request=request, step=self.step2, approver=self.director,
         )
 
         self.assertEqual(request.status, "approved")

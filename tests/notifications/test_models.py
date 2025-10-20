@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
-from django.utils import timezone
 
 from kits.notifications.models import Notification
 from kits.notifications.models import NotificationStatus
@@ -23,21 +22,21 @@ class NotificationTemplateTestCase(TestCase):
 
     def setUp(self):
         self.template = NotificationTemplate.objects.create(
-            code='test_template',
-            name='テストテンプレート',
-            subject_template='{{ user.name }}様へのお知らせ',
-            body_template='こんにちは、{{ user.name }}さん！',
+            code="test_template",
+            name="テストテンプレート",
+            subject_template="{{ user.name }}様へのお知らせ",
+            body_template="こんにちは、{{ user.name }}さん！",
             notification_types=[NotificationType.EMAIL],
         )
 
     def test_template_creation(self):
         """テンプレートが正しく作成できる"""
-        self.assertEqual(self.template.code, 'test_template')
+        self.assertEqual(self.template.code, "test_template")
         self.assertTrue(self.template.is_active)
 
     def test_template_str(self):
         """__str__メソッドが正しく動作する"""
-        expected = 'test_template - テストテンプレート'
+        expected = "test_template - テストテンプレート"
         self.assertEqual(str(self.template), expected)
 
 
@@ -46,17 +45,17 @@ class NotificationTestCase(TestCase):
 
     def setUp(self):
         self.user = User.objects.create_user(
-            email='test@example.com',
-            name='テストユーザー',
-            password='password123'
+            email="test@example.com",
+            name="テストユーザー",
+            password="password123",
         )
 
         self.notification = Notification.objects.create(
             recipient=self.user,
             recipient_email=self.user.email,
             notification_type=NotificationType.EMAIL,
-            subject='テスト通知',
-            body='これはテストです',
+            subject="テスト通知",
+            body="これはテストです",
         )
 
     def test_notification_creation(self):
@@ -79,7 +78,7 @@ class NotificationTestCase(TestCase):
 
     def test_mark_as_failed(self):
         """失敗マークが正しく動作する"""
-        error_msg = 'Test error'
+        error_msg = "Test error"
         self.notification.mark_as_failed(error_msg)
         self.assertEqual(self.notification.status, NotificationStatus.FAILED)
         self.assertEqual(self.notification.error_message, error_msg)
@@ -88,7 +87,7 @@ class NotificationTestCase(TestCase):
     def test_can_retry(self):
         """リトライ可否が正しく判定される"""
         # 初回失敗
-        self.notification.mark_as_failed('Error')
+        self.notification.mark_as_failed("Error")
         self.assertTrue(self.notification.can_retry)
 
         # 3回失敗(上限)

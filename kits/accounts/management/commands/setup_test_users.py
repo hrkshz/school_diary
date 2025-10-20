@@ -89,10 +89,10 @@ class Command(BaseCommand):
 
                 self.stdout.write(
                     self.style.SUCCESS(
-                        f"User '{user.username}' ({user.get_full_name()}) created."
-                    )
+                        f"User '{user.username}' ({user.get_full_name()}) created.",
+                    ),
                 )
             else:
                 self.stdout.write(
-                    self.style.WARNING(f"User '{user.username}' already exists.")
+                    self.style.WARNING(f"User '{user.username}' already exists."),
                 )

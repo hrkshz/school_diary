@@ -147,7 +147,7 @@ def check_design_doc_quality(package_name: str) -> list[str]:
 
     if missing_keywords:
         issues.append(
-            f"設計思想に重要なキーワードが不足: {', '.join(missing_keywords)}"
+            f"設計思想に重要なキーワードが不足: {', '.join(missing_keywords)}",
         )
 
     # 最低限の内容チェック
@@ -170,7 +170,7 @@ def check_quality(package_name: str) -> QualityResult:
     # ファイル数チェック（エラー）
     if stats.file_count < MIN_FILE_COUNT:
         errors.append(
-            f"ファイル数不足: {stats.file_count}/{MIN_FILE_COUNT}ファイル"
+            f"ファイル数不足: {stats.file_count}/{MIN_FILE_COUNT}ファイル",
         )
 
     # 設計思想の内容チェック（エラー）
@@ -184,7 +184,7 @@ def check_quality(package_name: str) -> QualityResult:
             actual_lines = stats.files[file_name]
             if actual_lines < recommended_lines:
                 warnings.append(
-                    f"{file_name}: {actual_lines}/{recommended_lines}行（参考値、内容が充実していれば問題なし）"
+                    f"{file_name}: {actual_lines}/{recommended_lines}行（参考値、内容が充実していれば問題なし）",
                 )
 
     passed = len(errors) == 0
@@ -221,7 +221,7 @@ def print_result(result: QualityResult) -> None:
                 recommended_lines = REQUIRED_DOCS[file_name]
                 status_icon = "✅" if lines >= recommended_lines else "ℹ️"
                 print(
-                    f"  {status_icon} {file_name}: {lines:,}行 (参考値{recommended_lines}行)"
+                    f"  {status_icon} {file_name}: {lines:,}行 (参考値{recommended_lines}行)",
                 )
             else:
                 print(f"  ❌ {file_name}: 未作成")
@@ -247,7 +247,7 @@ def print_comparison(results: list[QualityResult]) -> None:
     print("📊 パッケージ比較表")
     print("=" * 80)
     print(
-        f"{'パッケージ':<20} {'ファイル数':<10} {'総行数':<15} {'サイズ':<10} {'ステータス':<10}"
+        f"{'パッケージ':<20} {'ファイル数':<10} {'総行数':<15} {'サイズ':<10} {'ステータス':<10}",
     )
     print("-" * 80)
 
@@ -258,7 +258,7 @@ def print_comparison(results: list[QualityResult]) -> None:
             f"{result.stats.file_count:<10} "
             f"{result.stats.total_lines:<15,} "
             f"{result.stats.total_size_kb:<9.1f}KB "
-            f"{status}"
+            f"{status}",
         )
 
     print("-" * 80)
@@ -266,7 +266,7 @@ def print_comparison(results: list[QualityResult]) -> None:
         f"{'必須基準':<20} "
         f"{MIN_FILE_COUNT:<10} "
         f"{'（参考値）':<15} "
-        f"{'（参考値）':<10}"
+        f"{'（参考値）':<10}",
     )
     print("=" * 80 + "\n")
     print("注: 行数とサイズは参考値です。")
@@ -303,11 +303,10 @@ def main() -> int:
         all_passed = all(r.passed for r in results)
         return 0 if all_passed else 1
 
-    else:
-        # 単一パッケージをチェック
-        result = check_quality(package_arg)
-        print_result(result)
-        return 0 if result.passed else 1
+    # 単一パッケージをチェック
+    result = check_quality(package_arg)
+    print_result(result)
+    return 0 if result.passed else 1
 
 
 if __name__ == "__main__":

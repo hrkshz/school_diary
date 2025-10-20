@@ -39,7 +39,7 @@ class ImportValidator:
                         "model": model,
                         "fields": "__all__",
                     },
-                )
+                ),
             },
         )
 
@@ -89,7 +89,7 @@ class ImportValidator:
                                 "row": row_num,  # ヘッダー行を考慮して start=2
                                 "field": field,
                                 "error": error_msg,
-                            }
+                            },
                         )
 
         return all_errors

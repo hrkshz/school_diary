@@ -106,7 +106,7 @@ class DemoRequestAdmin(admin.ModelAdmin):
                 "現在の状態からは許可されていない操作です。",
                 messages.ERROR,
             )
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             self.message_user(
                 request,
                 f"予期しないエラーが発生しました: {e}",

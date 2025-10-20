@@ -39,7 +39,7 @@ def check_overdue_requests():
 
         except Exception:
             logger.exception(
-                "Failed to send overdue notification for request %s", request.id
+                "Failed to send overdue notification for request %s", request.id,
             )
 
     logger.info("Checked %s overdue requests, sent %s notifications", overdue_requests.count(), count)
@@ -82,7 +82,7 @@ def send_reminder_notifications(hours_before_deadline: int = 24):
 
         except Exception:
             logger.exception(
-                "Failed to send reminder notification for request %s", request.id
+                "Failed to send reminder notification for request %s", request.id,
             )
 
     logger.info("Sent %s reminder notifications", count)
@@ -128,7 +128,7 @@ def auto_escalate_overdue_requests(max_overdue_hours: int = 72):
 
         except Exception:
             logger.exception(
-                "Failed to send escalation notification for request %s", request.id
+                "Failed to send escalation notification for request %s", request.id,
             )
 
     logger.info("Escalated %s requests", count)

@@ -17,7 +17,6 @@ from simple_history.models import HistoricalRecords
 
 if TYPE_CHECKING:
     from django.contrib.auth.models import AbstractUser
-    from django.contrib.auth.models import Group
 
     User = AbstractUser
 else:
@@ -121,7 +120,7 @@ class ApprovalStep(models.Model):
         _("Auto-approve if requester in role"),
         default=False,
         help_text=_(
-            "If True, automatically approve if requester belongs to approver role"
+            "If True, automatically approve if requester belongs to approver role",
         ),
     )
 
@@ -186,7 +185,7 @@ class ApprovalRequest(models.Model):
 
     # ステータス
     status = models.CharField(
-        _("Status"), max_length=20, choices=STATUS_CHOICES, default="draft"
+        _("Status"), max_length=20, choices=STATUS_CHOICES, default="draft",
     )
 
     # 現在のステップ
@@ -206,7 +205,7 @@ class ApprovalRequest(models.Model):
 
     # メタデータ
     metadata = models.JSONField(
-        _("Metadata"), default=dict, blank=True, help_text=_("Additional information")
+        _("Metadata"), default=dict, blank=True, help_text=_("Additional information"),
     )
 
     # タイムスタンプ
@@ -242,7 +241,7 @@ class ApprovalRequest(models.Model):
         # デフォルトの期限を設定
         if not self.deadline and self.workflow.default_deadline_hours:
             self.deadline = timezone.now() + timezone.timedelta(
-                hours=self.workflow.default_deadline_hours
+                hours=self.workflow.default_deadline_hours,
             )
 
         self.save()

@@ -6,21 +6,22 @@
 
 import os
 import sys
-import django
 from datetime import date
 
+import django
+
 # Django設定
-sys.path.append('/app')
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings.local')
+sys.path.append("/app")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.local")
 django.setup()
 
 from django.contrib.auth import get_user_model
-from school_diary.diary.models import DiaryEntry, ClassRoom
-from school_diary.diary.utils import (
-    check_consecutive_decline,
-    check_critical_mental_state,
-    get_previous_school_day,
-)
+
+from school_diary.diary.models import ClassRoom
+from school_diary.diary.models import DiaryEntry
+from school_diary.diary.utils import check_consecutive_decline
+from school_diary.diary.utils import check_critical_mental_state
+from school_diary.diary.utils import get_previous_school_day
 
 User = get_user_model()
 
@@ -97,11 +98,11 @@ def verify_teacher_dashboard_alerts():
     result_a1 = len(critical_alerts) == expected_critical
     test_results.append(result_a1)
 
-    print(f"TC-A1: Critical Alert（メンタル★1）")
+    print("TC-A1: Critical Alert（メンタル★1）")
     print(f"  期待: {expected_critical}件 (student_001 + student_002)")
     print(f"  実際: {len(critical_alerts)}件")
     print(f"  結果: {'✅ PASS' if result_a1 else '❌ FAIL'}")
-    print(f"  備考: student_002は担任ダッシュボードでCritical、学年主任でEscalation両方表示")
+    print("  備考: student_002は担任ダッシュボードでCritical、学年主任でEscalation両方表示")
 
     if critical_alerts:
         for alert in critical_alerts:
@@ -114,7 +115,7 @@ def verify_teacher_dashboard_alerts():
     result_c1 = len(decline_alerts) == expected_decline
     test_results.append(result_c1)
 
-    print(f"TC-C1: Warning Alert（メンタル連続低下）")
+    print("TC-C1: Warning Alert（メンタル連続低下）")
     print(f"  期待: {expected_decline}件")
     print(f"  実際: {len(decline_alerts)}件")
     print(f"  結果: {'✅ PASS' if result_c1 else '❌ FAIL'}")
@@ -131,7 +132,7 @@ def verify_teacher_dashboard_alerts():
     result_d1 = len(class_health_alerts) == expected_class_health
     test_results.append(result_d1)
 
-    print(f"TC-D1: Warning Alert（クラス体調不良）")
+    print("TC-D1: Warning Alert（クラス体調不良）")
     print(f"  期待: {expected_class_health}件")
     print(f"  実際: {len(class_health_alerts)}件")
     print(f"  結果: {'✅ PASS' if result_d1 else '❌ FAIL'}")
@@ -195,7 +196,7 @@ def verify_grade_leader_dashboard_alerts():
     result_b1 = len(escalation_alerts) == expected_escalation
     test_results.append(result_b1)
 
-    print(f"TC-B1: Escalation Alert（3日連続メンタル★1）")
+    print("TC-B1: Escalation Alert（3日連続メンタル★1）")
     print(f"  期待: {expected_escalation}件")
     print(f"  実際: {len(escalation_alerts)}件")
     print(f"  結果: {'✅ PASS' if result_b1 else '❌ FAIL'}")
@@ -238,7 +239,7 @@ def verify_student_dashboard_reminder():
     result_e1 = has_reminder == expected_reminder
     test_results.append(result_e1)
 
-    print(f"TC-E1: Student Reminder（未提出）")
+    print("TC-E1: Student Reminder（未提出）")
     print(f"  期待: リマインダー表示 = {expected_reminder}")
     print(f"  実際: リマインダー表示 = {has_reminder}")
     print(f"  対象日: {expected_date}")

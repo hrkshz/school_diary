@@ -1,11 +1,11 @@
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
+from django.http import JsonResponse
 from django.urls import include
 from django.urls import path
 from django.views import defaults as default_views
 from django.views.generic import TemplateView
-from django.http import JsonResponse
 
 from school_diary.diary.views import home_redirect_view
 

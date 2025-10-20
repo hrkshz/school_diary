@@ -161,7 +161,7 @@ class ImportHistory(models.Model):
         upload_to="imports/%Y/%m/%d/",
         blank=True,
         validators=[
-            FileExtensionValidator(allowed_extensions=["csv", "tsv", "txt", "xlsx", "xls"])
+            FileExtensionValidator(allowed_extensions=["csv", "tsv", "txt", "xlsx", "xls"]),
         ],
         verbose_name=_("ファイル"),
     )
@@ -291,7 +291,7 @@ class ImportHistory(models.Model):
                 "renumbered_count",
                 "completed_at",
                 "updated_at",
-            ]
+            ],
         )
 
     def mark_as_failed(self, error_message: str):
@@ -308,7 +308,7 @@ class ImportHistory(models.Model):
                 "row": row_number,
                 "field": field,
                 "error": error,
-            }
+            },
         )
         self.save(update_fields=["error_details", "updated_at"])
 

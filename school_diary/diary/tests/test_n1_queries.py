@@ -11,13 +11,11 @@ from django.db import connection
 from django.test import TestCase
 from django.test.utils import CaptureQueriesContext
 
-from school_diary.diary.models import (
-    ClassRoom,
-    DailyAttendance,
-    DiaryEntry,
-    TeacherNote,
-    TeacherNoteReadStatus,
-)
+from school_diary.diary.models import ClassRoom
+from school_diary.diary.models import DailyAttendance
+from school_diary.diary.models import DiaryEntry
+from school_diary.diary.models import TeacherNote
+from school_diary.diary.models import TeacherNoteReadStatus
 
 User = get_user_model()
 
@@ -29,7 +27,7 @@ class TestDiaryEntryN1Queries(TestCase):
         """テストデータ準備"""
         # 教員ユーザー作成
         self.teacher = User.objects.create_user(
-            username="teacher001", email="teacher001@example.com"
+            username="teacher001", email="teacher001@example.com",
         )
 
         # 生徒ユーザー作成（10人）
@@ -45,7 +43,7 @@ class TestDiaryEntryN1Queries(TestCase):
 
         # クラス作成
         self.classroom = ClassRoom.objects.create(
-            grade=1, class_name="A", academic_year=2025, homeroom_teacher=self.teacher
+            grade=1, class_name="A", academic_year=2025, homeroom_teacher=self.teacher,
         )
         self.classroom.students.set(self.students)
 
@@ -112,7 +110,7 @@ class TestTeacherNoteN1Queries(TestCase):
         self.notes = []
         for i, student in enumerate(self.students):
             note = TeacherNote.objects.create(
-                teacher=self.teacher, student=student, note=f"メモ{i}", is_shared=False
+                teacher=self.teacher, student=student, note=f"メモ{i}", is_shared=False,
             )
             self.notes.append(note)
 
@@ -143,7 +141,7 @@ class TestDailyAttendanceN1Queries(TestCase):
     def setUp(self):
         """テストデータ準備"""
         self.teacher = User.objects.create_user(
-            username="teacher_attendance_001", email="teacher_attendance_001@example.com"
+            username="teacher_attendance_001", email="teacher_attendance_001@example.com",
         )
 
         self.students = []
@@ -157,7 +155,7 @@ class TestDailyAttendanceN1Queries(TestCase):
             self.students.append(student)
 
         self.classroom = ClassRoom.objects.create(
-            grade=1, class_name="A", academic_year=2025, homeroom_teacher=self.teacher
+            grade=1, class_name="A", academic_year=2025, homeroom_teacher=self.teacher,
         )
 
         # 出席記録作成（10件）
@@ -257,13 +255,13 @@ class TestClassRoomAllTeachersN1Queries(TestCase):
     def setUp(self):
         """テストデータ準備"""
         self.homeroom_teacher = User.objects.create_user(
-            username="teacher_classroom_001", email="teacher_classroom_001@example.com"
+            username="teacher_classroom_001", email="teacher_classroom_001@example.com",
         )
 
         self.assistant_teachers = []
         for i in range(1, 4):  # 1-3
             teacher = User.objects.create_user(
-                username=f"assistant_teacher_{i:03d}", email=f"assistant_teacher_{i:03d}@example.com"
+                username=f"assistant_teacher_{i:03d}", email=f"assistant_teacher_{i:03d}@example.com",
             )
             self.assistant_teachers.append(teacher)
 

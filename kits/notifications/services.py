@@ -4,15 +4,21 @@
 通知の作成、送信、テンプレートレンダリングを担当します。
 """
 import logging
-from typing import TYPE_CHECKING, Optional, Dict, Any, List
-from django.contrib.auth import get_user_model
-from django.template import Context, Template
-from django.utils import timezone
-from django.conf import settings
-import markdown
-import bleach
+from typing import TYPE_CHECKING
+from typing import Any
 
-from .models import Notification, NotificationTemplate, NotificationType, NotificationStatus
+import bleach
+import markdown
+from django.conf import settings
+from django.contrib.auth import get_user_model
+from django.template import Context
+from django.template import Template
+from django.utils import timezone
+
+from .models import Notification
+from .models import NotificationStatus
+from .models import NotificationTemplate
+from .models import NotificationType
 
 if TYPE_CHECKING:
     from django.contrib.auth.models import AbstractUser as User
@@ -31,19 +37,19 @@ class NotificationTemplateRenderer:
     """
 
     ALLOWED_TAGS = [
-        'a', 'abbr', 'acronym', 'b', 'blockquote', 'code',
-        'em', 'i', 'li', 'ol', 'p', 'strong', 'ul', 'h1',
-        'h2', 'h3', 'h4', 'h5', 'h6', 'br', 'div', 'span',
+        "a", "abbr", "acronym", "b", "blockquote", "code",
+        "em", "i", "li", "ol", "p", "strong", "ul", "h1",
+        "h2", "h3", "h4", "h5", "h6", "br", "div", "span",
     ]
 
     ALLOWED_ATTRIBUTES = {
-        'a': ['href', 'title'],
-        'abbr': ['title'],
-        'acronym': ['title'],
+        "a": ["href", "title"],
+        "abbr": ["title"],
+        "acronym": ["title"],
     }
 
     @classmethod
-    def render_subject(cls, template_str: str, context: Dict[str, Any]) -> str:
+    def render_subject(cls, template_str: str, context: dict[str, Any]) -> str:
         """
         件名をレンダリング
 
@@ -57,10 +63,10 @@ class NotificationTemplateRenderer:
         template = Template(template_str)
         rendered = template.render(Context(context))
         # 件名は1行のみ、余分な空白を削除
-        return rendered.strip().replace('\n', ' ')
+        return rendered.strip().replace("\n", " ")
 
     @classmethod
-    def render_body(cls, template_str: str, context: Dict[str, Any],
+    def render_body(cls, template_str: str, context: dict[str, Any],
                    use_markdown: bool = True) -> str:
         """
         本文をレンダリング
@@ -80,14 +86,14 @@ class NotificationTemplateRenderer:
             # MarkdownをHTMLに変換
             html = markdown.markdown(
                 rendered,
-                extensions=['extra', 'nl2br', 'sane_lists']
+                extensions=["extra", "nl2br", "sane_lists"],
             )
             # HTMLをサニタイズ(XSS対策)
             safe_html = bleach.clean(
                 html,
                 tags=cls.ALLOWED_TAGS,
                 attributes=cls.ALLOWED_ATTRIBUTES,
-                strip=True
+                strip=True,
             )
             return safe_html
 
@@ -102,17 +108,17 @@ class NotificationService:
     """
 
     def __init__(self):
-        self.config = getattr(settings, 'NOTIFICATIONS_CONFIG', {})
-        self.enabled = self.config.get('ENABLED', True)
+        self.config = getattr(settings, "NOTIFICATIONS_CONFIG", {})
+        self.enabled = self.config.get("ENABLED", True)
 
     def create_from_template(
         self,
         template_code: str,
         recipient: User,
-        context: Dict[str, Any],
+        context: dict[str, Any],
         notification_type: str = NotificationType.EMAIL,
         priority: str = "normal",
-        scheduled_at: Optional[timezone.datetime] = None,
+        scheduled_at: timezone.datetime | None = None,
         related_object_type: str = "",
         related_object_id: str = "",
     ) -> Notification:
@@ -138,22 +144,22 @@ class NotificationService:
         # テンプレートを取得
         template = NotificationTemplate.objects.get(
             code=template_code,
-            is_active=True
+            is_active=True,
         )
 
         # ユーザー情報をコンテキストに追加
-        context.setdefault('user', recipient)
-        context.setdefault('site_name', 'school_diary')
+        context.setdefault("user", recipient)
+        context.setdefault("site_name", "school_diary")
 
         # テンプレートをレンダリング
         subject = NotificationTemplateRenderer.render_subject(
             template.subject_template,
-            context
+            context,
         )
         body = NotificationTemplateRenderer.render_body(
             template.body_template,
             context,
-            use_markdown=True
+            use_markdown=True,
         )
 
         # HTML本文(オプショナル)
@@ -162,7 +168,7 @@ class NotificationService:
             html_body = NotificationTemplateRenderer.render_body(
                 template.html_template,
                 context,
-                use_markdown=False
+                use_markdown=False,
             )
 
         # JSONシリアライズ可能なcontext_dataを作成
@@ -170,7 +176,7 @@ class NotificationService:
         serializable_context = {}
         for key, value in context.items():
             # Djangoモデルインスタンス(_metaを持つオブジェクト)をスキップ
-            if not hasattr(value, '_meta'):
+            if not hasattr(value, "_meta"):
                 serializable_context[key] = value
 
         # 通知オブジェクトを作成
@@ -190,7 +196,7 @@ class NotificationService:
         )
 
         logger.info(
-            f"通知作成: {notification.pk} - {template_code} → {recipient.email}"
+            f"通知作成: {notification.pk} - {template_code} → {recipient.email}",
         )
 
         return notification
@@ -216,7 +222,7 @@ class NotificationService:
 
         try:
             notification.status = NotificationStatus.SENDING
-            notification.save(update_fields=['status'])
+            notification.save(update_fields=["status"])
 
             # 通知タイプに応じて送信
             if notification.notification_type == NotificationType.EMAIL:
@@ -225,7 +231,7 @@ class NotificationService:
                 self._send_in_app(notification)
             else:
                 raise NotImplementedError(
-                    f"未実装の通知タイプ: {notification.notification_type}"
+                    f"未実装の通知タイプ: {notification.notification_type}",
                 )
 
             # 送信完了
@@ -257,13 +263,12 @@ class NotificationService:
 
         email.send()
 
-    def _send_in_app(self, notification: Notification):  # noqa: ARG002
+    def _send_in_app(self, notification: Notification):
         """アプリ内通知(データベースに保存するだけ)"""
         # すでにNotificationモデルに保存されているので、
         # ステータスを更新するだけ
-        pass
 
-    def send_batch(self, notifications: List[Notification]) -> Dict[str, int]:
+    def send_batch(self, notifications: list[Notification]) -> dict[str, int]:
         """
         通知を一括送信
 
@@ -273,7 +278,7 @@ class NotificationService:
         Returns:
             送信結果の統計(成功数、失敗数)
         """
-        batch_size = self.config.get('BATCH_SIZE', 100)
+        batch_size = self.config.get("BATCH_SIZE", 100)
         success_count = 0
         failed_count = 0
 
@@ -284,9 +289,9 @@ class NotificationService:
                 failed_count += 1
 
         return {
-            'success': success_count,
-            'failed': failed_count,
-            'total': success_count + failed_count,
+            "success": success_count,
+            "failed": failed_count,
+            "total": success_count + failed_count,
         }
 
     def get_unread_count(self, user: User) -> int:
