@@ -118,9 +118,15 @@ unit-test:
 
 build-image:
   stage: build
-  image: docker:24-dind # Docker in Docker
+  image: docker:24 # Docker CLI
   services:
     - docker:24-dind
+  variables:
+    # Docker in Docker設定
+    DOCKER_HOST: tcp://docker:2376
+    DOCKER_TLS_CERTDIR: "/certs"
+    DOCKER_CERT_PATH: "$DOCKER_TLS_CERTDIR/client"
+    DOCKER_TLS_VERIFY: 1
   before_script:
     # AWS CLIインストール
     - apk add --no-cache aws-cli python3 py3-pip
