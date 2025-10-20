@@ -20,6 +20,7 @@ class ApprovalWorkflowModelTest(TestCase):
 
     def setUp(self):
         self.user = User.objects.create_user(
+            username="test_user",
             email="test@example.com",
             password="password",
         )
@@ -90,6 +91,7 @@ class ApprovalStepModelTest(TestCase):
         self.workflow = ApprovalWorkflow.objects.create(name="Test Workflow")
         self.group = Group.objects.create(name="Approvers")
         self.user = User.objects.create_user(
+            username="approver",
             email="approver@example.com",
             password="password",
         )
@@ -144,6 +146,7 @@ class ApprovalStepModelTest(TestCase):
 
         # グループに所属していないユーザーは承認できない
         other_user = User.objects.create_user(
+            username="other_user",
             email="other@example.com",
             password="password",
         )
@@ -166,6 +169,7 @@ class ApprovalRequestModelTest(TestCase):
             approver_role=self.group,
         )
         self.user = User.objects.create_user(
+            username="requester",
             email="requester@example.com",
             password="password",
         )
@@ -238,6 +242,7 @@ class ApprovalRequestModelTest(TestCase):
     def test_get_pending_approvers(self):
         """承認可能なユーザーを取得できる。"""
         approver = User.objects.create_user(
+            username="approver2",
             email="approver@example.com",
             password="password",
         )

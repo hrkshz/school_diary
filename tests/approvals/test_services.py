@@ -47,16 +47,19 @@ class ApprovalServiceTest(TestCase):
 
         # ユーザー作成
         self.requester = User.objects.create_user(
+            username="requester",
             email="requester@example.com",
             password="password",
         )
         self.manager = User.objects.create_user(
+            username="manager",
             email="manager@example.com",
             password="password",
         )
         self.manager.groups.add(self.manager_group)
 
         self.director = User.objects.create_user(
+            username="director",
             email="director@example.com",
             password="password",
         )
