@@ -36,11 +36,11 @@ class EmailAuthenticationBackend(AllauthAuthenticationBackend):
         # デバッグログ
         if result:
             logger.info(
-                f"EmailAuthenticationBackend: Authentication successful for {credentials.get('email') or credentials.get('username')}"
+                f"EmailAuthenticationBackend: Authentication successful for {credentials.get('email') or credentials.get('username')}",
             )
         else:
             logger.warning(
-                f"EmailAuthenticationBackend: Authentication failed for {credentials.get('email') or credentials.get('username')}"
+                f"EmailAuthenticationBackend: Authentication failed for {credentials.get('email') or credentials.get('username')}",
             )
 
         return result

@@ -228,13 +228,13 @@ class DiaryEntry(models.Model):
                 raise ValidationError(
                     {
                         "action_completed_at": "対応完了の場合は対応完了日時が必要です",
-                    }
+                    },
                 )
             if not self.action_completed_by:
                 raise ValidationError(
                     {
                         "action_completed_by": "対応完了の場合は対応者が必要です",
-                    }
+                    },
                 )
 
     def save(self, *args, **kwargs):
@@ -425,7 +425,7 @@ class UserProfile(AuditMixin):
             raise ValidationError(
                 {
                     "managed_grade": "学年主任の場合は管理学年を選択してください",
-                }
+                },
             )
 
         # 学年主任以外の場合は管理学年不要
@@ -433,7 +433,7 @@ class UserProfile(AuditMixin):
             raise ValidationError(
                 {
                     "managed_grade": "学年主任以外の場合は管理学年を選択しないでください",
-                }
+                },
             )
 
 
@@ -660,7 +660,7 @@ class DailyAttendance(models.Model):
             raise ValidationError(
                 {
                     "absence_reason": "欠席の場合は理由を選択してください",
-                }
+                },
             )
 
         # 欠席以外の場合は理由不要
@@ -668,7 +668,7 @@ class DailyAttendance(models.Model):
             raise ValidationError(
                 {
                     "absence_reason": "欠席以外の場合は理由を選択しないでください",
-                }
+                },
             )
 
     @classmethod

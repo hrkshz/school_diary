@@ -228,7 +228,7 @@ class TeacherDashboardView(LoginRequiredMixin, TemplateView):
                         "message": f"{student.get_full_name()}さん - メンタル★1",
                         "date": mental_state["date"],
                         "action": "声をかけてください。",
-                    }
+                    },
                 )
 
             # Level 3: Warning - メンタル3日連続低下
@@ -245,7 +245,7 @@ class TeacherDashboardView(LoginRequiredMixin, TemplateView):
                         "trend": trend_str,
                         "dates": mental_decline["dates"],
                         "action": "注意して見守ってください。",
-                    }
+                    },
                 )
 
         # Level 4: Warning - クラス5人以上が体調不良
@@ -264,7 +264,7 @@ class TeacherDashboardView(LoginRequiredMixin, TemplateView):
                     "message": f"クラス全体 - 体調不良が多いです（{poor_health_count}名）",
                     "date": previous_date,
                     "action": "注意してください。",
-                }
+                },
             )
 
         context["alerts"] = alerts
@@ -1163,7 +1163,7 @@ class GradeOverviewView(LoginRequiredMixin, TemplateView):
                             "message": f"【学年主任通知】{classroom}組 {student.get_full_name()}さん - メンタル★1が3日連続",
                             "dates": [entry.entry_date for entry in reversed(recent_entries)],
                             "action": "担任に状況を確認し、保護者面談や専門機関との連携を検討してください。",
-                        }
+                        },
                     )
 
         context["escalation_alerts"] = escalation_alerts
