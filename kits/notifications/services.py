@@ -3,6 +3,7 @@
 
 通知の作成、送信、テンプレートレンダリングを担当します。
 """
+
 import logging
 from typing import TYPE_CHECKING
 from typing import Any
@@ -37,9 +38,28 @@ class NotificationTemplateRenderer:
     """
 
     ALLOWED_TAGS = [
-        "a", "abbr", "acronym", "b", "blockquote", "code",
-        "em", "i", "li", "ol", "p", "strong", "ul", "h1",
-        "h2", "h3", "h4", "h5", "h6", "br", "div", "span",
+        "a",
+        "abbr",
+        "acronym",
+        "b",
+        "blockquote",
+        "code",
+        "em",
+        "i",
+        "li",
+        "ol",
+        "p",
+        "strong",
+        "ul",
+        "h1",
+        "h2",
+        "h3",
+        "h4",
+        "h5",
+        "h6",
+        "br",
+        "div",
+        "span",
     ]
 
     ALLOWED_ATTRIBUTES = {
@@ -66,8 +86,7 @@ class NotificationTemplateRenderer:
         return rendered.strip().replace("\n", " ")
 
     @classmethod
-    def render_body(cls, template_str: str, context: dict[str, Any],
-                   use_markdown: bool = True) -> str:
+    def render_body(cls, template_str: str, context: dict[str, Any], use_markdown: bool = True) -> str:
         """
         本文をレンダリング
 

@@ -404,6 +404,7 @@ class UserProfileInline(admin.StackedInline):
     新規作成時はSignalsで自動作成されるため非表示。
     編集時のみ表示して役割・管理学年を変更可能にする。
     """
+
     model = UserProfile
     can_delete = False  # UserProfileは必須（削除不可）
     max_num = 1  # OneToOneFieldなので1つのみ

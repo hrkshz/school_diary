@@ -1,6 +1,7 @@
 """
 Django管理画面設定
 """
+
 from django import forms
 from django.contrib import admin
 from django.urls import reverse
@@ -53,19 +54,31 @@ class NotificationTemplateAdmin(admin.ModelAdmin):
     readonly_fields = ["created_at", "updated_at", "usage_count"]
 
     fieldsets = (
-        ("基本情報", {
-            "fields": ("code", "name", "description", "is_active"),
-        }),
-        ("テンプレート", {
-            "fields": ("subject_template", "body_template", "html_template"),
-        }),
-        ("設定", {
-            "fields": ("notification_types",),
-        }),
-        ("メタ情報", {
-            "fields": ("usage_count", "created_at", "updated_at"),
-            "classes": ("collapse",),
-        }),
+        (
+            "基本情報",
+            {
+                "fields": ("code", "name", "description", "is_active"),
+            },
+        ),
+        (
+            "テンプレート",
+            {
+                "fields": ("subject_template", "body_template", "html_template"),
+            },
+        ),
+        (
+            "設定",
+            {
+                "fields": ("notification_types",),
+            },
+        ),
+        (
+            "メタ情報",
+            {
+                "fields": ("usage_count", "created_at", "updated_at"),
+                "classes": ("collapse",),
+            },
+        ),
     )
 
     @admin.display(description="通知タイプ")
@@ -121,41 +134,56 @@ class NotificationAdmin(admin.ModelAdmin):
     date_hierarchy = "created_at"
 
     fieldsets = (
-        ("受信者情報", {
-            "fields": ("recipient", "recipient_email"),
-        }),
-        ("通知内容", {
-            "fields": (
-                "notification_type",
-                "priority",
-                "template",
-                "subject",
-                "body",
-                "html_body",
-            ),
-        }),
-        ("ステータス", {
-            "fields": (
-                "status",
-                "scheduled_at",
-                "sent_at",
-                "read_at",
-                "error_message",
-                "retry_count",
-            ),
-        }),
-        ("関連情報", {
-            "fields": (
-                "related_object_type",
-                "related_object_id",
-                "context_data_display",
-            ),
-            "classes": ("collapse",),
-        }),
-        ("メタ情報", {
-            "fields": ("created_at", "updated_at"),
-            "classes": ("collapse",),
-        }),
+        (
+            "受信者情報",
+            {
+                "fields": ("recipient", "recipient_email"),
+            },
+        ),
+        (
+            "通知内容",
+            {
+                "fields": (
+                    "notification_type",
+                    "priority",
+                    "template",
+                    "subject",
+                    "body",
+                    "html_body",
+                ),
+            },
+        ),
+        (
+            "ステータス",
+            {
+                "fields": (
+                    "status",
+                    "scheduled_at",
+                    "sent_at",
+                    "read_at",
+                    "error_message",
+                    "retry_count",
+                ),
+            },
+        ),
+        (
+            "関連情報",
+            {
+                "fields": (
+                    "related_object_type",
+                    "related_object_id",
+                    "context_data_display",
+                ),
+                "classes": ("collapse",),
+            },
+        ),
+        (
+            "メタ情報",
+            {
+                "fields": ("created_at", "updated_at"),
+                "classes": ("collapse",),
+            },
+        ),
     )
 
     actions = ["resend_notifications", "mark_as_read"]

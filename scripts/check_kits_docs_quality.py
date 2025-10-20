@@ -263,10 +263,7 @@ def print_comparison(results: list[QualityResult]) -> None:
 
     print("-" * 80)
     print(
-        f"{'必須基準':<20} "
-        f"{MIN_FILE_COUNT:<10} "
-        f"{'（参考値）':<15} "
-        f"{'（参考値）':<10}",
+        f"{'必須基準':<20} {MIN_FILE_COUNT:<10} {'（参考値）':<15} {'（参考値）':<10}",
     )
     print("=" * 80 + "\n")
     print("注: 行数とサイズは参考値です。")
@@ -285,11 +282,7 @@ def main() -> int:
     if package_arg == "--all":
         # 全パッケージをチェック
         kits_dir = Path(__file__).parent.parent / "kits"
-        packages = [
-            d.name
-            for d in kits_dir.iterdir()
-            if d.is_dir() and not d.name.startswith("_")
-        ]
+        packages = [d.name for d in kits_dir.iterdir() if d.is_dir() and not d.name.startswith("_")]
 
         results = []
         for package in sorted(packages):

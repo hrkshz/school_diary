@@ -157,12 +157,7 @@ def check_critical_mental_state(student):
     from datetime import date as date_class
 
     # 最新のエントリーを取得
-    latest_entry = (
-        student.diary_entries
-        .filter(entry_date__lt=date_class.today())
-        .order_by("-entry_date")
-        .first()
-    )
+    latest_entry = student.diary_entries.filter(entry_date__lt=date_class.today()).order_by("-entry_date").first()
 
     if not latest_entry:
         return {"has_alert": False, "current_value": None, "date": None}

@@ -16,7 +16,9 @@ class ImportMappingModelTestCase(TestCase):
 
     def setUp(self):
         self.user = User.objects.create_user(
-            email="test@example.com", name="テストユーザー", password="password123",
+            email="test@example.com",
+            name="テストユーザー",
+            password="password123",
         )
 
     def test_create_mapping(self):
@@ -52,7 +54,9 @@ class ImportHistoryModelTestCase(TestCase):
 
     def setUp(self):
         self.user = User.objects.create_user(
-            email="test@example.com", name="テストユーザー", password="password123",
+            email="test@example.com",
+            name="テストユーザー",
+            password="password123",
         )
 
     def test_create_history(self):

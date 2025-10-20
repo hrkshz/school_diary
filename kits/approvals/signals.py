@@ -52,10 +52,7 @@ def _update_history_record(instance, user, transition_name, source, target):
         # change_reasonが未設定の場合のみ設定する
         # モデル側で明示的に設定された理由を尊重し、上書きしない
         if not latest_history.history_change_reason:
-            change_reason = (
-                f"State transitioned via '{transition_name}' "
-                f"from '{source}' to '{target}'."
-            )
+            change_reason = f"State transitioned via '{transition_name}' from '{source}' to '{target}'."
             update_fields["history_change_reason"] = change_reason
 
         # 更新する項目がある場合のみupdate()を実行

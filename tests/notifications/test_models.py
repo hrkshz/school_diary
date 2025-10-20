@@ -1,6 +1,7 @@
 """
 モデルのテスト
 """
+
 from typing import TYPE_CHECKING
 
 from django.contrib.auth import get_user_model
@@ -45,10 +46,12 @@ class NotificationTestCase(TestCase):
 
     def setUp(self):
         self.user = User.objects.create_user(
+            username="test_user",
             email="test@example.com",
-            name="テストユーザー",
             password="password123",
         )
+        self.user.first_name = "テストユーザー"
+        self.user.save()
 
         self.notification = Notification.objects.create(
             recipient=self.user,

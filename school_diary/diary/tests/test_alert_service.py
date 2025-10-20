@@ -47,10 +47,10 @@ def setup_classroom(db):
     students = []
     for i in range(3):
         student = User.objects.create_user(
-            username=f"student{i+1}@example.com",
-            email=f"student{i+1}@example.com",
+            username=f"student{i + 1}@example.com",
+            email=f"student{i + 1}@example.com",
             password="password123",
-            first_name=f"生徒{i+1}",
+            first_name=f"生徒{i + 1}",
             last_name="テスト",
         )
         student.profile.role = "student"
@@ -274,7 +274,7 @@ class TestCheckConsecutiveDecline:
         # 3日分のエントリー作成（5→4→3）
         entries = []
         for i, mental in enumerate([5, 4, 3]):
-            date = today - timedelta(days=2-i)
+            date = today - timedelta(days=2 - i)
             entry = DiaryEntry.objects.create(
                 student=student,
                 entry_date=date,
@@ -297,7 +297,7 @@ class TestCheckConsecutiveDecline:
 
         entries = []
         for i in range(3):
-            date = today - timedelta(days=2-i)
+            date = today - timedelta(days=2 - i)
             entry = DiaryEntry.objects.create(
                 student=student,
                 entry_date=date,
@@ -318,7 +318,7 @@ class TestCheckConsecutiveDecline:
 
         entries = []
         for i, mental in enumerate([2, 3, 4]):
-            date = today - timedelta(days=2-i)
+            date = today - timedelta(days=2 - i)
             entry = DiaryEntry.objects.create(
                 student=student,
                 entry_date=date,
@@ -339,7 +339,7 @@ class TestCheckConsecutiveDecline:
 
         entries = []
         for i, mental in enumerate([5, 2, 5]):
-            date = today - timedelta(days=2-i)
+            date = today - timedelta(days=2 - i)
             entry = DiaryEntry.objects.create(
                 student=student,
                 entry_date=date,
@@ -360,7 +360,7 @@ class TestCheckConsecutiveDecline:
 
         entries = []
         for i in range(2):  # 2件のみ
-            date = today - timedelta(days=1-i)
+            date = today - timedelta(days=1 - i)
             entry = DiaryEntry.objects.create(
                 student=student,
                 entry_date=date,
@@ -382,7 +382,7 @@ class TestCheckConsecutiveDecline:
 
         # 3日連続低下（5→4→3）
         for i, mental in enumerate([5, 4, 3]):
-            date = today - timedelta(days=2-i)
+            date = today - timedelta(days=2 - i)
             DiaryEntry.objects.create(
                 student=student,
                 entry_date=date,
@@ -404,7 +404,7 @@ class TestCheckConsecutiveDecline:
 
         # 3日連続低下 + 最新日がメンタル★1
         for i, mental in enumerate([5, 2, 1]):  # 5→2→1
-            date = today - timedelta(days=2-i)
+            date = today - timedelta(days=2 - i)
             DiaryEntry.objects.create(
                 student=student,
                 entry_date=date,
@@ -432,7 +432,7 @@ class TestFormatInlineHistory:
         # 3日分のエントリー作成
         entries = []
         for i in range(3):
-            date = today - timedelta(days=2-i)
+            date = today - timedelta(days=2 - i)
             entry = DiaryEntry.objects.create(
                 student=student,
                 entry_date=date,
@@ -563,12 +563,10 @@ class TestClassifyStudentsWeekendHandling:
 
             # 生徒Aは「対応済み」に分類される（金曜日=前登校日）
             completed_ids = [s.id for s, d in result["completed"]]
-            assert self.student_a.id in completed_ids, \
-                "金曜日に提出した生徒Aは「対応済み」に分類されるべき"
+            assert self.student_a.id in completed_ids, "金曜日に提出した生徒Aは「対応済み」に分類されるべき"
 
             # 生徒Aは「未提出」に分類されない
-            assert self.student_a not in result["not_submitted"], \
-                "金曜日に提出した生徒Aは「未提出」に分類されないべき"
+            assert self.student_a not in result["not_submitted"], "金曜日に提出した生徒Aは「未提出」に分類されないべき"
 
     def test_monday_without_friday_entry_should_be_not_submitted(self):
         """月曜日: 金曜日に提出していない生徒は「未提出」に分類される"""
@@ -598,13 +596,11 @@ class TestClassifyStudentsWeekendHandling:
             result = alert_service.classify_students(self.classroom)
 
             # 生徒Bは「未提出」に分類される（前登校日=金曜日に提出なし）
-            assert self.student_b in result["not_submitted"], \
-                "金曜日に提出していない生徒Bは「未提出」に分類されるべき"
+            assert self.student_b in result["not_submitted"], "金曜日に提出していない生徒Bは「未提出」に分類されるべき"
 
             # 生徒Bは「対応済み」に分類されない
             completed_ids = [s.id for s, d in result["completed"]]
-            assert self.student_b.id not in completed_ids, \
-                "金曜日に提出していない生徒Bは「対応済み」に分類されないべき"
+            assert self.student_b.id not in completed_ids, "金曜日に提出していない生徒Bは「対応済み」に分類されないべき"
 
     def test_monday_integrated_multiple_students(self):
         """月曜日: 複数生徒の分類が正しく動作する統合テスト"""
@@ -653,9 +649,5 @@ class TestClassifyStudentsWeekendHandling:
             assert self.student_b in result["not_submitted"], "生徒Bは未提出に分類されるべき"
 
             # カウント確認（「未対応」として表示される人数）
-            needs_response_count = (
-                len(result["not_submitted"]) +
-                len(result["unread"]) +
-                len(result["no_reaction"])
-            )
+            needs_response_count = len(result["not_submitted"]) + len(result["unread"]) + len(result["no_reaction"])
             assert needs_response_count >= 1, "「未対応」が1名以上いるべき"

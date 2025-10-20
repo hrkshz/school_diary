@@ -20,7 +20,8 @@ class ApprovalWorkflowModelTest(TestCase):
 
     def setUp(self):
         self.user = User.objects.create_user(
-            email="test@example.com", password="password",
+            email="test@example.com",
+            password="password",
         )
 
     def test_create_workflow(self):
@@ -44,10 +45,16 @@ class ApprovalWorkflowModelTest(TestCase):
         group = Group.objects.create(name="Approvers")
 
         step1 = ApprovalStep.objects.create(
-            workflow=workflow, order=1, name="Step 1", approver_role=group,
+            workflow=workflow,
+            order=1,
+            name="Step 1",
+            approver_role=group,
         )
         step2 = ApprovalStep.objects.create(
-            workflow=workflow, order=2, name="Step 2", approver_role=group,
+            workflow=workflow,
+            order=2,
+            name="Step 2",
+            approver_role=group,
         )
 
         steps = workflow.get_steps()
@@ -60,10 +67,16 @@ class ApprovalWorkflowModelTest(TestCase):
         group = Group.objects.create(name="Approvers")
 
         step1 = ApprovalStep.objects.create(
-            workflow=workflow, order=1, name="Step 1", approver_role=group,
+            workflow=workflow,
+            order=1,
+            name="Step 1",
+            approver_role=group,
         )
         ApprovalStep.objects.create(
-            workflow=workflow, order=2, name="Step 2", approver_role=group,
+            workflow=workflow,
+            order=2,
+            name="Step 2",
+            approver_role=group,
         )
 
         first_step = workflow.get_first_step()
@@ -77,7 +90,8 @@ class ApprovalStepModelTest(TestCase):
         self.workflow = ApprovalWorkflow.objects.create(name="Test Workflow")
         self.group = Group.objects.create(name="Approvers")
         self.user = User.objects.create_user(
-            email="approver@example.com", password="password",
+            email="approver@example.com",
+            password="password",
         )
         self.user.groups.add(self.group)
 
@@ -98,10 +112,16 @@ class ApprovalStepModelTest(TestCase):
     def test_get_next_step(self):
         """次のステップを取得できる。"""
         step1 = ApprovalStep.objects.create(
-            workflow=self.workflow, order=1, name="Step 1", approver_role=self.group,
+            workflow=self.workflow,
+            order=1,
+            name="Step 1",
+            approver_role=self.group,
         )
         step2 = ApprovalStep.objects.create(
-            workflow=self.workflow, order=2, name="Step 2", approver_role=self.group,
+            workflow=self.workflow,
+            order=2,
+            name="Step 2",
+            approver_role=self.group,
         )
 
         next_step = step1.get_next_step()
@@ -113,7 +133,10 @@ class ApprovalStepModelTest(TestCase):
     def test_can_approve(self):
         """ユーザーが承認できるかを判定できる。"""
         step = ApprovalStep.objects.create(
-            workflow=self.workflow, order=1, name="Step 1", approver_role=self.group,
+            workflow=self.workflow,
+            order=1,
+            name="Step 1",
+            approver_role=self.group,
         )
 
         # グループに所属しているユーザーは承認できる
@@ -121,7 +144,8 @@ class ApprovalStepModelTest(TestCase):
 
         # グループに所属していないユーザーは承認できない
         other_user = User.objects.create_user(
-            email="other@example.com", password="password",
+            email="other@example.com",
+            password="password",
         )
         self.assertFalse(step.can_approve(other_user))
 
@@ -131,17 +155,23 @@ class ApprovalRequestModelTest(TestCase):
 
     def setUp(self):
         self.workflow = ApprovalWorkflow.objects.create(
-            name="Test Workflow", default_deadline_hours=48,
+            name="Test Workflow",
+            default_deadline_hours=48,
         )
         self.group = Group.objects.create(name="Approvers")
         self.step = ApprovalStep.objects.create(
-            workflow=self.workflow, order=1, name="Step 1", approver_role=self.group,
+            workflow=self.workflow,
+            order=1,
+            name="Step 1",
+            approver_role=self.group,
         )
         self.user = User.objects.create_user(
-            email="requester@example.com", password="password",
+            email="requester@example.com",
+            password="password",
         )
         self.demo = DemoRequest.objects.create(
-            title="Test Demo", created_by=self.user,
+            title="Test Demo",
+            created_by=self.user,
         )
 
     def test_create_request(self):
@@ -208,7 +238,8 @@ class ApprovalRequestModelTest(TestCase):
     def test_get_pending_approvers(self):
         """承認可能なユーザーを取得できる。"""
         approver = User.objects.create_user(
-            email="approver@example.com", password="password",
+            email="approver@example.com",
+            password="password",
         )
         approver.groups.add(self.group)
 

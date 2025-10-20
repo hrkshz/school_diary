@@ -72,9 +72,7 @@ class DemoRequestAdmin(admin.ModelAdmin):
                 {
                     "name": t.name,
                     "verbose": (
-                        t.method.__doc__.split("(")[0].strip()
-                        if t.method.__doc__
-                        else t.name.replace("_", " ").title()
+                        t.method.__doc__.split("(")[0].strip() if t.method.__doc__ else t.name.replace("_", " ").title()
                     ),
                 }
                 for t in transitions

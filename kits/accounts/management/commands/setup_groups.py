@@ -49,7 +49,8 @@ class Command(BaseCommand):
 
             group.permissions.clear()
             permissions = Permission.objects.filter(
-                content_type=content_type, codename__in=perm_codenames,
+                content_type=content_type,
+                codename__in=perm_codenames,
             )
             group.permissions.add(*permissions)
             self.stdout.write(

@@ -306,11 +306,7 @@ class Report(models.Model):
     @property
     def is_downloadable(self) -> bool:
         """ダウンロード可能かどうか"""
-        return (
-            self.status == ReportStatus.COMPLETED
-            and bool(self.file)
-            and not self.is_expired
-        )
+        return self.status == ReportStatus.COMPLETED and bool(self.file) and not self.is_expired
 
 
 class ReportSchedule(models.Model):

@@ -80,7 +80,7 @@ plugins = ["mypy_django_plugin.main"]
 module = "*.migrations.*"
 ignore_errors = true
 
-[tool.django-stubs]
+[mypy.plugins.django-stubs]
 django_settings_module = "config.settings.test"
 
 # ==== djLint ====

@@ -3,6 +3,7 @@ Celeryタスク
 
 通知の非同期送信を担当します。
 """
+
 import logging
 
 from celery import shared_task
@@ -113,6 +114,7 @@ def retry_failed_notifications():
     リトライ可能な失敗通知を再送信します。
     """
     from django.conf import settings
+
     max_retries = settings.NOTIFICATIONS_CONFIG.get("RETRY_ATTEMPTS", 3)
 
     # リトライ対象の通知を取得

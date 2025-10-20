@@ -30,9 +30,7 @@ class KitsSettings:
         if name in self.defaults:
             return self.defaults[name]
 
-        msg = (
-            f"'{name}' setting not found in KitsSettings defaults or project settings."
-        )
+        msg = f"'{name}' setting not found in KitsSettings defaults or project settings."
         raise AttributeError(
             msg,
         )

@@ -3,6 +3,7 @@
 
 H-MODEL-004: バリデーション不足の解消
 """
+
 import pytest
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
@@ -26,13 +27,17 @@ class TestDailyAttendanceValidation(TestCase):
     def setUp(self):
         """テストデータ準備"""
         self.student = User.objects.create_user(
-            username="student1", email="student1@example.com",
+            username="student1",
+            email="student1@example.com",
         )
         self.teacher = User.objects.create_user(
-            username="teacher1", email="teacher1@example.com",
+            username="teacher1",
+            email="teacher1@example.com",
         )
         self.classroom = ClassRoom.objects.create(
-            grade=1, class_name="A", academic_year=2025,
+            grade=1,
+            class_name="A",
+            academic_year=2025,
         )
 
     def test_absent_without_reason_raises_error(self):
@@ -102,7 +107,8 @@ class TestUserProfileValidation(TestCase):
     def setUp(self):
         """テストデータ準備"""
         self.user = User.objects.create_user(
-            username="grade_leader1", email="grade_leader1@example.com",
+            username="grade_leader1",
+            email="grade_leader1@example.com",
         )
         # signals.pyで自動作成されたUserProfileを取得
         self.profile = UserProfile.objects.get(user=self.user)
@@ -150,13 +156,17 @@ class TestDiaryEntryValidation(TestCase):
     def setUp(self):
         """テストデータ準備"""
         self.student = User.objects.create_user(
-            username="student1", email="student1@example.com",
+            username="student1",
+            email="student1@example.com",
         )
         self.teacher = User.objects.create_user(
-            username="teacher1", email="teacher1@example.com",
+            username="teacher1",
+            email="teacher1@example.com",
         )
         self.classroom = ClassRoom.objects.create(
-            grade=1, class_name="A", academic_year=2025,
+            grade=1,
+            class_name="A",
+            academic_year=2025,
         )
 
     def test_completed_without_completed_at_raises_error(self):

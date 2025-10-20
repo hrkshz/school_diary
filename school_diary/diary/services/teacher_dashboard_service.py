@@ -126,9 +126,7 @@ class TeacherDashboardService:
                 {
                     "student": attendance.student,
                     "absence_reason": (
-                        attendance.get_absence_reason_display()
-                        if attendance.absence_reason
-                        else "未設定"
+                        attendance.get_absence_reason_display() if attendance.absence_reason else "未設定"
                     ),
                     "absence_reason_code": attendance.absence_reason,
                 },
@@ -177,23 +175,15 @@ class TeacherDashboardService:
         # 出席情報をstudent_dataに追加（N+1問題回避済み）
         for data in student_data:
             attendance_data = attendance_by_student_id.get(data["student"].id)
-            data["attendance_status"] = (
-                attendance_data["status"] if attendance_data else "present"
-            )
-            data["absence_reason"] = (
-                attendance_data["absence_reason"] if attendance_data else None
-            )
+            data["attendance_status"] = attendance_data["status"] if attendance_data else "present"
+            data["absence_reason"] = attendance_data["absence_reason"] if attendance_data else None
 
         # 全生徒リストに出席データを付加
         all_students_with_attendance = []
         for student in classroom.students.all().order_by("last_name", "first_name"):
             attendance_data = attendance_by_student_id.get(student.id)
-            student.attendance_status = (
-                attendance_data["status"] if attendance_data else "present"
-            )
-            student.attendance_absence_reason = (
-                attendance_data["absence_reason"] if attendance_data else None
-            )
+            student.attendance_status = attendance_data["status"] if attendance_data else "present"
+            student.attendance_absence_reason = attendance_data["absence_reason"] if attendance_data else None
             all_students_with_attendance.append(student)
 
         return student_data, all_students_with_attendance
@@ -232,8 +222,7 @@ class TeacherDashboardService:
             TeacherNote.objects.filter(
                 student_id__in=same_grade_students,
                 is_shared=True,
-                created_at__gte=timezone.now()
-                - timedelta(days=NoteSettings.SHARED_NOTE_DAYS),
+                created_at__gte=timezone.now() - timedelta(days=NoteSettings.SHARED_NOTE_DAYS),
             )
             .exclude(
                 teacher=user,

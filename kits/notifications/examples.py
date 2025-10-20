@@ -3,6 +3,7 @@
 
 他のアプリケーションからkits.notificationsを使用する例
 """
+
 from typing import TYPE_CHECKING
 
 from django.contrib.auth import get_user_model
@@ -21,7 +22,7 @@ else:
 def example_1_simple_notification():
     """例1: シンプルな通知送信"""
     # テンプレートを作成
-    template, created = NotificationTemplate.objects.get_or_create(
+    _template, _created = NotificationTemplate.objects.get_or_create(
         code="welcome_email",
         defaults={
             "name": "ウェルカムメール",
@@ -69,7 +70,7 @@ def example_1_simple_notification():
 def example_2_approval_request():
     """例2: 承認依頼通知"""
     # テンプレートを作成
-    template, created = NotificationTemplate.objects.get_or_create(
+    _template, _created = NotificationTemplate.objects.get_or_create(
         code="approval_request",
         defaults={
             "name": "承認依頼",
@@ -136,7 +137,7 @@ def example_3_bulk_reminder():
     # 返却期限が近い図書館利用者に一括通知
 
     # テンプレート作成
-    template, created = NotificationTemplate.objects.get_or_create(
+    _template, _created = NotificationTemplate.objects.get_or_create(
         code="library_return_reminder",
         defaults={
             "name": "返却リマインダー",

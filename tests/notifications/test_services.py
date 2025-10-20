@@ -1,6 +1,7 @@
 """
 サービス層のテスト
 """
+
 from typing import TYPE_CHECKING
 
 from django.contrib.auth import get_user_model
@@ -42,10 +43,12 @@ class NotificationServiceTestCase(TestCase):
 
     def setUp(self):
         self.user = User.objects.create_user(
+            username="test_user",
             email="test@example.com",
-            name="テストユーザー",
             password="password123",
         )
+        self.user.first_name = "テストユーザー"
+        self.user.save()
 
         self.template = NotificationTemplate.objects.create(
             code="test_notification",

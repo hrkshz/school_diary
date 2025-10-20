@@ -68,12 +68,10 @@ class TestDiaryCreateViewUI:
             "diary_create.html の <form> 内に <button type='submit'> があるか確認してください。"
         )
         assert "提出する" in submit_btn.text, (
-            f"送信ボタンのテキストが正しくありません。"
-            f"期待: '提出する' を含む、実際: '{submit_btn.text}'"
+            f"送信ボタンのテキストが正しくありません。期待: '提出する' を含む、実際: '{submit_btn.text}'"
         )
         assert "btn-primary" in (submit_btn.get("class") or []), (
-            "送信ボタンに btn-primary クラスが適用されていません。"
-            "Bootstrap のプライマリボタンスタイルが必要です。"
+            "送信ボタンに btn-primary クラスが適用されていません。Bootstrap のプライマリボタンスタイルが必要です。"
         )
 
     def test_cancel_button_exists(self, authenticated_client):
@@ -124,12 +122,9 @@ class TestDiaryCreateViewUI:
         # Assert
         csrf_input = soup.find("input", {"name": "csrfmiddlewaretoken"})
         assert csrf_input is not None, (
-            "CSRFトークンが見つかりません。"
-            "フォーム内に {% csrf_token %} があるか確認してください。"
+            "CSRFトークンが見つかりません。フォーム内に {% csrf_token %} があるか確認してください。"
         )
-        assert csrf_input.get("type") == "hidden", (
-            "CSRFトークンは hidden フィールドである必要があります。"
-        )
+        assert csrf_input.get("type") == "hidden", "CSRFトークンは hidden フィールドである必要があります。"
 
     def test_form_has_post_method(self, authenticated_client):
         """
@@ -148,13 +143,9 @@ class TestDiaryCreateViewUI:
 
         # Assert
         form = soup.find("form")
-        assert form is not None, (
-            "フォームが見つかりません。"
-            "diary_create.html に <form> タグがあるか確認してください。"
-        )
+        assert form is not None, "フォームが見つかりません。diary_create.html に <form> タグがあるか確認してください。"
         assert form.get("method", "").lower() == "post", (
-            f"フォームのmethod属性がPOSTではありません。"
-            f"実際: '{form.get('method')}'"
+            f"フォームのmethod属性がPOSTではありません。実際: '{form.get('method')}'"
         )
 
     def test_entry_date_field_exists(self, authenticated_client):
@@ -179,8 +170,7 @@ class TestDiaryCreateViewUI:
             "DiaryEntryForm の entry_date フィールドが正しくレンダリングされているか確認してください。"
         )
         assert entry_date_input.get("type") == "date", (
-            f"記載日フィールドの type が date ではありません。"
-            f"実際: '{entry_date_input.get('type')}'"
+            f"記載日フィールドの type が date ではありません。実際: '{entry_date_input.get('type')}'"
         )
 
     def test_health_condition_field_exists(self, authenticated_client):
@@ -206,9 +196,7 @@ class TestDiaryCreateViewUI:
         )
         # 選択肢が5つあることを確認（1〜5）
         options = health_select.find_all("option")
-        assert len(options) >= 5, (
-            f"体調の選択肢が不足しています。期待: 5以上、実際: {len(options)}"
-        )
+        assert len(options) >= 5, f"体調の選択肢が不足しています。期待: 5以上、実際: {len(options)}"
 
     def test_mental_condition_field_exists(self, authenticated_client):
         """
@@ -233,9 +221,7 @@ class TestDiaryCreateViewUI:
         )
         # 選択肢が5つあることを確認（1〜5）
         options = mental_select.find_all("option")
-        assert len(options) >= 5, (
-            f"メンタル状態の選択肢が不足しています。期待: 5以上、実際: {len(options)}"
-        )
+        assert len(options) >= 5, f"メンタル状態の選択肢が不足しています。期待: 5以上、実際: {len(options)}"
 
     def test_reflection_field_exists(self, authenticated_client):
         """
@@ -260,9 +246,7 @@ class TestDiaryCreateViewUI:
         )
         # rows属性が5以上であることを確認（十分な入力スペース）
         rows = int(reflection_textarea.get("rows", 0))
-        assert rows >= 5, (
-            f"振り返りフィールドの rows が不足しています。期待: 5以上、実際: {rows}"
-        )
+        assert rows >= 5, f"振り返りフィールドの rows が不足しています。期待: 5以上、実際: {rows}"
 
     def test_page_title_correct(self, authenticated_client):
         """
@@ -286,8 +270,7 @@ class TestDiaryCreateViewUI:
             "base.html または diary_create.html に {% block title %} があるか確認してください。"
         )
         assert "連絡帳作成" in title_tag.text, (
-            f"ページタイトルが正しくありません。"
-            f"期待: '連絡帳作成' を含む、実際: '{title_tag.text}'"
+            f"ページタイトルが正しくありません。期待: '連絡帳作成' を含む、実際: '{title_tag.text}'"
         )
 
     def test_section_headings_exist(self, authenticated_client):
@@ -329,7 +312,7 @@ def authenticated_client_with_entries(db):
             entry_date=timezone.now().date() - timezone.timedelta(days=i),
             health_condition=3,  # 普通
             mental_condition=4,  # 元気
-            reflection=f"テスト日記{i+1}",
+            reflection=f"テスト日記{i + 1}",
         )
 
     client = Client()
@@ -360,12 +343,9 @@ class TestDiaryHistoryViewUI:
 
         # Assert
         title_tag = soup.find("title")
-        assert title_tag is not None, (
-            "<title> タグが見つかりません。"
-        )
+        assert title_tag is not None, "<title> タグが見つかりません。"
         assert "過去の記録" in title_tag.text, (
-            f"ページタイトルが正しくありません。"
-            f"期待: '過去の記録' を含む、実際: '{title_tag.text}'"
+            f"ページタイトルが正しくありません。期待: '過去の記録' を含む、実際: '{title_tag.text}'"
         )
 
     def test_back_button_exists(self, authenticated_client):
@@ -410,12 +390,8 @@ class TestDiaryHistoryViewUI:
 
         # Assert
         alert = soup.find("div", class_="alert-info")
-        assert alert is not None, (
-            "データなしメッセージ（alert-info）が見つかりません。"
-        )
-        assert "まだ連絡帳を提出していません" in alert.text, (
-            f"メッセージ内容が正しくありません。実際: '{alert.text}'"
-        )
+        assert alert is not None, "データなしメッセージ（alert-info）が見つかりません。"
+        assert "まだ連絡帳を提出していません" in alert.text, f"メッセージ内容が正しくありません。実際: '{alert.text}'"
 
     def test_table_exists_with_data(self, authenticated_client_with_entries):
         """
@@ -435,16 +411,11 @@ class TestDiaryHistoryViewUI:
         # Assert
         table = soup.find("table")
         assert table is not None, (
-            "テーブルが見つかりません。"
-            "diary_history.html に <table> 要素があるか確認してください。"
+            "テーブルが見つかりません。diary_history.html に <table> 要素があるか確認してください。"
         )
         table_classes = table.get("class") or []
-        assert "table-striped" in table_classes, (
-            "table-striped クラスが適用されていません。"
-        )
-        assert "table-hover" in table_classes, (
-            "table-hover クラスが適用されていません。"
-        )
+        assert "table-striped" in table_classes, "table-striped クラスが適用されていません。"
+        assert "table-hover" in table_classes, "table-hover クラスが適用されていません。"
 
     def test_table_headers_correct(self, authenticated_client_with_entries):
         """
@@ -462,16 +433,12 @@ class TestDiaryHistoryViewUI:
 
         # Assert
         thead = soup.find("thead")
-        assert thead is not None, (
-            "<thead> が見つかりません。"
-        )
+        assert thead is not None, "<thead> が見つかりません。"
         headers = [th.text.strip() for th in thead.find_all("th")]
         expected_headers = ["日付", "体調", "メンタル", "既読状態"]
 
         for expected in expected_headers:
-            assert expected in headers, (
-                f"ヘッダー '{expected}' が見つかりません。実際のヘッダー: {headers}"
-            )
+            assert expected in headers, f"ヘッダー '{expected}' が見つかりません。実際のヘッダー: {headers}"
 
     def test_entry_displayed_with_badges(self, authenticated_client_with_entries):
         """
@@ -490,14 +457,10 @@ class TestDiaryHistoryViewUI:
 
         # Assert
         tbody = soup.find("tbody")
-        assert tbody is not None, (
-            "<tbody> が見つかりません。"
-        )
+        assert tbody is not None, "<tbody> が見つかりません。"
 
         rows = tbody.find_all("tr")
-        assert len(rows) >= 1, (
-            "データ行が見つかりません。テストデータが正しく表示されていない可能性があります。"
-        )
+        assert len(rows) >= 1, "データ行が見つかりません。テストデータが正しく表示されていない可能性があります。"
 
         # バッジの存在確認
         badges = tbody.find_all("span", class_="badge")
@@ -520,7 +483,7 @@ class TestDiaryHistoryViewUI:
                 entry_date=timezone.now().date() - timezone.timedelta(days=i),
                 health_condition=3,
                 mental_condition=3,
-                reflection=f"テスト日記{i+1}",
+                reflection=f"テスト日記{i + 1}",
             )
 
         url = reverse("diary:diary_history")
@@ -560,12 +523,10 @@ class TestRootURLRedirect:
 
         # Assert: リダイレクトが発生する
         assert response.status_code == 302, (
-            f"ルートURLのステータスコードが302ではありません。"
-            f"実際: {response.status_code}"
+            f"ルートURLのステータスコードが302ではありません。実際: {response.status_code}"
         )
         assert response.url == "/accounts/login/", (
-            f"リダイレクト先が正しくありません。"
-            f"期待: /accounts/login/, 実際: {response.url}"
+            f"リダイレクト先が正しくありません。期待: /accounts/login/, 実際: {response.url}"
         )
 
     def test_root_url_redirects_to_admin_for_staff(self):
@@ -590,12 +551,8 @@ class TestRootURLRedirect:
         response = client.get("/", follow=False)
 
         # Assert: 管理画面にリダイレクト
-        assert response.status_code == 302, (
-            f"ステータスコードが302ではありません。実際: {response.status_code}"
-        )
-        assert response.url == "/admin/", (
-            f"リダイレクト先が正しくありません。期待: /admin/, 実際: {response.url}"
-        )
+        assert response.status_code == 302, f"ステータスコードが302ではありません。実際: {response.status_code}"
+        assert response.url == "/admin/", f"リダイレクト先が正しくありません。期待: /admin/, 実際: {response.url}"
 
     def test_root_url_redirects_to_student_dashboard(self):
         """
@@ -621,10 +578,9 @@ class TestRootURLRedirect:
         response = client.get("/", follow=False)
 
         # Assert: 生徒ダッシュボードにリダイレクト
-        assert response.status_code == 302, (
-            f"ステータスコードが302ではありません。実際: {response.status_code}"
-        )
+        assert response.status_code == 302, f"ステータスコードが302ではありません。実際: {response.status_code}"
         from django.urls import reverse
+
         expected_url = reverse("diary:student_dashboard")
         assert response.url == expected_url, (
             f"リダイレクト先が正しくありません。期待: {expected_url}, 実際: {response.url}"
@@ -664,15 +620,11 @@ class TestAuthenticationFlow:
         response = client.post("/accounts/logout/", follow=True)
 
         # Assert: 最終的に /accounts/login/ にリダイレクト
-        assert response.status_code == 200, (
-            f"最終ステータスコードが200ではありません。実際: {response.status_code}"
-        )
+        assert response.status_code == 200, f"最終ステータスコードが200ではありません。実際: {response.status_code}"
         # リダイレクトチェーンを確認
         redirect_chain = [url for url, status in response.redirect_chain]
         # ログアウト後は / または /accounts/login/ にリダイレクトされるはず
-        assert len(redirect_chain) > 0, (
-            f"リダイレクトが発生していません。リダイレクトチェーン: {redirect_chain}"
-        )
+        assert len(redirect_chain) > 0, f"リダイレクトが発生していません。リダイレクトチェーン: {redirect_chain}"
         # 最終的なURLが /accounts/login/ であることを確認
         final_url = redirect_chain[-1][0] if redirect_chain else response.request["PATH_INFO"]
         assert "/accounts/login/" in final_url or response.request["PATH_INFO"] == "/accounts/login/", (
@@ -694,8 +646,7 @@ class TestAuthenticationFlow:
 
         # Assert: DJANGO_ADMIN_FORCE_ALLAUTH が有効
         assert settings.DJANGO_ADMIN_FORCE_ALLAUTH is True, (
-            f"DJANGO_ADMIN_FORCE_ALLAUTH が有効になっていません。"
-            f"実際: {settings.DJANGO_ADMIN_FORCE_ALLAUTH}"
+            f"DJANGO_ADMIN_FORCE_ALLAUTH が有効になっていません。実際: {settings.DJANGO_ADMIN_FORCE_ALLAUTH}"
         )
 
     def test_teacher_redirects_to_dashboard(self):
@@ -730,10 +681,9 @@ class TestAuthenticationFlow:
         response = client.get("/", follow=False)
 
         # Assert: 担任ダッシュボードにリダイレクト
-        assert response.status_code == 302, (
-            f"ステータスコードが302ではありません。実際: {response.status_code}"
-        )
+        assert response.status_code == 302, f"ステータスコードが302ではありません。実際: {response.status_code}"
         from django.urls import reverse
+
         expected_url = reverse("diary:teacher_dashboard")
         assert response.url == expected_url, (
             f"リダイレクト先が正しくありません。期待: {expected_url}, 実際: {response.url}"
@@ -845,8 +795,7 @@ class TestTeacherDashboardViewUI:
         title_tag = soup.find("title")
         assert title_tag is not None, "<title> タグが見つかりません。"
         assert "担任ダッシュボード" in title_tag.text, (
-            f"ページタイトルが正しくありません。"
-            f"期待: '担任ダッシュボード' を含む、実際: '{title_tag.text}'"
+            f"ページタイトルが正しくありません。期待: '担任ダッシュボード' を含む、実際: '{title_tag.text}'"
         )
 
     def test_classroom_info_displayed(self, teacher_client_with_class):
@@ -867,12 +816,8 @@ class TestTeacherDashboardViewUI:
         # Assert
         lead = soup.find("p", class_="lead")
         assert lead is not None, "<p class='lead'> が見つかりません。"
-        assert "2025年度 1年A組" in lead.text, (
-            f"クラス情報が正しく表示されていません。実際: '{lead.text}'"
-        )
-        assert "2名" in lead.text, (
-            f"生徒数が正しく表示されていません。実際: '{lead.text}'"
-        )
+        assert "2025年度 1年A組" in lead.text, f"クラス情報が正しく表示されていません。実際: '{lead.text}'"
+        assert "2名" in lead.text, f"生徒数が正しく表示されていません。実際: '{lead.text}'"
 
     def test_student_table_exists(self, teacher_client_with_class):
         """
@@ -893,9 +838,7 @@ class TestTeacherDashboardViewUI:
         table = soup.find("table")
         assert table is not None, "テーブルが見つかりません。"
         table_classes = table.get("class") or []
-        assert "table-hover" in table_classes, (
-            "table-hover クラスが適用されていません。"
-        )
+        assert "table-hover" in table_classes, "table-hover クラスが適用されていません。"
 
     def test_table_headers_correct(self, teacher_client_with_class):
         """
@@ -918,9 +861,7 @@ class TestTeacherDashboardViewUI:
         expected_headers = ["生徒名", "出欠", "提出", "状態", "アクション"]
 
         for expected in expected_headers:
-            assert expected in headers, (
-                f"ヘッダー '{expected}' が見つかりません。実際のヘッダー: {headers}"
-            )
+            assert expected in headers, f"ヘッダー '{expected}' が見つかりません。実際のヘッダー: {headers}"
 
     def test_unread_badge_displayed(self, teacher_client_with_class):
         """
@@ -945,12 +886,8 @@ class TestTeacherDashboardViewUI:
             "span",
             class_=lambda x: x and "bg-info" in x,
         )
-        assert info_badge is not None, (
-            "未読バッジ（bg-info）が見つかりません。"
-        )
-        assert "NEW" in info_badge.text, (
-            f"未読バッジのテキストが正しく表示されていません。実際: '{info_badge.text}'"
-        )
+        assert info_badge is not None, "未読バッジ（bg-info）が見つかりません。"
+        assert "NEW" in info_badge.text, f"未読バッジのテキストが正しく表示されていません。実際: '{info_badge.text}'"
 
     def test_student_health_mental_displayed(self, teacher_client_with_class):
         """
@@ -973,9 +910,7 @@ class TestTeacherDashboardViewUI:
 
         # 状態バッジ（badge）が表示されていることを確認（出席、提出、状態）
         badges = tbody.find_all("span", class_="badge")
-        assert len(badges) >= 2, (
-            f"状態バッジが不足しています。期待: 2以上、実際: {len(badges)}"
-        )
+        assert len(badges) >= 2, f"状態バッジが不足しています。期待: 2以上、実際: {len(badges)}"
 
     def test_no_classroom_alert_displayed(self, authenticated_client):
         """
@@ -994,12 +929,8 @@ class TestTeacherDashboardViewUI:
 
         # Assert
         alert = soup.find("div", class_="alert-info")
-        assert alert is not None, (
-            "アラート（alert-info）が見つかりません。"
-        )
-        assert "担当クラスがありません" in alert.text, (
-            f"メッセージ内容が正しくありません。実際: '{alert.text}'"
-        )
+        assert alert is not None, "アラート（alert-info）が見つかりません。"
+        assert "担当クラスがありません" in alert.text, f"メッセージ内容が正しくありません。実際: '{alert.text}'"
 
 
 @pytest.fixture
@@ -1092,18 +1023,14 @@ class TestTeacherReactionAndActionFlow:
         response = data["client"].post(url, {"public_reaction": "checked"})
 
         # Assert
-        assert response.status_code == 302, (
-            f"リダイレクトが発生しませんでした。ステータス: {response.status_code}"
-        )
+        assert response.status_code == 302, f"リダイレクトが発生しませんでした。ステータス: {response.status_code}"
 
         entry.refresh_from_db()
         assert entry.is_read is True, "既読フラグが立っていません。"
         assert entry.public_reaction == "checked", (
             f"反応が保存されていません。期待: 'checked', 実際: {entry.public_reaction}"
         )
-        assert entry.internal_action is None, (
-            "internal_actionは空であるべきです。"
-        )
+        assert entry.internal_action is None, "internal_actionは空であるべきです。"
         assert entry.read_by == data["teacher"], "read_byが正しく設定されていません。"
         assert entry.read_at is not None, "read_atが設定されていません。"
 
@@ -1121,10 +1048,13 @@ class TestTeacherReactionAndActionFlow:
         url = reverse("diary:teacher_mark_as_read", args=[entry.id])
 
         # Act
-        response = data["client"].post(url, {
-            "public_reaction": "thumbs_up",
-            "internal_action": "needs_follow_up",
-        })
+        response = data["client"].post(
+            url,
+            {
+                "public_reaction": "thumbs_up",
+                "internal_action": "needs_follow_up",
+            },
+        )
 
         # Assert
         assert response.status_code == 302
@@ -1134,9 +1064,8 @@ class TestTeacherReactionAndActionFlow:
         assert entry.public_reaction == "thumbs_up"
         assert entry.internal_action == "needs_follow_up"
         from school_diary.diary.models import ActionStatus
-        assert entry.action_status == ActionStatus.PENDING, (
-            "action_statusがpendingになっていません。"
-        )
+
+        assert entry.action_status == ActionStatus.PENDING, "action_statusがpendingになっていません。"
 
     def test_update_reaction_after_read(self, teacher_with_student_entry):
         """
@@ -1167,9 +1096,7 @@ class TestTeacherReactionAndActionFlow:
         assert response.status_code == 302
 
         entry.refresh_from_db()
-        assert entry.public_reaction == "thumbs_up", (
-            "既読済みの連絡帳に反応を追加できていません。"
-        )
+        assert entry.public_reaction == "thumbs_up", "既読済みの連絡帳に反応を追加できていません。"
 
     def test_update_action_after_read(self, teacher_with_student_entry):
         """
@@ -1200,10 +1127,9 @@ class TestTeacherReactionAndActionFlow:
         assert response.status_code == 302
 
         entry.refresh_from_db()
-        assert entry.internal_action == "needs_follow_up", (
-            "既読済みの連絡帳に対応記録を追加できていません。"
-        )
+        assert entry.internal_action == "needs_follow_up", "既読済みの連絡帳に対応記録を追加できていません。"
         from school_diary.diary.models import ActionStatus
+
         assert entry.action_status == ActionStatus.PENDING
 
     def test_change_reaction_after_read(self, teacher_with_student_entry):
@@ -1259,6 +1185,7 @@ class TestTeacherReactionAndActionFlow:
         entry.read_at = timezone.now()
         entry.internal_action = "monitoring"
         from school_diary.diary.models import ActionStatus
+
         entry.action_status = ActionStatus.COMPLETED
         entry.action_completed_by = data["teacher"]
         entry.action_completed_at = timezone.now()
@@ -1300,6 +1227,7 @@ class TestTeacherReactionAndActionFlow:
         entry.read_at = timezone.now()
         entry.internal_action = "needs_follow_up"
         from school_diary.diary.models import ActionStatus
+
         entry.action_status = ActionStatus.PENDING
         entry.save()
 
@@ -1312,9 +1240,7 @@ class TestTeacherReactionAndActionFlow:
         assert response.status_code == 302
 
         entry.refresh_from_db()
-        assert entry.internal_action is None, (
-            "対応記録を削除できていません。"
-        )
+        assert entry.internal_action is None, "対応記録を削除できていません。"
         assert entry.action_status == ActionStatus.NOT_REQUIRED, (
             "対応記録を削除したら、action_statusがNOT_REQUIREDになるべきです。"
         )
@@ -1341,6 +1267,7 @@ class TestTeacherReactionAndActionFlow:
         entry.refresh_from_db()
 
         from school_diary.diary.models import ActionStatus
+
         assert entry.action_status == ActionStatus.PENDING, (
             "対応記録を設定したら、action_statusがpendingになるべきです。"
         )
@@ -1350,17 +1277,13 @@ class TestTeacherReactionAndActionFlow:
         data["client"].post(complete_url, {"action_note": "面談実施"})
         entry.refresh_from_db()
 
-        assert entry.action_status == ActionStatus.COMPLETED, (
-            "対応完了処理後、action_statusがcompletedになるべきです。"
-        )
+        assert entry.action_status == ActionStatus.COMPLETED, "対応完了処理後、action_statusがcompletedになるべきです。"
 
         # Act 3: 対応記録を削除
         data["client"].post(url, {"internal_action": ""})
         entry.refresh_from_db()
 
-        assert entry.internal_action is None, (
-            "対応記録を削除できていません。"
-        )
+        assert entry.internal_action is None, "対応記録を削除できていません。"
         assert entry.action_status == ActionStatus.NOT_REQUIRED, (
             "対応記録を削除したら、action_statusがNOT_REQUIREDになるべきです。"
         )
@@ -1501,9 +1424,7 @@ class TestTeacherNotesUI:
 
         # Assert
         add_button = soup.find("button", string=lambda text: text and "新規メモ追加" in text)
-        assert add_button is not None, (
-            "「新規メモ追加」ボタンが見つかりません。"
-        )
+        assert add_button is not None, "「新規メモ追加」ボタンが見つかりません。"
         assert add_button.get("data-bs-toggle") == "modal", (
             "新規メモ追加ボタンにdata-bs-toggle='modal'が設定されていません。"
         )
@@ -1527,18 +1448,12 @@ class TestTeacherNotesUI:
         # Assert
         # 共有メモバッジの確認
         shared_badge = soup.find("span", string=lambda text: text and "学年共有" in text)
-        assert shared_badge is not None, (
-            "共有メモバッジ（学年共有）が見つかりません。"
-        )
-        assert "bg-primary" in shared_badge.get("class", []), (
-            "共有メモバッジにbg-primaryクラスが適用されていません。"
-        )
+        assert shared_badge is not None, "共有メモバッジ（学年共有）が見つかりません。"
+        assert "bg-primary" in shared_badge.get("class", []), "共有メモバッジにbg-primaryクラスが適用されていません。"
 
         # 個人メモバッジの確認
         private_badge = soup.find("span", string=lambda text: text and "個人メモ" in text)
-        assert private_badge is not None, (
-            "個人メモバッジ（個人メモ）が見つかりません。"
-        )
+        assert private_badge is not None, "個人メモバッジ（個人メモ）が見つかりません。"
         assert "bg-secondary" in private_badge.get("class", []), (
             "個人メモバッジにbg-secondaryクラスが適用されていません。"
         )
@@ -1562,20 +1477,14 @@ class TestTeacherNotesUI:
         # Assert
         # 編集モーダルの確認（teacher1のメモ用のモーダルは存在）
         edit_modal1 = soup.find("div", id=f"editNoteModal{data['note1'].id}")
-        assert edit_modal1 is not None, (
-            "teacher1のメモ用の編集モーダルが見つかりません。"
-        )
+        assert edit_modal1 is not None, "teacher1のメモ用の編集モーダルが見つかりません。"
 
         edit_modal2 = soup.find("div", id=f"editNoteModal{data['note2'].id}")
-        assert edit_modal2 is not None, (
-            "teacher1の共有メモ用の編集モーダルが見つかりません。"
-        )
+        assert edit_modal2 is not None, "teacher1の共有メモ用の編集モーダルが見つかりません。"
 
         # teacher2のメモ用の編集モーダルは存在しない
         edit_modal3 = soup.find("div", id=f"editNoteModal{data['note3'].id}")
-        assert edit_modal3 is None, (
-            "teacher2のメモ用の編集モーダルが表示されていますが、表示されるべきではありません。"
-        )
+        assert edit_modal3 is None, "teacher2のメモ用の編集モーダルが表示されていますが、表示されるべきではありません。"
 
     def test_shared_notes_visible_to_other_teachers(self, teacher_with_notes_data):
         """
@@ -1596,15 +1505,11 @@ class TestTeacherNotesUI:
         # Assert
         # note2（teacher1の共有メモ）が表示されている
         note2_content = soup.find(string=lambda text: text and "体調不良が続く" in text)
-        assert note2_content is not None, (
-            "teacher1の共有メモが表示されていません。"
-        )
+        assert note2_content is not None, "teacher1の共有メモが表示されていません。"
 
         # note3（teacher2の共有メモ）が表示されている
         note3_content = soup.find(string=lambda text: text and "学年会議で共有" in text)
-        assert note3_content is not None, (
-            "teacher2の共有メモが表示されていません。"
-        )
+        assert note3_content is not None, "teacher2の共有メモが表示されていません。"
 
     def test_add_note_modal_structure(self, teacher_with_notes_data):
         """
@@ -1625,31 +1530,22 @@ class TestTeacherNotesUI:
 
         # Assert
         add_modal = soup.find("div", id="addNoteModal")
-        assert add_modal is not None, (
-            "新規メモ追加モーダル（id='addNoteModal'）が見つかりません。"
-        )
+        assert add_modal is not None, "新規メモ追加モーダル（id='addNoteModal'）が見つかりません。"
 
         # テキストエリアの確認
         note_textarea = add_modal.find("textarea", {"name": "note"})
-        assert note_textarea is not None, (
-            "メモ内容のテキストエリア（name='note'）が見つかりません。"
-        )
+        assert note_textarea is not None, "メモ内容のテキストエリア（name='note'）が見つかりません。"
 
         # 共有チェックボックスの確認
         shared_checkbox = add_modal.find("input", {"name": "is_shared", "type": "checkbox"})
-        assert shared_checkbox is not None, (
-            "共有チェックボックス（name='is_shared'）が見つかりません。"
-        )
+        assert shared_checkbox is not None, "共有チェックボックス（name='is_shared'）が見つかりません。"
 
         # フォームのactionURL確認
         form = add_modal.find("form")
-        assert form is not None, (
-            "新規メモ追加モーダル内にformが見つかりません。"
-        )
+        assert form is not None, "新規メモ追加モーダル内にformが見つかりません。"
         expected_url = reverse("diary:teacher_add_note", args=[data["student"].id])
         assert form.get("action") == expected_url, (
-            f"フォームのaction URLが正しくありません。"
-            f"期待: {expected_url}, 実際: {form.get('action')}"
+            f"フォームのaction URLが正しくありません。期待: {expected_url}, 実際: {form.get('action')}"
         )
 
     def test_edit_note_modal_preloaded(self, teacher_with_notes_data):
@@ -1670,24 +1566,18 @@ class TestTeacherNotesUI:
 
         # Assert
         edit_modal = soup.find("div", id=f"editNoteModal{data['note2'].id}")
-        assert edit_modal is not None, (
-            "編集モーダルが見つかりません。"
-        )
+        assert edit_modal is not None, "編集モーダルが見つかりません。"
 
         # テキストエリアに既存内容が含まれている
         note_textarea = edit_modal.find("textarea", {"name": "note"})
-        assert note_textarea is not None, (
-            "編集モーダル内のテキストエリアが見つかりません。"
-        )
+        assert note_textarea is not None, "編集モーダル内のテキストエリアが見つかりません。"
         assert data["note2"].note in note_textarea.text, (
             "編集モーダルのテキストエリアに既存のメモ内容が表示されていません。"
         )
 
         # 共有チェックボックスがチェックされている（note2はis_shared=True）
         shared_checkbox = edit_modal.find("input", {"name": "is_shared"})
-        assert shared_checkbox is not None, (
-            "編集モーダル内の共有チェックボックスが見つかりません。"
-        )
+        assert shared_checkbox is not None, "編集モーダル内の共有チェックボックスが見つかりません。"
         assert shared_checkbox.has_attr("checked"), (
             "共有メモの編集モーダルで、共有チェックボックスがチェックされていません。"
         )
@@ -1730,6 +1620,4 @@ class TestTeacherNotesUI:
 
         # Assert
         no_notes_msg = soup.find(string=lambda text: text and "担任メモはまだありません" in text)
-        assert no_notes_msg is not None, (
-            "担任メモがない場合のメッセージが表示されていません。"
-        )
+        assert no_notes_msg is not None, "担任メモがない場合のメッセージが表示されていません。"

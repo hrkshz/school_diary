@@ -197,10 +197,7 @@ class PDFExporter:
             from weasyprint import HTML
             from weasyprint.text.fonts import FontConfiguration
         except ImportError as e:
-            msg = (
-                "WeasyPrintがインストールされていません。"
-                "pip install weasyprint を実行してください。"
-            )
+            msg = "WeasyPrintがインストールされていません。pip install weasyprint を実行してください。"
             raise ImportError(
                 msg,
             ) from e
@@ -233,10 +230,7 @@ class PDFExporter:
             from reportlab.platypus import SimpleDocTemplate
             from reportlab.platypus import Spacer
         except ImportError as e:
-            msg = (
-                "ReportLabがインストールされていません。"
-                "pip install reportlab を実行してください。"
-            )
+            msg = "ReportLabがインストールされていません。pip install reportlab を実行してください。"
             raise ImportError(
                 msg,
             ) from e

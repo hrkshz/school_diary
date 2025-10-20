@@ -27,7 +27,8 @@ class TestDiaryEntryN1Queries(TestCase):
         """テストデータ準備"""
         # 教員ユーザー作成
         self.teacher = User.objects.create_user(
-            username="teacher001", email="teacher001@example.com",
+            username="teacher001",
+            email="teacher001@example.com",
         )
 
         # 生徒ユーザー作成（10人）
@@ -43,7 +44,10 @@ class TestDiaryEntryN1Queries(TestCase):
 
         # クラス作成
         self.classroom = ClassRoom.objects.create(
-            grade=1, class_name="A", academic_year=2025, homeroom_teacher=self.teacher,
+            grade=1,
+            class_name="A",
+            academic_year=2025,
+            homeroom_teacher=self.teacher,
         )
         self.classroom.students.set(self.students)
 
@@ -78,10 +82,7 @@ class TestDiaryEntryN1Queries(TestCase):
 
         # 期待値: select_related使用後は2クエリ以下
         # （1. DiaryEntry取得、2. student一括取得）
-        assert num_queries <= 2, (
-            f"N+1クエリが発生しています。クエリ数: {num_queries}件 "
-            f"（期待値: 2件以下）"
-        )
+        assert num_queries <= 2, f"N+1クエリが発生しています。クエリ数: {num_queries}件 （期待値: 2件以下）"
 
 
 class TestTeacherNoteN1Queries(TestCase):
@@ -110,7 +111,10 @@ class TestTeacherNoteN1Queries(TestCase):
         self.notes = []
         for i, student in enumerate(self.students):
             note = TeacherNote.objects.create(
-                teacher=self.teacher, student=student, note=f"メモ{i}", is_shared=False,
+                teacher=self.teacher,
+                student=student,
+                note=f"メモ{i}",
+                is_shared=False,
             )
             self.notes.append(note)
 
@@ -129,10 +133,7 @@ class TestTeacherNoteN1Queries(TestCase):
 
         # 期待値: 3クエリ以下
         # （1. TeacherNote取得、2. teacher一括取得、3. student一括取得）
-        assert num_queries <= 3, (
-            f"N+1クエリが発生しています。クエリ数: {num_queries}件 "
-            f"（期待値: 3件以下）"
-        )
+        assert num_queries <= 3, f"N+1クエリが発生しています。クエリ数: {num_queries}件 （期待値: 3件以下）"
 
 
 class TestDailyAttendanceN1Queries(TestCase):
@@ -141,7 +142,8 @@ class TestDailyAttendanceN1Queries(TestCase):
     def setUp(self):
         """テストデータ準備"""
         self.teacher = User.objects.create_user(
-            username="teacher_attendance_001", email="teacher_attendance_001@example.com",
+            username="teacher_attendance_001",
+            email="teacher_attendance_001@example.com",
         )
 
         self.students = []
@@ -155,7 +157,10 @@ class TestDailyAttendanceN1Queries(TestCase):
             self.students.append(student)
 
         self.classroom = ClassRoom.objects.create(
-            grade=1, class_name="A", academic_year=2025, homeroom_teacher=self.teacher,
+            grade=1,
+            class_name="A",
+            academic_year=2025,
+            homeroom_teacher=self.teacher,
         )
 
         # 出席記録作成（10件）
@@ -184,10 +189,7 @@ class TestDailyAttendanceN1Queries(TestCase):
         print(f"クエリ数: {num_queries}")
 
         # 期待値: 2クエリ以下
-        assert num_queries <= 2, (
-            f"N+1クエリが発生しています。クエリ数: {num_queries}件 "
-            f"（期待値: 2件以下）"
-        )
+        assert num_queries <= 2, f"N+1クエリが発生しています。クエリ数: {num_queries}件 （期待値: 2件以下）"
 
 
 class TestTeacherNoteReadStatusN1Queries(TestCase):
@@ -243,10 +245,7 @@ class TestTeacherNoteReadStatusN1Queries(TestCase):
         print(f"クエリ数: {num_queries}")
 
         # 期待値: 3クエリ以下
-        assert num_queries <= 3, (
-            f"N+1クエリが発生しています。クエリ数: {num_queries}件 "
-            f"（期待値: 3件以下）"
-        )
+        assert num_queries <= 3, f"N+1クエリが発生しています。クエリ数: {num_queries}件 （期待値: 3件以下）"
 
 
 class TestClassRoomAllTeachersN1Queries(TestCase):
@@ -255,13 +254,15 @@ class TestClassRoomAllTeachersN1Queries(TestCase):
     def setUp(self):
         """テストデータ準備"""
         self.homeroom_teacher = User.objects.create_user(
-            username="teacher_classroom_001", email="teacher_classroom_001@example.com",
+            username="teacher_classroom_001",
+            email="teacher_classroom_001@example.com",
         )
 
         self.assistant_teachers = []
         for i in range(1, 4):  # 1-3
             teacher = User.objects.create_user(
-                username=f"assistant_teacher_{i:03d}", email=f"assistant_teacher_{i:03d}@example.com",
+                username=f"assistant_teacher_{i:03d}",
+                email=f"assistant_teacher_{i:03d}@example.com",
             )
             self.assistant_teachers.append(teacher)
 
@@ -293,7 +294,4 @@ class TestClassRoomAllTeachersN1Queries(TestCase):
         # 期待値: 3クエリ以下
         # （1. ClassRoom取得、2. homeroom_teacher一括取得、
         #   3. assistant_teachers一括取得）
-        assert num_queries <= 3, (
-            f"N+1クエリが発生しています。クエリ数: {num_queries}件 "
-            f"（期待値: 3件以下）"
-        )
+        assert num_queries <= 3, f"N+1クエリが発生しています。クエリ数: {num_queries}件 （期待値: 3件以下）"

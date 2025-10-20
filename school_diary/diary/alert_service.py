@@ -51,10 +51,14 @@ def classify_students(classroom):
     yesterday = get_previous_school_day(today)
 
     # 1. 全生徒の過去7日分を一括取得（N+1問題回避）
-    all_recent_entries = DiaryEntry.objects.filter(
-        student__classes=classroom,
-        entry_date__gte=today - timedelta(days=7),
-    ).select_related("student").order_by("student", "-entry_date")
+    all_recent_entries = (
+        DiaryEntry.objects.filter(
+            student__classes=classroom,
+            entry_date__gte=today - timedelta(days=7),
+        )
+        .select_related("student")
+        .order_by("student", "-entry_date")
+    )
 
     # 2. Pythonで生徒ごとに分類（メモリ内処理）
     entries_by_student = defaultdict(list)

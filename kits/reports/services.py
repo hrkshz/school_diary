@@ -128,8 +128,7 @@ class ReportService:
             format=output_format,
             parameters=parameters,
             status=ReportStatus.PENDING,
-            expires_at=timezone.now()
-            + timedelta(days=self.config.get("RETENTION_DAYS", 30)),
+            expires_at=timezone.now() + timedelta(days=self.config.get("RETENTION_DAYS", 30)),
         )
 
         try:

@@ -20,15 +20,19 @@ class TestDiaryEntryService(TestCase):
         """テストデータ準備"""
         # テストユーザー作成（生徒）
         self.student = User.objects.create_user(
-            username="student1", email="student1@example.com",
+            username="student1",
+            email="student1@example.com",
         )
         # テストユーザー作成（教員）
         self.teacher = User.objects.create_user(
-            username="teacher1", email="teacher1@example.com",
+            username="teacher1",
+            email="teacher1@example.com",
         )
         # テストクラス作成
         self.classroom = ClassRoom.objects.create(
-            grade=1, class_name="A", academic_year=2025,
+            grade=1,
+            class_name="A",
+            academic_year=2025,
         )
         self.classroom.students.add(self.student)
 
@@ -52,7 +56,9 @@ class TestDiaryEntryService(TestCase):
         """classroom指定時にそれを尊重する"""
         # Arrange
         another_classroom = ClassRoom.objects.create(
-            grade=2, class_name="B", academic_year=2025,
+            grade=2,
+            class_name="B",
+            academic_year=2025,
         )
 
         # Act
@@ -114,7 +120,9 @@ class TestDiaryEntryService(TestCase):
 
         # Act
         updated_entry = DiaryEntryService.update_entry(
-            entry, reflection="更新後のテキスト", health_condition=ConditionLevel.GOOD,
+            entry,
+            reflection="更新後のテキスト",
+            health_condition=ConditionLevel.GOOD,
         )
 
         # Assert

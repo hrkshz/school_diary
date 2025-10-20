@@ -34,7 +34,11 @@ class ApprovalService:
     """
 
     def create_request(
-        self, workflow, content_object, requester: "User", metadata: dict | None = None,
+        self,
+        workflow,
+        content_object,
+        requester: "User",
+        metadata: dict | None = None,
     ) -> ApprovalRequest:
         """
         承認依頼を作成する。
@@ -98,7 +102,9 @@ class ApprovalService:
 
             # 通知を送信（kits.notificationsが利用可能な場合）
             self._send_notification(
-                request, "approval_request_submitted", request.requester,
+                request,
+                "approval_request_submitted",
+                request.requester,
             )
 
             if request.current_step:
@@ -108,7 +114,11 @@ class ApprovalService:
 
     @transaction.atomic
     def approve_step(
-        self, request: ApprovalRequest, step: ApprovalStep, approver: "User", comment: str = "",
+        self,
+        request: ApprovalRequest,
+        step: ApprovalStep,
+        approver: "User",
+        comment: str = "",
     ) -> ApprovalRequest:
         """
         承認ステップを承認する。
@@ -137,7 +147,11 @@ class ApprovalService:
 
         # 承認アクションを記録
         action = ApprovalAction.objects.create(
-            request=request, step=step, approver=approver, action="approve", comment=comment,
+            request=request,
+            step=step,
+            approver=approver,
+            action="approve",
+            comment=comment,
         )
 
         logger.info("Created approval action %s for request %s", action.id, request.id)
@@ -145,7 +159,9 @@ class ApprovalService:
         # 並列承認の場合、必要承認数をチェック
         if step.is_parallel:
             approval_count = ApprovalAction.objects.filter(
-                request=request, step=step, action="approve",
+                request=request,
+                step=step,
+                action="approve",
             ).count()
 
             if approval_count < step.required_approvals:
@@ -168,14 +184,13 @@ class ApprovalService:
             request.save()
 
             logger.info(
-                "Request %s advanced to step %s", request.id, next_step.order,
+                "Request %s advanced to step %s",
+                request.id,
+                next_step.order,
             )
 
             # 自動承認のチェック
-            if (
-                next_step.auto_approve_if_requester_in_role
-                and next_step.can_approve(request.requester)
-            ):
+            if next_step.auto_approve_if_requester_in_role and next_step.can_approve(request.requester):
                 self.auto_approve_step(request, next_step, request.requester)
             else:
                 # 次のステップの承認者に通知
@@ -198,7 +213,11 @@ class ApprovalService:
 
     @transaction.atomic
     def reject_step(
-        self, request: ApprovalRequest, step: ApprovalStep, approver: "User", comment: str = "",
+        self,
+        request: ApprovalRequest,
+        step: ApprovalStep,
+        approver: "User",
+        comment: str = "",
     ) -> ApprovalRequest:
         """
         承認ステップを否認する。
@@ -227,7 +246,11 @@ class ApprovalService:
 
         # 否認アクションを記録
         action = ApprovalAction.objects.create(
-            request=request, step=step, approver=approver, action="reject", comment=comment,
+            request=request,
+            step=step,
+            approver=approver,
+            action="reject",
+            comment=comment,
         )
 
         logger.info("Created rejection action %s for request %s", action.id, request.id)
@@ -249,7 +272,11 @@ class ApprovalService:
 
     @transaction.atomic
     def return_to_requester(
-        self, request: ApprovalRequest, step: ApprovalStep, approver: "User", comment: str = "",
+        self,
+        request: ApprovalRequest,
+        step: ApprovalStep,
+        approver: "User",
+        comment: str = "",
     ) -> ApprovalRequest:
         """
         承認依頼を申請者に差戻す。
@@ -278,11 +305,17 @@ class ApprovalService:
 
         # 差戻しアクションを記録
         action = ApprovalAction.objects.create(
-            request=request, step=step, approver=approver, action="return", comment=comment,
+            request=request,
+            step=step,
+            approver=approver,
+            action="return",
+            comment=comment,
         )
 
         logger.info(
-            "Created return action %s for request %s", action.id, request.id,
+            "Created return action %s for request %s",
+            action.id,
+            request.id,
         )
 
         # リクエストをdraft状態に戻す
@@ -302,7 +335,10 @@ class ApprovalService:
         return request
 
     def auto_approve_step(
-        self, request: ApprovalRequest, step: ApprovalStep, user: "User",
+        self,
+        request: ApprovalRequest,
+        step: ApprovalStep,
+        user: "User",
     ) -> ApprovalRequest:
         """
         ステップを自動承認する。
@@ -318,11 +354,16 @@ class ApprovalService:
             ApprovalRequest: 更新された承認依頼
         """
         logger.info(
-            "Auto-approving step %s for request %s", step.order, request.id,
+            "Auto-approving step %s for request %s",
+            step.order,
+            request.id,
         )
 
         return self.approve_step(
-            request, step, user, comment="Auto-approved (requester in approver role)",
+            request,
+            step,
+            user,
+            comment="Auto-approved (requester in approver role)",
         )
 
     def get_pending_requests_for_user(self, user: "User"):
@@ -343,7 +384,8 @@ class ApprovalService:
 
         # 保留中で、ユーザーが承認可能なリクエストを取得
         return ApprovalRequest.objects.filter(
-            status="pending", current_step__in=approver_steps,
+            status="pending",
+            current_step__in=approver_steps,
         ).distinct()
 
     def get_overdue_requests(self):
@@ -355,7 +397,8 @@ class ApprovalService:
         """
         now = timezone.now()
         return ApprovalRequest.objects.filter(
-            status="pending", deadline__lt=now,
+            status="pending",
+            deadline__lt=now,
         )
 
     def _send_notification(self, request: ApprovalRequest, template_code: str, actor: "User"):
@@ -418,8 +461,7 @@ class ApprovalService:
                 "request_id": request.id,
                 "workflow_name": request.workflow.name,
                 "step_name": step.name,
-                "requester_name": request.requester.get_full_name()
-                or request.requester.username,
+                "requester_name": request.requester.get_full_name() or request.requester.username,
                 "content_object": str(request.content_object),
             }
 

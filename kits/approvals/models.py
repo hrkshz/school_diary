@@ -135,11 +135,7 @@ class ApprovalStep(models.Model):
 
     def get_next_step(self):
         """次のステップを取得する。最後のステップの場合はNoneを返す。"""
-        return (
-            ApprovalStep.objects.filter(workflow=self.workflow, order__gt=self.order)
-            .order_by("order")
-            .first()
-        )
+        return ApprovalStep.objects.filter(workflow=self.workflow, order__gt=self.order).order_by("order").first()
 
     def can_approve(self, user: "User") -> bool:
         """指定されたユーザーがこのステップを承認できるかを判定する。"""
@@ -185,7 +181,10 @@ class ApprovalRequest(models.Model):
 
     # ステータス
     status = models.CharField(
-        _("Status"), max_length=20, choices=STATUS_CHOICES, default="draft",
+        _("Status"),
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default="draft",
     )
 
     # 現在のステップ
@@ -205,7 +204,10 @@ class ApprovalRequest(models.Model):
 
     # メタデータ
     metadata = models.JSONField(
-        _("Metadata"), default=dict, blank=True, help_text=_("Additional information"),
+        _("Metadata"),
+        default=dict,
+        blank=True,
+        help_text=_("Additional information"),
     )
 
     # タイムスタンプ

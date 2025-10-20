@@ -76,11 +76,15 @@ def get_students_with_consecutive_decline(
     start_date = end_date - timedelta(days=days - 1)
 
     # 過去3日分の連絡帳を取得（N+1問題回避）
-    entries = DiaryEntry.objects.filter(
-        student__classes=classroom,
-        entry_date__gte=start_date,
-        entry_date__lte=end_date,
-    ).select_related("student").order_by("student", "-entry_date")
+    entries = (
+        DiaryEntry.objects.filter(
+            student__classes=classroom,
+            entry_date__gte=start_date,
+            entry_date__lte=end_date,
+        )
+        .select_related("student")
+        .order_by("student", "-entry_date")
+    )
 
     # 生徒ごとにグループ化して連続性をチェック
     students_health_decline = []
@@ -118,9 +122,7 @@ class StudentDashboardView(LoginRequiredMixin, TemplateView):
 
         # 過去7日分の連絡帳
         context["recent_entries"] = (
-            DiaryEntry.objects.filter(student=self.request.user)
-            .select_related("read_by")
-            .order_by("-entry_date")[:7]
+            DiaryEntry.objects.filter(student=self.request.user).select_related("read_by").order_by("-entry_date")[:7]
         )
 
         # 今日の提出済みか確認（前登校日ベース）
@@ -178,15 +180,9 @@ class TeacherDashboardView(LoginRequiredMixin, TemplateView):
         # テンプレート用にデータ整形
         student_data = []
         for student in students:
-            latest_entry = (
-                student.latest_entry_list[0] if student.latest_entry_list else None
-            )
+            latest_entry = student.latest_entry_list[0] if student.latest_entry_list else None
             # テーブルビュー用: 本日の連絡帳のみに絞る（時点統一）
-            today_entry = (
-                latest_entry
-                if (latest_entry and latest_entry.entry_date == today)
-                else None
-            )
+            today_entry = latest_entry if (latest_entry and latest_entry.entry_date == today) else None
             student_data.append(
                 {
                     "student": student,
@@ -196,16 +192,16 @@ class TeacherDashboardView(LoginRequiredMixin, TemplateView):
             )
 
         # Table View用: 本日の未提出者数を計算
-        today_not_submitted_count = sum(
-            1 for s in student_data if s["latest_entry"] is None
-        )
+        today_not_submitted_count = sum(1 for s in student_data if s["latest_entry"] is None)
 
         # 欠席者情報を取得（Service層）
         absence_data = TeacherDashboardService.get_absence_data(classroom, today)
 
         # 出席データを取得（Service層）
         student_data, all_students = TeacherDashboardService.get_attendance_data_for_modal(
-            classroom, today, student_data,
+            classroom,
+            today,
+            student_data,
         )
 
         context["classroom"] = classroom
@@ -224,29 +220,33 @@ class TeacherDashboardView(LoginRequiredMixin, TemplateView):
             # Level 1: Critical - メンタル★1（即座の対応が必要）
             mental_state = check_critical_mental_state(student)
             if mental_state["has_alert"]:
-                alerts.append({
-                    "level": "critical",
-                    "type": "mental_critical",
-                    "student": student,
-                    "message": f"{student.get_full_name()}さん - メンタル★1",
-                    "date": mental_state["date"],
-                    "action": "声をかけてください。",
-                })
+                alerts.append(
+                    {
+                        "level": "critical",
+                        "type": "mental_critical",
+                        "student": student,
+                        "message": f"{student.get_full_name()}さん - メンタル★1",
+                        "date": mental_state["date"],
+                        "action": "声をかけてください。",
+                    }
+                )
 
             # Level 3: Warning - メンタル3日連続低下
             mental_decline = check_consecutive_decline(student, "mental_condition")
             if mental_decline["has_alert"]:
                 trend_values = mental_decline["trend"]
                 trend_str = " → ".join([f"★{'★' * v}" for v in trend_values])
-                alerts.append({
-                    "level": "warning",
-                    "type": "mental_decline",
-                    "student": student,
-                    "message": f"{student.get_full_name()}さん - メンタル低下が続いています",
-                    "trend": trend_str,
-                    "dates": mental_decline["dates"],
-                    "action": "注意して見守ってください。",
-                })
+                alerts.append(
+                    {
+                        "level": "warning",
+                        "type": "mental_decline",
+                        "student": student,
+                        "message": f"{student.get_full_name()}さん - メンタル低下が続いています",
+                        "trend": trend_str,
+                        "dates": mental_decline["dates"],
+                        "action": "注意して見守ってください。",
+                    }
+                )
 
         # Level 4: Warning - クラス5人以上が体調不良
         previous_date = get_previous_school_day(today)
@@ -257,13 +257,15 @@ class TeacherDashboardView(LoginRequiredMixin, TemplateView):
         ).count()
 
         if poor_health_count >= HealthThresholds.CLASS_ALERT_THRESHOLD:
-            alerts.append({
-                "level": "warning",
-                "type": "class_health",
-                "message": f"クラス全体 - 体調不良が多いです（{poor_health_count}名）",
-                "date": previous_date,
-                "action": "注意してください。",
-            })
+            alerts.append(
+                {
+                    "level": "warning",
+                    "type": "class_health",
+                    "message": f"クラス全体 - 体調不良が多いです（{poor_health_count}名）",
+                    "date": previous_date,
+                    "action": "注意してください。",
+                }
+            )
 
         context["alerts"] = alerts
 
@@ -272,9 +274,9 @@ class TeacherDashboardView(LoginRequiredMixin, TemplateView):
 
         # 未対応の合計を計算（テンプレート側での複雑な計算を避ける）
         needs_response_count = (
-            len(classified_students["not_submitted"]) +
-            len(classified_students["unread"]) +
-            len(classified_students["no_reaction"])
+            len(classified_students["not_submitted"])
+            + len(classified_students["unread"])
+            + len(classified_students["no_reaction"])
         )
 
         # 各分類の生徒に最新3件の連絡帳をprefetch（N+1問題回避、履歴表示用）
@@ -466,11 +468,7 @@ class DiaryHistoryView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         """ログイン中の生徒の連絡帳のみ取得"""
-        return (
-            DiaryEntry.objects.filter(student=self.request.user)
-            .select_related("read_by")
-            .order_by("-entry_date")
-        )
+        return DiaryEntry.objects.filter(student=self.request.user).select_related("read_by").order_by("-entry_date")
 
 
 class TeacherStudentDetailView(LoginRequiredMixin, ListView):
@@ -533,11 +531,16 @@ class TeacherStudentDetailView(LoginRequiredMixin, ListView):
 
             # 担任メモを取得（権限チェック: 自分のクラスの生徒のメモのみ）
             # 共有メモは学年の全担任が閲覧可能、非共有メモは作成者のみ
-            notes = TeacherNote.objects.filter(
-                student=student,
-            ).filter(
-                Q(is_shared=True) | Q(teacher=self.request.user),
-            ).select_related("teacher").order_by("-updated_at")
+            notes = (
+                TeacherNote.objects.filter(
+                    student=student,
+                )
+                .filter(
+                    Q(is_shared=True) | Q(teacher=self.request.user),
+                )
+                .select_related("teacher")
+                .order_by("-updated_at")
+            )
             context["notes"] = notes
 
         return context
@@ -800,7 +803,9 @@ class ClassHealthDashboardView(LoginRequiredMixin, TemplateView):
         # - 30日間: 削除理由: ヒートマップセルが小さすぎてUI破綻、実務的にも不要
         days = int(self.request.GET.get("days", DashboardSettings.HEALTH_DASHBOARD_DEFAULT_DAYS))
         if days not in DashboardSettings.HEALTH_DASHBOARD_DAYS:
-            days = DashboardSettings.HEALTH_DASHBOARD_DEFAULT_DAYS  # バリデーション（サポート外の日数はデフォルトにフォールバック）
+            days = (
+                DashboardSettings.HEALTH_DASHBOARD_DEFAULT_DAYS
+            )  # バリデーション（サポート外の日数はデフォルトにフォールバック）
 
         # 担当クラスを取得
         classroom = self.request.user.homeroom_classes.first()
@@ -823,7 +828,9 @@ class ClassHealthDashboardView(LoginRequiredMixin, TemplateView):
 
         # データ取得（指定期間の連絡帳、N+1問題回避）
         entries = DiaryEntry.objects.filter(
-            student__classes=classroom, entry_date__gte=start_date, entry_date__lte=end_date,
+            student__classes=classroom,
+            entry_date__gte=start_date,
+            entry_date__lte=end_date,
         ).select_related("student")
 
         # 生徒リスト取得
@@ -832,9 +839,7 @@ class ClassHealthDashboardView(LoginRequiredMixin, TemplateView):
         # 生徒×日付マトリクス生成
         students_matrix = []
         # 日付別サマリー辞書を初期化（日付ごとの体調・メンタル不調者数）
-        daily_summary = {
-            date: {"poor_health": 0, "poor_mental": 0} for date in date_list
-        }
+        daily_summary = {date: {"poor_health": 0, "poor_mental": 0} for date in date_list}
         poor_health_students = set()  # 体調不良者（health <= 2）
         poor_mental_students = set()  # メンタル低下者（mental <= 2）
         total_expected_entries = students.count() * days
@@ -861,9 +866,7 @@ class ClassHealthDashboardView(LoginRequiredMixin, TemplateView):
 
         # サマリー統計計算
         submission_rate = (
-            round(total_submitted_entries / total_expected_entries * 100, 1)
-            if total_expected_entries > 0
-            else 0
+            round(total_submitted_entries / total_expected_entries * 100, 1) if total_expected_entries > 0 else 0
         )
 
         summary = {
@@ -878,10 +881,14 @@ class ClassHealthDashboardView(LoginRequiredMixin, TemplateView):
         today = timezone.now().date()
 
         # 学年全体統計を計算（担任が学年平均と比較できるように）
-        grade_classrooms = ClassRoom.objects.filter(
-            grade=classroom.grade,
-            academic_year=classroom.academic_year,
-        ).exclude(id=classroom.id).prefetch_related("students")
+        grade_classrooms = (
+            ClassRoom.objects.filter(
+                grade=classroom.grade,
+                academic_year=classroom.academic_year,
+            )
+            .exclude(id=classroom.id)
+            .prefetch_related("students")
+        )
 
         if grade_classrooms.exists():
             # 学年全体（自分のクラスを除く）の統計
@@ -1070,24 +1077,32 @@ class GradeOverviewView(LoginRequiredMixin, TemplateView):
             # 統計計算
             total_entries = entries.count()
             expected_entries = student_count * 7
-            submission_rate = (
-                round((total_entries / expected_entries * 100), 1)
-                if expected_entries > 0
-                else 0
-            )
+            submission_rate = round((total_entries / expected_entries * 100), 1) if expected_entries > 0 else 0
 
             poor_health_count = (
-                entries.filter(health_condition__lte=HealthThresholds.POOR_CONDITION).values("student").distinct().count()
+                entries.filter(health_condition__lte=HealthThresholds.POOR_CONDITION)
+                .values("student")
+                .distinct()
+                .count()
             )
             poor_mental_count = (
-                entries.filter(mental_condition__lte=HealthThresholds.POOR_CONDITION).values("student").distinct().count()
+                entries.filter(mental_condition__lte=HealthThresholds.POOR_CONDITION)
+                .values("student")
+                .distinct()
+                .count()
             )
 
             # 警告レベル判定
             alert_level = "success"  # 緑
-            if absent_illness >= HealthThresholds.CLASS_ALERT_THRESHOLD or poor_health_count >= HealthThresholds.CLASS_ALERT_THRESHOLD:
+            if (
+                absent_illness >= HealthThresholds.CLASS_ALERT_THRESHOLD
+                or poor_health_count >= HealthThresholds.CLASS_ALERT_THRESHOLD
+            ):
                 alert_level = "danger"  # 赤
-            elif absent_illness >= HealthThresholds.CONSECUTIVE_DAYS or poor_health_count >= HealthThresholds.CONSECUTIVE_DAYS:
+            elif (
+                absent_illness >= HealthThresholds.CONSECUTIVE_DAYS
+                or poor_health_count >= HealthThresholds.CONSECUTIVE_DAYS
+            ):
                 alert_level = "warning"  # 黄
 
             classroom_stats.append(
@@ -1138,18 +1153,18 @@ class GradeOverviewView(LoginRequiredMixin, TemplateView):
                 recent_entries = student.diary_entries.order_by("-entry_date")[:3]
 
                 # 3件揃っているか、かつ全てメンタル★1かチェック
-                if len(recent_entries) == 3 and all(
-                    entry.mental_condition == 1 for entry in recent_entries
-                ):
-                    escalation_alerts.append({
-                        "level": "critical_escalation",
-                        "student": student,
-                        "classroom": classroom,
-                        "teacher": classroom.homeroom_teacher,
-                        "message": f"【学年主任通知】{classroom}組 {student.get_full_name()}さん - メンタル★1が3日連続",
-                        "dates": [entry.entry_date for entry in reversed(recent_entries)],
-                        "action": "担任に状況を確認し、保護者面談や専門機関との連携を検討してください。",
-                    })
+                if len(recent_entries) == 3 and all(entry.mental_condition == 1 for entry in recent_entries):
+                    escalation_alerts.append(
+                        {
+                            "level": "critical_escalation",
+                            "student": student,
+                            "classroom": classroom,
+                            "teacher": classroom.homeroom_teacher,
+                            "message": f"【学年主任通知】{classroom}組 {student.get_full_name()}さん - メンタル★1が3日連続",
+                            "dates": [entry.entry_date for entry in reversed(recent_entries)],
+                            "action": "担任に状況を確認し、保護者面談や専門機関との連携を検討してください。",
+                        }
+                    )
 
         context["escalation_alerts"] = escalation_alerts
 
@@ -1208,24 +1223,24 @@ class SchoolOverviewView(LoginRequiredMixin, TemplateView):
             ).count()
 
             # 欠席率計算
-            absence_rate = (
-                round((absent_count / student_count * 100), 1) if student_count > 0 else 0
-            )
+            absence_rate = round((absent_count / student_count * 100), 1) if student_count > 0 else 0
 
             # 統計計算
             total_entries = entries.count()
             expected_entries = student_count * 7
-            submission_rate = (
-                round((total_entries / expected_entries * 100), 1)
-                if expected_entries > 0
-                else 0
-            )
+            submission_rate = round((total_entries / expected_entries * 100), 1) if expected_entries > 0 else 0
 
             poor_health_count = (
-                entries.filter(health_condition__lte=HealthThresholds.POOR_CONDITION).values("student").distinct().count()
+                entries.filter(health_condition__lte=HealthThresholds.POOR_CONDITION)
+                .values("student")
+                .distinct()
+                .count()
             )
             poor_mental_count = (
-                entries.filter(mental_condition__lte=HealthThresholds.POOR_CONDITION).values("student").distinct().count()
+                entries.filter(mental_condition__lte=HealthThresholds.POOR_CONDITION)
+                .values("student")
+                .distinct()
+                .count()
             )
 
             # 警告レベル判定（学級閉鎖基準: 20%）
@@ -1257,11 +1272,7 @@ class SchoolOverviewView(LoginRequiredMixin, TemplateView):
         total_absent_illness = sum(s["absent_illness"] for s in grade_stats)
         total_poor_health = sum(s["poor_health_count"] for s in grade_stats)
         total_poor_mental = sum(s["poor_mental_count"] for s in grade_stats)
-        avg_submission_rate = (
-            round(sum(s["submission_rate"] for s in grade_stats) / 3, 1)
-            if grade_stats
-            else 0
-        )
+        avg_submission_rate = round(sum(s["submission_rate"] for s in grade_stats) / 3, 1) if grade_stats else 0
 
         # 全体の警告レベル
         school_alert_level = "success"

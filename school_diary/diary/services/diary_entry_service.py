@@ -66,10 +66,7 @@ class DiaryEntryService:
             new_action = fields["internal_action"]
 
             # internal_actionが変更され、対応済みの場合はリセット
-            if (
-                old_action != new_action
-                and entry.action_status == ActionStatus.COMPLETED
-            ):
+            if old_action != new_action and entry.action_status == ActionStatus.COMPLETED:
                 entry.action_status = ActionStatus.PENDING
                 entry.action_completed_at = None
                 entry.action_completed_by = None

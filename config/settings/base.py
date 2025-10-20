@@ -350,14 +350,11 @@ JAZZMIN_SETTINGS = {
     "site_logo": None,
     "welcome_sign": "ようこそ 連絡帳管理システムへ",
     "copyright": "連絡帳管理システム 2025",
-
     # 検索設定
     "search_model": ["auth.User", "diary.DiaryEntry"],
-
     # サイドバー設定
     "show_sidebar": True,
     "navigation_expanded": True,
-
     # メニュー順序（使用頻度と業務フローに基づく）
     "order_with_respect_to": [
         "auth",  # ユーザー・グループ
@@ -373,7 +370,6 @@ JAZZMIN_SETTINGS = {
         "sites",  # サイト
         "demos",  # デモ・参考実装
     ],
-
     # アイコン設定（Font Awesome）
     "icons": {
         "auth": "fas fa-users-cog",
@@ -391,7 +387,6 @@ JAZZMIN_SETTINGS = {
         "mfa": "fas fa-shield-alt",
         "demos": "fas fa-flask",
     },
-
     # UI設定
     "show_ui_builder": False,
 }
