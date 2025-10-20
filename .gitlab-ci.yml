@@ -9,7 +9,6 @@ image: python:3.12-slim
 variables:
   # Docker設定
   DOCKER_DRIVER: overlay2
-  DOCKER_TLS_CERTDIR: "/certs"
 
   # AWS設定
   AWS_DEFAULT_REGION: ap-northeast-1
