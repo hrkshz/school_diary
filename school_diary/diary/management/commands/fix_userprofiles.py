@@ -61,8 +61,7 @@ class Command(BaseCommand):
                     user=user,
                     email=user.email.lower(),
                     defaults={
-                        "verified": not settings.ACCOUNT_EMAIL_VERIFICATION
-                        == "mandatory",
+                        "verified": settings.ACCOUNT_EMAIL_VERIFICATION != "mandatory",
                         "primary": True,
                     },
                 )

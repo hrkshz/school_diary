@@ -89,13 +89,12 @@ class NotificationTemplateRenderer:
                 extensions=["extra", "nl2br", "sane_lists"],
             )
             # HTMLをサニタイズ(XSS対策)
-            safe_html = bleach.clean(
+            return bleach.clean(
                 html,
                 tags=cls.ALLOWED_TAGS,
                 attributes=cls.ALLOWED_ATTRIBUTES,
                 strip=True,
             )
-            return safe_html
 
         return rendered
 
@@ -230,8 +229,9 @@ class NotificationService:
             elif notification.notification_type == NotificationType.IN_APP:
                 self._send_in_app(notification)
             else:
+                msg = f"未実装の通知タイプ: {notification.notification_type}"
                 raise NotImplementedError(
-                    f"未実装の通知タイプ: {notification.notification_type}",
+                    msg,
                 )
 
             # 送信完了
@@ -243,7 +243,7 @@ class NotificationService:
             # エラーハンドリング
             error_message = str(e)
             notification.mark_as_failed(error_message)
-            logger.error(f"通知送信失敗: {notification.pk} - {error_message}")
+            logger.exception(f"通知送信失敗: {notification.pk} - {error_message}")
             return False
 
     def _send_email(self, notification: Notification):
@@ -304,7 +304,7 @@ class NotificationService:
 
     def mark_all_as_read(self, user: User) -> int:
         """全ての通知を既読にする"""
-        count = Notification.objects.filter(
+        return Notification.objects.filter(
             recipient=user,
             notification_type=NotificationType.IN_APP,
             status=NotificationStatus.SENT,
@@ -312,4 +312,3 @@ class NotificationService:
             status=NotificationStatus.READ,
             read_at=timezone.now(),
         )
-        return count

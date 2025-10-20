@@ -429,9 +429,7 @@ class CustomUserAdmin(BaseUserAdmin):
         "is_active",
     )
 
-    list_filter = list(BaseUserAdmin.list_filter or ()) + [
-        ("homeroom_classes", admin.RelatedOnlyFieldListFilter),
-    ]
+    list_filter = [*list(BaseUserAdmin.list_filter or ()), ("homeroom_classes", admin.RelatedOnlyFieldListFilter)]
 
     search_fields = BaseUserAdmin.search_fields
 
@@ -480,7 +478,7 @@ class CustomUserAdmin(BaseUserAdmin):
         編集時のみUserProfileInlineを表示して役割変更を可能にする。
         """
         if not obj:
-            return list()
+            return []
         return super().get_inline_instances(request, obj)
 
     def save_model(self, request, obj, form, change):
@@ -628,6 +626,8 @@ class CustomUserAdmin(BaseUserAdmin):
 # apps.pyのready()で削除することも可能だが、保守性を考慮して残している。
 # 理由: cookiecutter-djangoの「再利用可能な部品集」としての価値を保持
 
+import contextlib
+
 from django.contrib.admin.exceptions import NotRegistered
 from django.contrib.auth.models import Group
 from django.contrib.sites.models import Site
@@ -667,15 +667,11 @@ except (ImportError, NotRegistered):
     pass  # io未インストール、またはadmin登録されていない
 
 # 不要なモデルを削除（確実に存在するもの）
-try:
+with contextlib.suppress(NotRegistered):
     admin.site.unregister(Group)
-except NotRegistered:
-    pass
 
-try:
+with contextlib.suppress(NotRegistered):
     admin.site.unregister(Site)
-except NotRegistered:
-    pass
 
 # ========================================
 # 監査ログ（権限変更の履歴追跡）

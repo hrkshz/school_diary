@@ -9,9 +9,7 @@ from school_diary.diary.models import ActionStatus
 from school_diary.diary.models import ClassRoom
 from school_diary.diary.models import DiaryEntry
 from school_diary.diary.models import InternalAction
-from school_diary.diary.services.teacher_dashboard_service import (
-    TeacherDashboardService,
-)
+from school_diary.diary.services.teacher_dashboard_service import TeacherDashboardService
 
 User = get_user_model()
 

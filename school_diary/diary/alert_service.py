@@ -135,10 +135,7 @@ def _check_consecutive_decline(recent_entries):
     day3_mental = entries[2].mental_condition
 
     # 連続低下: day1 >= day2 >= day3 AND day3 < day1
-    if day1_mental >= day2_mental >= day3_mental and day3_mental < day1_mental:
-        return True
-
-    return False
+    return bool(day1_mental >= day2_mental >= day3_mental and day3_mental < day1_mental)
 
 
 def _is_critical(latest_entry, recent_entries, today, yesterday):
@@ -151,10 +148,7 @@ def _is_critical(latest_entry, recent_entries, today, yesterday):
         return False
 
     # メンタル★1
-    if latest_entry.mental_condition == 1:
-        return True
-
-    return False
+    return latest_entry.mental_condition == 1
 
 
 def format_inline_history(entries):

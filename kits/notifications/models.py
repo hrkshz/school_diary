@@ -164,7 +164,7 @@ class Notification(models.Model):
         verbose_name=_("HTML本文"),
     )
 
-    # コンテキストデータ: テンプレートレンダリング用  # noqa: ERA001
+    # コンテキストデータ: テンプレートレンダリング用
     context_data = models.JSONField(
         default=dict,
         verbose_name=_("コンテキストデータ"),
@@ -209,7 +209,7 @@ class Notification(models.Model):
         verbose_name=_("リトライ回数"),
     )
 
-    # 関連オブジェクト(ジェネリックリレーション)  # noqa: ERA001
+    # 関連オブジェクト(ジェネリックリレーション)
     # 例: 承認申請、健診予約など
     related_object_type = models.CharField(
         max_length=100,

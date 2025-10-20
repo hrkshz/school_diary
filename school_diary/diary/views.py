@@ -325,7 +325,7 @@ class TeacherDashboardView(LoginRequiredMixin, TemplateView):
             students_with_dates = []
             for student in students_with_history:
                 # タプルから日付を取得
-                entry_date = [d for s, d in completed_tuples if s.id == student.id][0]
+                entry_date = next(d for s, d in completed_tuples if s.id == student.id)
 
                 if hasattr(student, "recent_entries_for_history") and student.recent_entries_for_history:
                     student.inline_history = alert_service.format_inline_history(

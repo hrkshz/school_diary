@@ -141,7 +141,8 @@ class ReportService:
             df = self._execute_query(template, parameters)
 
             if df.empty:
-                raise ValueError("データが見つかりませんでした")
+                msg = "データが見つかりませんでした"
+                raise ValueError(msg)
 
             # ファイル名を生成
             timestamp = timezone.now().strftime("%Y%m%d_%H%M%S")
@@ -156,7 +157,8 @@ class ReportService:
             elif output_format == ReportFormat.XLSX:
                 file_size = ExcelExporter.export(df, str(file_path))
             else:
-                raise ValueError(f"未対応の形式: {output_format}")
+                msg = f"未対応の形式: {output_format}"
+                raise ValueError(msg)
 
             # 完了としてマーク
             report.mark_as_completed(
@@ -198,14 +200,16 @@ class ReportService:
             安全に実行する仕組み（SQLインジェクション対策など）が必要です。
         """
         if not template.model_name:
-            raise ValueError("model_nameが設定されていません")
+            msg = "model_nameが設定されていません"
+            raise ValueError(msg)
 
         # モデルをインポート
         try:
             app_label, model_name = template.model_name.rsplit(".", 1)
             model = apps.get_model(app_label, model_name)
         except (ValueError, LookupError) as e:
-            raise ValueError(f"モデルが見つかりません: {template.model_name}") from e
+            msg = f"モデルが見つかりません: {template.model_name}"
+            raise ValueError(msg) from e
 
         # QuerySetを取得
         queryset = model.objects.all()
@@ -309,7 +313,8 @@ class ReportService:
                 title=chart_config.get("title", ""),
             )
         else:
-            raise ValueError(f"未対応のグラフタイプ: {chart_type}")
+            msg = f"未対応のグラフタイプ: {chart_type}"
+            raise ValueError(msg)
 
         return chart.to_json()
 

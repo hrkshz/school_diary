@@ -37,8 +37,9 @@ class RoleBasedRedirectAdapter(DefaultAccountAdapter):
 
         # 大文字が含まれている場合はエラー
         if email != email.lower():
+            msg = "メールアドレスは小文字のみ使用できます。"
             raise ValidationError(
-                "メールアドレスは小文字のみ使用できます。",
+                msg,
             )
 
         return email

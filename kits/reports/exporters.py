@@ -183,7 +183,8 @@ class PDFExporter:
             return PDFExporter._export_weasyprint(html_content, file_path, base_url)
         if pdf_backend == "reportlab":
             return PDFExporter._export_reportlab(html_content, file_path)
-        raise ValueError(f"未対応のPDFバックエンド: {pdf_backend}")
+        msg = f"未対応のPDFバックエンド: {pdf_backend}"
+        raise ValueError(msg)
 
     @staticmethod
     def _export_weasyprint(
@@ -196,9 +197,12 @@ class PDFExporter:
             from weasyprint import HTML
             from weasyprint.text.fonts import FontConfiguration
         except ImportError as e:
-            raise ImportError(
+            msg = (
                 "WeasyPrintがインストールされていません。"
-                "pip install weasyprint を実行してください。",
+                "pip install weasyprint を実行してください。"
+            )
+            raise ImportError(
+                msg,
             ) from e
 
         if base_url is None:
@@ -229,9 +233,12 @@ class PDFExporter:
             from reportlab.platypus import SimpleDocTemplate
             from reportlab.platypus import Spacer
         except ImportError as e:
-            raise ImportError(
+            msg = (
                 "ReportLabがインストールされていません。"
-                "pip install reportlab を実行してください。",
+                "pip install reportlab を実行してください。"
+            )
+            raise ImportError(
+                msg,
             ) from e
 
         # 簡易的なHTML → テキスト変換（本格的にはhtml2textなどを使用）

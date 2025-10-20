@@ -27,7 +27,7 @@ GRADE_CHOICES = [
 ]
 
 # 空欄付き学年選択肢
-GRADE_CHOICES_WITH_EMPTY = [("", "---")] + GRADE_CHOICES
+GRADE_CHOICES_WITH_EMPTY = [("", "---"), *GRADE_CHOICES]
 
 
 # ========================================

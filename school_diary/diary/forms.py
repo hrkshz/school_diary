@@ -94,8 +94,9 @@ class DiaryEntryForm(forms.ModelForm):
         expected_date = get_previous_school_day(today)
 
         if entry_date != expected_date:
+            msg = f"記載日は前登校日（{expected_date.strftime('%Y年%m月%d日')}）にしてください。"
             raise ValidationError(
-                f"記載日は前登校日（{expected_date.strftime('%Y年%m月%d日')}）にしてください。",
+                msg,
             )
 
         return entry_date
@@ -196,7 +197,8 @@ class CustomUserCreationForm(UserCreationForm):
         """メールアドレスの重複チェック"""
         email = self.cleaned_data["email"]
         if User.objects.filter(email=email).exists():
-            raise ValidationError("このメールアドレスは既に使用されています。")
+            msg = "このメールアドレスは既に使用されています。"
+            raise ValidationError(msg)
         return email
 
     def clean(self):

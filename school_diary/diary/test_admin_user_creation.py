@@ -14,6 +14,7 @@
 6. TestEdgeCases: エッジケース（8テスト）
 """
 
+import pytest
 from allauth.account.models import EmailAddress
 from django.contrib.auth import get_user_model
 from django.test import TestCase
@@ -462,11 +463,11 @@ class TestEdgeCases(TestCase):
         from django.core.exceptions import ValidationError
 
         user.profile.managed_grade = 0
-        with self.assertRaises(ValidationError):
+        with pytest.raises(ValidationError):
             user.profile.full_clean()
 
         user.profile.managed_grade = 4
-        with self.assertRaises(ValidationError):
+        with pytest.raises(ValidationError):
             user.profile.full_clean()
 
     def test_duplicate_email(self):
@@ -512,7 +513,7 @@ class TestEdgeCases(TestCase):
 
         # refresh後、profileアクセスでエラー
         user.refresh_from_db()
-        with self.assertRaises(UserProfile.DoesNotExist):
+        with pytest.raises(UserProfile.DoesNotExist):
             _ = user.profile
 
     def test_grade_leader_without_managed_grade(self):

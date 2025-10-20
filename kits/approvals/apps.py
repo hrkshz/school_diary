@@ -12,6 +12,6 @@ class ApprovalsConfig(AppConfig):
     def ready(self):
         """アプリケーション起動時にシグナルをインポートして登録する。"""
         with suppress(ImportError):
-            import kits.approvals.signals  # noqa: PLC0415
+            import kits.approvals.signals
 
             _ = kits.approvals.signals  # Mark as used for linters

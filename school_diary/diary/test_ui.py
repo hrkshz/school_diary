@@ -716,7 +716,7 @@ class TestAuthenticationFlow:
         # UserProfile はsignals.pyで自動作成される
         teacher.refresh_from_db()
 
-        classroom = ClassRoom.objects.create(
+        ClassRoom.objects.create(
             grade=1,
             class_name="A",
             academic_year=2025,

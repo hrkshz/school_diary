@@ -44,11 +44,11 @@ def send_notification_task(self, notification_id: int):
         }
 
     except Notification.DoesNotExist:
-        logger.error(f"通知が見つかりません: ID={notification_id}")
+        logger.exception(f"通知が見つかりません: ID={notification_id}")
         return {"error": "Notification not found"}
 
     except Exception as e:
-        logger.error(f"通知送信エラー: {notification_id} - {e!s}")
+        logger.exception(f"通知送信エラー: {notification_id} - {e!s}")
         raise
 
 

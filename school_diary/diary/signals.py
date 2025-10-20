@@ -39,8 +39,7 @@ def create_user_profile(sender, instance, created, **kwargs):
                     user=instance,
                     email=instance.email.lower(),
                     defaults={
-                        "verified": not settings.ACCOUNT_EMAIL_VERIFICATION
-                        == "mandatory",
+                        "verified": settings.ACCOUNT_EMAIL_VERIFICATION != "mandatory",
                         "primary": True,
                     },
                 )

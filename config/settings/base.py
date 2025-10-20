@@ -1,4 +1,3 @@
-# ruff: noqa: ERA001
 """Base settings to build other settings files upon."""
 
 from pathlib import Path
@@ -96,7 +95,7 @@ LOCAL_APPS = [
     "kits.io",
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
-INSTALLED_APPS = ["jazzmin"] + DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
+INSTALLED_APPS = ["jazzmin", *DJANGO_APPS, *THIRD_PARTY_APPS, *LOCAL_APPS]
 
 # MIGRATIONS
 # ------------------------------------------------------------------------------

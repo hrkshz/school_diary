@@ -83,7 +83,7 @@ class ReportTemplate(models.Model):
         help_text=_("Django ORM形式のクエリ(Pythonコード)"),
     )
 
-    # グラフ設定(JSON)  # noqa: ERA001
+    # グラフ設定(JSON)
     chart_config = models.JSONField(
         default=dict,
         verbose_name=_("グラフ設定"),
