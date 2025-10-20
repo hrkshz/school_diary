@@ -27,19 +27,7 @@ class DiaryConfig(AppConfig):
         except (ImportError, NotRegistered):
             pass
 
-        # kits.approvals（承認管理: 4モデル）
-        try:
-            from kits.approvals.models import ApprovalAction
-            from kits.approvals.models import ApprovalRequest
-            from kits.approvals.models import ApprovalStep
-            from kits.approvals.models import ApprovalWorkflow
-
-            admin.site.unregister(ApprovalWorkflow)
-            admin.site.unregister(ApprovalStep)
-            admin.site.unregister(ApprovalRequest)
-            admin.site.unregister(ApprovalAction)
-        except (ImportError, NotRegistered):
-            pass
+        # kits.approvals（承認管理）- 未使用のため削除
 
         # kits.notifications（通知管理: 2モデル）
         try:

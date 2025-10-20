@@ -88,7 +88,7 @@ LOCAL_APPS = [
     # KITS: Common reusable components
     "kits.demos.apps.DemosConfig",
     "kits.accounts.apps.AccountsConfig",
-    "kits.approvals.apps.ApprovalsConfig",
+    # "kits.approvals.apps.ApprovalsConfig",  # Disabled: Not used in application
     "kits.audit.apps.AuditConfig",
     # "kits.notifications.apps.NotificationsConfig",  # Disabled: Celery dependency removed
     "kits.reports",
@@ -360,7 +360,7 @@ JAZZMIN_SETTINGS = {
         "auth",  # ユーザー・グループ
         "diary",  # 連絡帳関連
         "reports",  # レポート
-        "approvals",  # 承認フロー
+        # "approvals",  # 承認フロー（未使用のため削除）
         "notifications",  # 通知
         "io",  # データ入出力
         "audit",  # 監査ログ
@@ -379,7 +379,7 @@ JAZZMIN_SETTINGS = {
         "diary.ClassRoom": "fas fa-school",
         "diary.TeacherNote": "fas fa-sticky-note",
         "reports": "fas fa-chart-bar",
-        "approvals": "fas fa-check-circle",
+        # "approvals": "fas fa-check-circle",  # 未使用のため削除
         "notifications": "fas fa-bell",
         "io": "fas fa-file-import",
         "audit": "fas fa-history",
