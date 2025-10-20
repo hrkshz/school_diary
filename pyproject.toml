@@ -80,6 +80,11 @@ plugins = ["mypy_django_plugin.main"]
 module = "*.migrations.*"
 ignore_errors = true
 
+[[tool.mypy.overrides]]
+# 外部ライブラリの型スタブ不足を無視（技術的制約）
+module = ["allauth.*", "simple_history.*"]
+ignore_missing_imports = true
+
 [tool.django-stubs]
 django_settings_module = "config.settings.test"
 
