@@ -658,15 +658,6 @@ try:
 except (ImportError, NotRegistered):
     pass  # demos未インストール、またはadmin登録されていない
 
-try:
-    from kits.io.models import ImportHistory
-    from kits.io.models import ImportMapping
-
-    admin.site.unregister(ImportMapping)
-    admin.site.unregister(ImportHistory)
-except (ImportError, NotRegistered):
-    pass  # io未インストール、またはadmin登録されていない
-
 # 不要なモデルを削除（確実に存在するもの）
 with contextlib.suppress(NotRegistered):
     admin.site.unregister(Group)

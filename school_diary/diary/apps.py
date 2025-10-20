@@ -51,16 +51,6 @@ class DiaryConfig(AppConfig):
         except (ImportError, NotRegistered):
             pass
 
-        # kits.io（データ入出力: 2モデル）
-        try:
-            from kits.io.models import ImportHistory
-            from kits.io.models import ImportMapping
-
-            admin.site.unregister(ImportHistory)
-            admin.site.unregister(ImportMapping)
-        except (ImportError, NotRegistered):
-            pass
-
         # kits.demos（デモ・参考実装: 1モデル）
         try:
             from kits.demos.models import DemoRequest

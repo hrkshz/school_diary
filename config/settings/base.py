@@ -92,7 +92,7 @@ LOCAL_APPS = [
     "kits.audit.apps.AuditConfig",
     # "kits.notifications.apps.NotificationsConfig",  # Disabled: Celery dependency removed
     "kits.reports",
-    "kits.io",
+    # "kits.io",  # Disabled: Not used in application
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
 INSTALLED_APPS = ["jazzmin", *DJANGO_APPS, *THIRD_PARTY_APPS, *LOCAL_APPS]
