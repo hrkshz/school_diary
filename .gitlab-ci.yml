@@ -129,6 +129,12 @@ build-image:
     # - apk: Alpine Linuxのパッケージマネージャー
     # - aws-cli: ECRログインに必要
 
+    # デバッグ: 環境変数確認
+    - echo "AWS_ACCESS_KEY_ID exists = $(test -n "$AWS_ACCESS_KEY_ID" && echo YES || echo NO)"
+    - echo "AWS_SECRET_ACCESS_KEY exists = $(test -n "$AWS_SECRET_ACCESS_KEY" && echo YES || echo NO)"
+    - echo "AWS_DEFAULT_REGION = $AWS_DEFAULT_REGION"
+    - echo "ECR_REGISTRY = $ECR_REGISTRY"
+
     # ECRログイン
     - |
       aws ecr get-login-password --region $AWS_DEFAULT_REGION | \
