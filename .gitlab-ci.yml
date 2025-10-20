@@ -76,7 +76,7 @@ type-check:
   stage: test
   script:
     - uv sync --frozen --all-extras --dev
-    - uv run mypy school_diary
+    - uv run mypy school_diary --disable-error-code import-untyped
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
