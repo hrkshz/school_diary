@@ -120,6 +120,7 @@ build-image:
   image: docker:24 # Docker CLI
   services:
     - name: docker:24-dind
+      alias: docker
       command: ["--tls=false"]
   variables:
     # Docker in Docker設定（TLS無効化）
