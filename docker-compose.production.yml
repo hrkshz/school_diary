@@ -1,13 +1,33 @@
 services:
   django:
-    build:
-      context: .
-      dockerfile: ./compose/production/django/Dockerfile
+    # ✅ ECRイメージを使用（環境変数で切り替え）
+    image: ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG:-latest}
 
-    image: school_diary_production_django
+    # 📚 学習ポイント:
+    # - ${変数名:-デフォルト値}: 環境変数、未設定ならデフォルト値
+    # - ECR_REGISTRY: 123456789012.dkr.ecr.ap-northeast-1.amazonaws.com
+    # - ECR_REPOSITORY: school-diary-production-django
+    # - IMAGE_TAG: latest（デフォルト）
+
+    # buildセクションは削除（ECRから取得するため不要）
+    # build:
+    #   context: .
+    #   dockerfile: ./compose/production/django/Dockerfile
+
     env_file:
       - ./.envs/.production/.django
       - ./.envs/.production/.postgres
+
     command: /start
+
     ports:
       - '8000:5000'
+
+    restart: unless-stopped
+
+    healthcheck:
+      test: ["CMD", "python", "manage.py", "check", "--deploy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s

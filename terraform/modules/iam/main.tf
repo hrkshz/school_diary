@@ -87,6 +87,20 @@ resource "aws_iam_role_policy" "cloudwatch_policy" {
   })
 }
 
+# ECR Read権限をEC2に付与
+resource "aws_iam_role_policy_attachment" "ecr_read" {
+  # どのIAM roleに権限を付与するか
+  role = aws_iam_role.ec2_role.name
+
+  # どの権限を付与するか（AWS管理ポリシー）
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+}
+
+# 📚 学習ポイント:
+# - aws_iam_role_policy_attachment: 既存のIAM roleにポリシーを追加
+# - AmazonEC2ContainerRegistryReadOnly: ECR pullのみ許可（pushは不可）
+# - AWS管理ポリシー: AWSが提供する既製の権限セット
+
 # EC2 Instance Profile
 resource "aws_iam_instance_profile" "ec2_profile" {
   name = "${var.project_name}-${var.environment}-ec2-profile"

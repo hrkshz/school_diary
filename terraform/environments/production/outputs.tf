@@ -48,3 +48,14 @@ output "iam_instance_profile_name" {
   description = "IAM instance profile name"
   value       = module.iam.instance_profile_name
 }
+
+# ECR outputs
+output "ecr_repository_url" {
+  description = "ECRリポジトリのURL"
+  value       = module.ecr.repository_url
+}
+
+output "ecr_repository_name" {
+  description = "ECRリポジトリ名"
+  value       = module.ecr.repository_name
+}

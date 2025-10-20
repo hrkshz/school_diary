@@ -1,0 +1,247 @@
+# =================================================================
+# GitLab CI/CD設定ファイル（ECR版）
+# =================================================================
+
+# 基本イメージ（Python 3.12）
+image: python:3.12-slim
+
+# グローバル変数
+variables:
+  # Docker設定
+  DOCKER_DRIVER: overlay2
+  DOCKER_TLS_CERTDIR: "/certs"
+
+  # AWS設定
+  AWS_DEFAULT_REGION: ap-northeast-1
+
+  # ECR設定（自動計算）
+  ECR_REGISTRY: ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com
+  ECR_REPOSITORY: school-diary-production-django
+
+  # テスト用
+  DJANGO_SETTINGS_MODULE: "config.settings.test"
+  DATABASE_URL: "sqlite:///test.db"
+
+# 📚 学習ポイント:
+# - variables: 全ジョブで使用できる環境変数
+# - ${変数名}: 変数の参照
+# - ECR_REGISTRY: <account-id>.dkr.ecr.<region>.amazonaws.comの形式
+
+# ステージ定義（実行順序）
+stages:
+  - test    # テスト実行
+  - build   # Dockerイメージビルド
+  - deploy  # EC2デプロイ
+
+# 依存関係キャッシュ（ビルド高速化）
+cache:
+  key:
+    files:
+      - uv.lock  # uv.lockが変更されたらキャッシュ無効化
+  paths:
+    - .venv/
+    - .cache/pip/
+  policy: pull-push
+
+# 📚 学習ポイント:
+# - cache: ビルド時間を短縮（依存関係を再利用）
+# - key: キャッシュの識別子
+
+# 全ジョブ共通の事前処理
+before_script:
+  - python -V
+  - pip install uv
+
+#━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Stage 1: Test（並列実行）
+#━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+# Linting
+lint:
+  stage: test
+  script:
+    - uv sync --frozen
+    - uv run ruff check .
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+# 📚 学習ポイント:
+# - stage: test - testステージに属する
+# - rules: 実行条件（MRまたはmainブランチ）
+
+# Type Checking
+type-check:
+  stage: test
+  script:
+    - uv sync --frozen
+    - uv run mypy school_diary
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  allow_failure: true  # mypyエラーは警告扱い
+
+# Unit Test
+unit-test:
+  stage: test
+  services:
+    - postgres:16-alpine  # テスト用PostgreSQL
+  variables:
+    POSTGRES_DB: test_db
+    POSTGRES_USER: test_user
+    POSTGRES_PASSWORD: test_password
+    DATABASE_URL: "postgres://test_user:test_password@postgres:5432/test_db"
+  script:
+    - apt-get update && apt-get install -y libpq-dev
+    - uv sync --frozen
+    - uv run pytest --cov=school_diary --cov-report=term --cov-report=xml
+  coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
+  artifacts:
+    paths:
+      - htmlcov/
+      - coverage.xml
+    expire_in: 1 week
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+# 📚 学習ポイント:
+# - services: 追加のコンテナ（PostgreSQL）
+# - artifacts: ビルド成果物を保存
+# - coverage: カバレッジ率を抽出
+
+#━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Stage 2: Build（ECRにpush）
+#━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+build-image:
+  stage: build
+  image: docker:24-dind  # Docker in Docker
+  services:
+    - docker:24-dind
+  before_script:
+    # AWS CLIインストール
+    - apk add --no-cache aws-cli python3 py3-pip
+
+    # 📚 学習ポイント:
+    # - apk: Alpine Linuxのパッケージマネージャー
+    # - aws-cli: ECRログインに必要
+
+    # ECRログイン
+    - |
+      aws ecr get-login-password --region $AWS_DEFAULT_REGION | \
+        docker login --username AWS --password-stdin $ECR_REGISTRY
+
+    # 📚 学習ポイント:
+    # - aws ecr get-login-password: ECRのパスワード取得（12時間有効）
+    # - docker login: Dockerに認証情報を設定
+    # - --password-stdin: パスワードを標準入力から受け取る（セキュア）
+
+  script:
+    # Dockerイメージビルド
+    - |
+      docker build \
+        -f compose/production/django/Dockerfile \
+        -t $ECR_REGISTRY/$ECR_REPOSITORY:latest \
+        -t $ECR_REGISTRY/$ECR_REPOSITORY:$CI_COMMIT_SHORT_SHA \
+        .
+
+    # 📚 学習ポイント:
+    # - -t: タグを指定（複数可）
+    # - latest: 最新版
+    # - $CI_COMMIT_SHORT_SHA: コミットハッシュ（例: abc123）
+
+    # ECRにpush
+    - docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+    - docker push $ECR_REGISTRY/$ECR_REPOSITORY:$CI_COMMIT_SHORT_SHA
+
+    # 📚 学習ポイント:
+    # - docker push: レジストリにイメージをアップロード
+
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH  # mainブランチのみ
+  tags:
+    - docker
+
+#━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Stage 3: Deploy（EC2にデプロイ）
+#━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+deploy-production:
+  stage: deploy
+  image: alpine:latest
+  before_script:
+    # SSH clientインストール
+    - apk add --no-cache openssh-client bash
+
+    # SSH設定
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - echo "$EC2_SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa
+    - ssh-keyscan -H $EC2_HOST >> ~/.ssh/known_hosts
+
+    # 📚 学習ポイント:
+    # - chmod 600: 所有者のみ読み書き可能（SSHセキュリティ要件）
+    # - ssh-keyscan: ホスト鍵を取得（MITM攻撃防止）
+
+  script:
+    # EC2にSSH接続してデプロイ
+    - |
+      ssh $EC2_USER@$EC2_HOST bash -s << "ENDSSH"
+        set -e  # エラー時に停止
+        cd /opt/app
+
+        echo "=== ECRログイン ==="
+        aws ecr get-login-password --region ap-northeast-1 | \
+          docker login --username AWS --password-stdin $ECR_REGISTRY
+
+        # 📚 学習ポイント:
+        # - EC2のIAM roleで自動認証（パスワード不要）
+
+        echo "=== 環境変数設定 ==="
+        export ECR_REGISTRY=$ECR_REGISTRY
+        export ECR_REPOSITORY=$ECR_REPOSITORY
+        export IMAGE_TAG=latest
+
+        echo "=== Dockerイメージpull ==="
+        docker compose -f docker-compose.production.yml pull
+
+        # 📚 学習ポイント:
+        # - docker compose pull: ECRから最新イメージ取得
+
+        echo "=== コンテナ再起動 ==="
+        docker compose -f docker-compose.production.yml up -d --force-recreate
+
+        # 📚 学習ポイント:
+        # - up -d: バックグラウンドで起動
+        # - --force-recreate: 常に新しいコンテナを作成
+
+        echo "=== マイグレーション ==="
+        docker compose -f docker-compose.production.yml exec -T django \
+          python manage.py migrate --noinput
+
+        # 📚 学習ポイント:
+        # - exec -T: TTY無しで実行（CI/CD環境用）
+
+        echo "=== ヘルスチェック ==="
+        docker compose -f docker-compose.production.yml exec -T django \
+          python manage.py check --deploy
+
+        echo "=== デプロイ完了！ ==="
+      ENDSSH
+
+  environment:
+    name: production
+    url: http://$EC2_HOST
+
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      when: manual  # 手動実行（安全のため）
+
+  only:
+    - main
+
+# 📚 学習ポイント:
+# - environment: GitLabのEnvironments機能
+# - when: manual - 手動トリガーが必要
