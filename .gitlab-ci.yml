@@ -120,13 +120,12 @@ build-image:
   stage: build
   image: docker:24 # Docker CLI
   services:
-    - docker:24-dind
+    - name: docker:24-dind
+      command: ["--tls=false"]
   variables:
-    # Docker in Docker設定
-    DOCKER_HOST: tcp://docker:2376
-    DOCKER_TLS_CERTDIR: "/certs"
-    DOCKER_CERT_PATH: "$DOCKER_TLS_CERTDIR/client"
-    DOCKER_TLS_VERIFY: 1
+    # Docker in Docker設定（TLS無効化）
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
   before_script:
     # AWS CLIインストール
     - apk add --no-cache aws-cli python3 py3-pip
