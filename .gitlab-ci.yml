@@ -61,7 +61,7 @@ before_script:
 lint:
   stage: test
   script:
-    - uv sync --frozen
+    - uv sync --frozen --all-extras --dev
     - uv run ruff check .
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
@@ -75,7 +75,7 @@ lint:
 type-check:
   stage: test
   script:
-    - uv sync --frozen
+    - uv sync --frozen --all-extras --dev
     - uv run mypy school_diary
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
@@ -94,7 +94,7 @@ unit-test:
     DATABASE_URL: "postgres://test_user:test_password@postgres:5432/test_db"
   script:
     - apt-get update && apt-get install -y libpq-dev
-    - uv sync --frozen
+    - uv sync --frozen --all-extras --dev
     - uv run pytest --cov=school_diary --cov-report=term --cov-report=xml
   coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
   artifacts:
