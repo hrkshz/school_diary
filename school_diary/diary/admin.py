@@ -398,6 +398,50 @@ class DailyAttendanceAdmin(admin.ModelAdmin):
 admin.site.unregister(User)
 
 
+class RoleFilter(admin.SimpleListFilter):
+    """役割フィルタ（分かりやすい日本語表示）"""
+
+    title = "役割"
+    parameter_name = "role"
+
+    def lookups(self, request, model_admin):
+        """フィルタの選択肢"""
+        return (
+            ("student", "生徒"),
+            ("teacher", "担任"),
+            ("grade_leader", "学年主任"),
+            ("school_leader", "校長・教頭"),
+        )
+
+    def queryset(self, request, queryset):
+        """フィルタリング処理"""
+        if self.value():
+            return queryset.filter(profile__role=self.value())
+        return queryset
+
+
+class ActiveStatusFilter(admin.SimpleListFilter):
+    """在籍状況フィルタ（在籍中/卒業・退学済み）"""
+
+    title = "在籍状況"
+    parameter_name = "active"
+
+    def lookups(self, request, model_admin):
+        """フィルタの選択肢"""
+        return (
+            ("1", "在籍中"),
+            ("0", "卒業・退学済み"),
+        )
+
+    def queryset(self, request, queryset):
+        """フィルタリング処理"""
+        if self.value() == "1":
+            return queryset.filter(is_active=True)
+        if self.value() == "0":
+            return queryset.filter(is_active=False)
+        return queryset
+
+
 class UserProfileInline(admin.StackedInline):
     """ユーザープロフィール編集インライン（ベストプラクティス実装）
 
@@ -430,7 +474,10 @@ class CustomUserAdmin(BaseUserAdmin):
         "is_active",
     )
 
-    list_filter = [*list(BaseUserAdmin.list_filter or ()), ("homeroom_classes", admin.RelatedOnlyFieldListFilter)]
+    list_filter = [
+        RoleFilter,          # 役割（生徒、担任、学年主任、校長・教頭）
+        ActiveStatusFilter,  # 在籍状況（在籍中、卒業・退学済み）
+    ]
 
     search_fields = BaseUserAdmin.search_fields
 
