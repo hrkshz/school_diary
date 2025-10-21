@@ -37,5 +37,4 @@ class PasswordChangeRequiredMiddleware:
                         # パスワード変更画面にリダイレクト
                         return HttpResponseRedirect(reverse("password_change"))
 
-        response = self.get_response(request)
-        return response
+        return self.get_response(request)

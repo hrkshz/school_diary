@@ -304,7 +304,8 @@ class PasswordChangeForm(forms.Form):
         """現在のパスワード（仮パスワード）が正しいか検証"""
         old_password = self.cleaned_data["old_password"]
         if not self.user.check_password(old_password):
-            raise ValidationError("現在のパスワードが正しくありません。")
+            error_message = "現在のパスワードが正しくありません。"
+            raise ValidationError(error_message)
         return old_password
 
     def clean_new_password2(self):
@@ -312,7 +313,8 @@ class PasswordChangeForm(forms.Form):
         new_password1 = self.cleaned_data.get("new_password1")
         new_password2 = self.cleaned_data.get("new_password2")
         if new_password1 and new_password2 and new_password1 != new_password2:
-            raise ValidationError("新しいパスワードが一致しません。")
+            error_message = "新しいパスワードが一致しません。"
+            raise ValidationError(error_message)
         return new_password2
 
     def save(self, commit=True):
