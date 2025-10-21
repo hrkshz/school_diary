@@ -18,6 +18,8 @@ if READ_DOT_ENV_FILE:
 # ------------------------------------------------------------------------------
 # https://docs.djangoproject.com/en/dev/ref/settings/#debug
 DEBUG: bool = env.bool("DJANGO_DEBUG", default=False)  # type: ignore[arg-type]
+# Site URL（メール送信時のログインURL生成に使用）
+SITE_URL = env.str("DJANGO_SITE_URL", default="http://localhost:8000")
 # Local time zone. Choices are
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
 # though not all of them may be available with every OS.
@@ -153,6 +155,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "allauth.account.middleware.AccountMiddleware",
     "simple_history.middleware.HistoryRequestMiddleware",
+    "school_diary.diary.middleware.PasswordChangeRequiredMiddleware",  # パスワード変更強制
 ]
 
 # STATIC
@@ -279,7 +282,7 @@ LOGGING = {
 ACCOUNT_ALLOW_REGISTRATION = env.bool("DJANGO_ACCOUNT_ALLOW_REGISTRATION", default=False)  # type: ignore[arg-type]
 ACCOUNT_LOGIN_METHODS = {"email"}
 ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
-ACCOUNT_EMAIL_VERIFICATION = "mandatory"
+ACCOUNT_EMAIL_VERIFICATION = "none"  # PoC環境のため、メール認証を無効化
 ACCOUNT_ADAPTER = "school_diary.diary.adapters.RoleBasedRedirectAdapter"
 
 # Django REST Framework

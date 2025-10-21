@@ -12,6 +12,7 @@ from django.http import HttpResponseForbidden
 from django.http import HttpResponseNotAllowed
 from django.shortcuts import get_object_or_404
 from django.shortcuts import redirect
+from django.shortcuts import render
 from django.urls import reverse_lazy
 from django.utils import timezone
 from django.views.generic import CreateView
@@ -26,6 +27,7 @@ from .constants import GradeLevel
 from .constants import HealthThresholds
 from .constants import NoteSettings
 from .forms import DiaryEntryForm
+from .forms import PasswordChangeForm
 from .models import AbsenceReason
 from .models import ActionStatus
 from .models import AttendanceStatus
@@ -1371,3 +1373,28 @@ def mark_shared_note_read(request, note_id):
     student_name = note.student.get_full_name()
     messages.success(request, f"{student_name}さんの共有メモを既読にしました。")
     return redirect("diary:teacher_dashboard")
+
+
+@login_required
+def password_change_view(request):
+    """パスワード変更ビュー（初回ログイン時用）
+
+    仮パスワードから本パスワードへの変更を行う。
+    変更成功後、requires_password_changeをFalseに設定し、
+    メールアドレスを認証済みにする。
+    """
+    from django.contrib.auth import update_session_auth_hash
+
+    if request.method == "POST":
+        form = PasswordChangeForm(user=request.user, data=request.POST)
+        if form.is_valid():
+            user = form.save()
+            # セッションを維持（パスワード変更後もログイン状態を保持）
+            update_session_auth_hash(request, user)
+            messages.success(request, "✅ パスワード変更が完了しました。メール認証も完了しました。")
+            # 役割別ダッシュボードへリダイレクト
+            return redirect("home")
+    else:
+        form = PasswordChangeForm(user=request.user)
+
+    return render(request, "diary/password_change.html", {"form": form})

@@ -259,3 +259,76 @@ class CustomUserCreationForm(UserCreationForm):
             )
 
         return user
+
+
+class PasswordChangeForm(forms.Form):
+    """パスワード変更フォーム（初回ログイン時用）
+
+    仮パスワードから本パスワードへの変更を行うフォーム。
+    """
+
+    old_password = forms.CharField(
+        label="現在のパスワード（仮パスワード）",
+        widget=forms.PasswordInput(attrs={"class": "form-control", "placeholder": "メールで送信された仮パスワード"}),
+        help_text="管理者から送信されたメールに記載されている仮パスワードを入力してください。",
+    )
+    new_password1 = forms.CharField(
+        label="新しいパスワード",
+        widget=forms.PasswordInput(attrs={"class": "form-control", "placeholder": "8文字以上の安全なパスワード"}),
+        help_text="8文字以上で、他人に推測されにくいパスワードを設定してください。",
+    )
+    new_password2 = forms.CharField(
+        label="新しいパスワード（確認）",
+        widget=forms.PasswordInput(attrs={"class": "form-control", "placeholder": "もう一度入力してください"}),
+        help_text="確認のため、もう一度同じパスワードを入力してください。",
+    )
+
+    def __init__(self, user, *args, **kwargs):
+        self.user = user
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_method = "post"
+        self.helper.layout = Layout(
+            Div(
+                HTML('<h4 class="mb-3">🔒 パスワード変更</h4>'),
+                HTML('<p class="text-muted">初回ログインのため、パスワードを変更してください。</p>'),
+                css_class="mb-4",
+            ),
+            "old_password",
+            "new_password1",
+            "new_password2",
+            Submit("submit", "パスワードを変更する", css_class="btn btn-primary btn-lg w-100 mt-3"),
+        )
+
+    def clean_old_password(self):
+        """現在のパスワード（仮パスワード）が正しいか検証"""
+        old_password = self.cleaned_data["old_password"]
+        if not self.user.check_password(old_password):
+            raise ValidationError("現在のパスワードが正しくありません。")
+        return old_password
+
+    def clean_new_password2(self):
+        """新しいパスワードが一致するか検証"""
+        new_password1 = self.cleaned_data.get("new_password1")
+        new_password2 = self.cleaned_data.get("new_password2")
+        if new_password1 and new_password2 and new_password1 != new_password2:
+            raise ValidationError("新しいパスワードが一致しません。")
+        return new_password2
+
+    def save(self, commit=True):
+        """パスワードを変更して、requires_password_changeをFalseに設定"""
+        password = self.cleaned_data["new_password1"]
+        self.user.set_password(password)
+        if hasattr(self.user, "profile"):
+            self.user.profile.requires_password_change = False
+            self.user.profile.save()
+
+        # メールアドレスを認証済みにする
+        email_address = EmailAddress.objects.filter(user=self.user, email=self.user.email).first()
+        if email_address:
+            email_address.verified = True
+            email_address.save()
+
+        if commit:
+            self.user.save()
+        return self.user

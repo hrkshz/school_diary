@@ -535,6 +535,7 @@ class CustomUserAdmin(BaseUserAdmin):
         新規作成時（change=False）:
             CustomUserCreationFormのsave()メソッドが正しく実行されるようにする。
             roleとmanaged_gradeをUserProfileに確実に保存する。
+            仮パスワードを生成してメール送信する。
 
         編集時（change=True）:
             通常の保存処理（UserProfileはInlineAdminで処理される）
@@ -543,6 +544,10 @@ class CustomUserAdmin(BaseUserAdmin):
 
         # 新規作成時のみ、roleとmanaged_gradeを明示的に設定
         if not change and isinstance(form, CustomUserCreationForm):
+            import secrets
+            # from django.core.mail import send_mail  # メール送信無効化中
+            # from django.conf import settings  # メール送信無効化中
+
             role = form.cleaned_data.get("role")
             managed_grade = form.cleaned_data.get("managed_grade")
 
@@ -552,13 +557,74 @@ class CustomUserAdmin(BaseUserAdmin):
                 profile.role = role
             if managed_grade:
                 profile.managed_grade = managed_grade
+
+            # 仮パスワード生成（16文字、強力）
+            temp_password = secrets.token_urlsafe(12)
+            obj.set_password(temp_password)
+            profile.requires_password_change = True
             profile.save()
+            obj.save()
 
             # role="admin"の場合はis_superuser=Trueを自動設定
             if role == UserProfile.ROLE_ADMIN:
                 obj.is_superuser = True
                 obj.is_staff = True
                 obj.save()
+
+            # Welcome emailを送信（一時的に無効化：AWS SESサンドボックス制限のため）
+            # TODO: ドメイン取得後、以下のコメントを解除してメール送信を有効化
+            # email_sent = False
+            # try:
+            #     send_mail(
+            #         subject="【連絡帳システム】アカウント登録完了",
+            #         message=f"""
+# {obj.get_full_name() or obj.username} 様
+#
+# 連絡帳システムのアカウントが作成されました。
+# 以下の情報でログインしてください。
+#
+# ログインURL: {settings.SITE_URL}/accounts/login/
+# メールアドレス: {obj.email}
+# 仮パスワード: {temp_password}
+#
+# 初回ログイン後、パスワード変更が必要です。
+# 新しいパスワードを設定してください。
+#
+# ※このメールは自動送信されています。
+# """,
+#         from_email=settings.DEFAULT_FROM_EMAIL,
+#         recipient_list=[obj.email],
+#         fail_silently=False,
+#     )
+#     email_sent = True
+# except Exception as e:
+#     # メール送信失敗時は警告メッセージ
+#     self.message_user(
+#         request,
+#         f"⚠️ メール送信失敗: {e}\n仮パスワード「{temp_password}」をユーザーに別途連絡してください。",
+#         messages.WARNING,
+#     )
+#
+# # メール送信成功時は成功メッセージ
+# if email_sent:
+#     self.message_user(
+#         request,
+#         f"✅ ユーザー作成完了。仮パスワード「{temp_password}」をメール送信しました。",
+#         messages.SUCCESS,
+#     )
+
+            # 管理画面に仮パスワードを表示（手動通知用）
+            self.message_user(
+                request,
+                f"✅ ユーザー作成完了\n"
+                f"━━━━━━━━━━━━━━━━━━━━━━\n"
+                f"📧 メールアドレス: {obj.email}\n"
+                f"🔑 仮パスワード: {temp_password}\n"
+                f"━━━━━━━━━━━━━━━━━━━━━━\n"
+                f"上記の情報をユーザーに伝えてください。\n"
+                f"初回ログイン後、パスワード変更が必要です。",
+                messages.SUCCESS,
+            )
 
     def save_formset(self, request, form, formset, change):
         """インラインフォーム保存時の処理

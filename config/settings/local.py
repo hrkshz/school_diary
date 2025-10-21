@@ -34,7 +34,7 @@ EMAIL_HOST = env.str("EMAIL_HOST", default="mailpit")  # type: ignore[arg-type]
 # https://docs.djangoproject.com/en/dev/ref/settings/#email-port
 EMAIL_PORT = 1025
 # https://docs.djangoproject.com/en/dev/ref/settings/#email-backend
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"  # Mailpit経由でメール送信
 
 # WhiteNoise
 # ------------------------------------------------------------------------------

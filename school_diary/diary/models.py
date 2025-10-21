@@ -408,6 +408,11 @@ class UserProfile(AuditMixin):
         validators=[MinValueValidator(1), MaxValueValidator(3)],
         help_text="学年主任の場合、管理する学年（1, 2, 3）",
     )
+    requires_password_change = models.BooleanField(
+        "パスワード変更が必要",
+        default=False,
+        help_text="初回ログイン時にパスワード変更を強制します（管理者が仮パスワードで作成した場合）",
+    )
 
     class Meta:
         verbose_name = "ユーザープロフィール"
