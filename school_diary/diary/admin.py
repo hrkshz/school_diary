@@ -554,6 +554,36 @@ class CustomUserAdmin(BaseUserAdmin):
                 profile.managed_grade = managed_grade
             profile.save()
 
+            # role="admin"の場合はis_superuser=Trueを自動設定
+            if role == UserProfile.ROLE_ADMIN:
+                obj.is_superuser = True
+                obj.is_staff = True
+                obj.save()
+
+    def save_formset(self, request, form, formset, change):
+        """インラインフォーム保存時の処理
+
+        UserProfileのroleが"admin"（システム管理者）に変更された場合、
+        自動的にis_superuser=Trueを設定する。
+        """
+        instances = formset.save(commit=False)
+        for instance in instances:
+            # UserProfileの場合のみ処理
+            if isinstance(instance, UserProfile):
+                # role="admin"の場合はis_superuser=Trueを自動設定
+                if instance.role == UserProfile.ROLE_ADMIN:
+                    instance.user.is_superuser = True
+                    instance.user.is_staff = True
+                    instance.user.save()
+                # role!="admin"の場合はis_superuser=Falseに戻す
+                else:
+                    instance.user.is_superuser = False
+                    # is_staffはそのまま（担任等も管理画面アクセス必要）
+                    instance.user.save()
+            instance.save()
+        formset.save_m2m()
+        super().save_formset(request, form, formset, change)
+
     @admin.display(description="氏名")
     def full_name_display(self, obj):
         """フルネーム表示（日本語順: 姓 + 名）"""
