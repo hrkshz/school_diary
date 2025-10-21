@@ -118,3 +118,10 @@ variable "s3_versioning_enabled" {
   type        = bool
   default     = true
 }
+
+# SES Variables
+variable "ses_sender_email" {
+  description = "Email address to verify for SES (sender)"
+  type        = string
+  default     = "hiroki0107@gmail.com"
+}

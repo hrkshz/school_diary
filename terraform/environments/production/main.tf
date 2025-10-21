@@ -90,3 +90,14 @@ module "cloudfront" {
   nlb_dns_name = module.nlb.dns_name
   environment  = var.environment
 }
+
+module "ses" {
+  source = "../../modules/ses"
+
+  sender_email = var.ses_sender_email
+  tags = {
+    Name        = "${var.project_name}-${var.environment}-ses"
+    Environment = var.environment
+    Project     = var.project_name
+  }
+}

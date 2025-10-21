@@ -109,7 +109,7 @@ MEDIA_URL = f"https://{aws_s3_domain}/media/"
 # https://docs.djangoproject.com/en/dev/ref/settings/#default-from-email
 DEFAULT_FROM_EMAIL = env.str(
     "DJANGO_DEFAULT_FROM_EMAIL",
-    default="LabApp <noreply@school_diary.example.com>",  # type: ignore[arg-type]
+    default="School Diary <hiroki0107@gmail.com>",  # type: ignore[arg-type]
 )
 # https://docs.djangoproject.com/en/dev/ref/settings/#server-email
 SERVER_EMAIL = env.str("DJANGO_SERVER_EMAIL", default=DEFAULT_FROM_EMAIL)  # type: ignore[arg-type]

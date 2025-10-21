@@ -70,3 +70,14 @@ output "cloudfront_distribution_id" {
   description = "CloudFront distribution ID"
   value       = module.cloudfront.cloudfront_distribution_id
 }
+
+# SES outputs
+output "ses_email_identity_arn" {
+  description = "SES email identity ARN"
+  value       = module.ses.email_identity_arn
+}
+
+output "ses_verified_email" {
+  description = "SES verified email address"
+  value       = module.ses.email_address
+}
