@@ -199,14 +199,13 @@ deploy-production:
     # - ssh-keyscan: ホスト鍵を取得（MITM攻撃防止）
 
   script:
-    # 必要なファイルをEC2に転送
+    # docker-compose.ymlをEC2に転送（イメージタグ更新のため）
     - echo "=== ファイル転送 ==="
     - scp docker-compose.production.yml $EC2_USER@$EC2_HOST:/opt/app/
-    - scp -r .envs $EC2_USER@$EC2_HOST:/opt/app/
 
     # 📚 学習ポイント:
     # - scp: セキュアコピー（SSH経由でファイル転送）
-    # - -r: ディレクトリを再帰的に転送
+    # - .envsは初回のみ手動配置（インフラ設定として管理）
 
     # EC2にSSH接続してデプロイ
     - |
