@@ -83,3 +83,10 @@ module "nlb" {
   subnet_id       = module.vpc.public_subnet_id
   ec2_instance_id = module.ec2.instance_id
 }
+
+module "cloudfront" {
+  source = "../../modules/cloudfront"
+
+  nlb_dns_name = module.nlb.dns_name
+  environment  = var.environment
+}

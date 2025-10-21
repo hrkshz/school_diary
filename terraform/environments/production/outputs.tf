@@ -59,3 +59,14 @@ output "ecr_repository_name" {
   description = "ECRリポジトリ名"
   value       = module.ecr.repository_name
 }
+
+# CloudFront outputs
+output "cloudfront_domain_name" {
+  description = "CloudFront distribution domain name (HTTPS URL)"
+  value       = module.cloudfront.cloudfront_domain_name
+}
+
+output "cloudfront_distribution_id" {
+  description = "CloudFront distribution ID"
+  value       = module.cloudfront.cloudfront_distribution_id
+}
