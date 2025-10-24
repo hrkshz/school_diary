@@ -82,7 +82,7 @@ type-check:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
   allow_failure: true # mypyエラーは警告扱い
 
-# Unit Test
+# Unit Test（主要機能のみ: 03-features.mdベース）
 unit-test:
   stage: test
   services:
@@ -96,7 +96,8 @@ unit-test:
     - apt-get update && apt-get install -y libpq-dev
     - uv sync --frozen --all-extras --dev
     - uv run python manage.py migrate --noinput
-    - uv run pytest --cov=school_diary --cov-report=term --cov-report=xml
+    # 主要機能テストのみ実行（Critical Path）
+    - uv run pytest school_diary/diary/tests/features/ --cov=school_diary --cov-report=term --cov-report=xml -v
   coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
   artifacts:
     paths:

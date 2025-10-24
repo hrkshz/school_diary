@@ -70,7 +70,7 @@ def main():
     input_file = "school_diary/diary/test_ui.py"
     output_file = "school_diary/diary/test_ui_cleaned.py"
 
-    with open(input_file, "r", encoding="utf-8") as f:
+    with open(input_file, encoding="utf-8") as f:
         lines = f.readlines()
 
     output_lines = []
@@ -100,11 +100,10 @@ def main():
                         i += len(func_lines)
                         output_lines.append("\n")  # 空行追加
                         continue
-                    else:
-                        # 削除対象のfixtureをスキップ
-                        func_lines = extract_function(lines, i)
-                        i += len(func_lines)
-                        continue
+                    # 削除対象のfixtureをスキップ
+                    func_lines = extract_function(lines, i)
+                    i += len(func_lines)
+                    continue
 
         # クラスチェック
         if line.strip().startswith("class "):
@@ -136,20 +135,19 @@ def main():
 
                     output_lines.append("\n")  # クラス後に空行
                     continue
-                else:
-                    # 削除対象のクラスをスキップ
-                    class_indent = len(line) - len(line.lstrip())
-                    i += 1
-                    while i < len(lines):
-                        curr_line = lines[i]
-                        if not curr_line.strip():
-                            i += 1
-                            continue
-                        curr_indent = len(curr_line) - len(curr_line.lstrip())
-                        if curr_indent <= class_indent and curr_line.strip():
-                            break
+                # 削除対象のクラスをスキップ
+                class_indent = len(line) - len(line.lstrip())
+                i += 1
+                while i < len(lines):
+                    curr_line = lines[i]
+                    if not curr_line.strip():
                         i += 1
-                    continue
+                        continue
+                    curr_indent = len(curr_line) - len(curr_line.lstrip())
+                    if curr_indent <= class_indent and curr_line.strip():
+                        break
+                    i += 1
+                continue
 
         i += 1
 
@@ -158,9 +156,9 @@ def main():
         f.writelines(output_lines)
 
     print(f"✅ 新しいファイル作成: {output_file}")
-    print(f"   元のテスト数: 46")
-    print(f"   削除予定: 31")
-    print(f"   保持予定: 15")
+    print("   元のテスト数: 46")
+    print("   削除予定: 31")
+    print("   保持予定: 15")
 
 if __name__ == "__main__":
     main()
