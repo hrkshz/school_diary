@@ -9,7 +9,6 @@ Fixture Pyramid:
 - Level 3: 複雑なシナリオ（setup_inbox_scenario）
 """
 
-from datetime import date
 from datetime import timedelta
 
 import pytest

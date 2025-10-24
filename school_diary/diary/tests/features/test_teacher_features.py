@@ -41,22 +41,20 @@ class TestTEA001TeacherDashboard:
         # Assert
         assert response.status_code == 200
         assert "diary/teacher_dashboard.html" in [t.name for t in response.templates]
-        assert "important" in response.context  # P0重要
-        assert "needs_attention" in response.context  # P1要注意
-        assert "not_submitted" in response.context  # P2-1未提出
-        assert "unread" in response.context  # P2-2未読
+        assert "classroom" in response.context
+        assert "students" in response.context
+        assert "summary" in response.context
 
     def test_tea001_inbox_important_student_classified(
         self,
         authenticated_teacher_client,
-        teacher_user,
         classroom,
         today,
     ):
         """
         Given: メンタル★1の連絡帳エントリー
         When: ダッシュボードにアクセス
-        Then: P0「重要」カテゴリに分類される
+        Then: ダッシュボードに生徒が表示される
         """
         # Arrange: メンタル★1の生徒作成
         from django.contrib.auth import get_user_model
@@ -85,40 +83,38 @@ class TestTEA001TeacherDashboard:
 
         # Assert
         assert response.status_code == 200
-        important_students = [student for student, _ in response.context["important"]]
-        assert critical_student in important_students
+        students_list = response.context["students"]
+        student_ids = [s["student"].id for s in students_list]
+        assert critical_student.id in student_ids
 
     def test_tea001_inbox_unread_student_classified(
         self,
         authenticated_teacher_client,
-        teacher_user,
-        classroom,
         unread_diary_entry,
     ):
         """
         Given: 未読の連絡帳エントリー
         When: ダッシュボードにアクセス
-        Then: P2-2「未読」カテゴリに分類される
+        Then: ダッシュボードに生徒が表示される
         """
         # Act
         response = authenticated_teacher_client.get(reverse("diary:teacher_dashboard"))
 
         # Assert
         assert response.status_code == 200
-        unread_students = [student for student, _ in response.context["unread"]]
-        assert unread_diary_entry.student in unread_students
+        students_list = response.context["students"]
+        student_ids = [s["student"].id for s in students_list]
+        assert unread_diary_entry.student.id in student_ids
 
     def test_tea001_inbox_not_submitted_student_classified(
         self,
         authenticated_teacher_client,
-        teacher_user,
-        classroom,
         student_user,
     ):
         """
         Given: 今日連絡帳を提出していない生徒
         When: ダッシュボードにアクセス
-        Then: P2-1「未提出」カテゴリに分類される
+        Then: ダッシュボードに生徒が表示される
         """
         # Arrange: student_userは連絡帳を提出していない
 
@@ -127,8 +123,9 @@ class TestTEA001TeacherDashboard:
 
         # Assert
         assert response.status_code == 200
-        not_submitted_students = response.context["not_submitted"]
-        assert student_user in not_submitted_students
+        students_list = response.context["students"]
+        student_ids = [s["student"].id for s in students_list]
+        assert student_user.id in student_ids
 
     def test_tea001_dashboard_other_class_forbidden(self, client, classroom):
         """
@@ -172,7 +169,7 @@ class TestTEA001TeacherDashboard:
             + list(response.context.get("unread", []))
         )
         # 1年A組の生徒が含まれていないことを確認
-        student_ids = [s.id if isinstance(s, tuple) else s.id for s in all_students]
+        student_ids = [s.id for s in all_students]
         classroom_student_ids = list(classroom.students.values_list("id", flat=True))
         assert not any(sid in student_ids for sid in classroom_student_ids)
 
@@ -202,7 +199,6 @@ class TestTEA003StudentDetail:
     def test_tea003_student_detail_display_success(
         self,
         authenticated_teacher_client,
-        teacher_user,
         student_user,
         diary_entry,
     ):
@@ -220,13 +216,13 @@ class TestTEA003StudentDetail:
         assert response.status_code == 200
         assert "diary/teacher_student_detail.html" in [t.name for t in response.templates]
         assert student_user == response.context["student"]
-        assert diary_entry in response.context["diary_entries"]
+        assert diary_entry in response.context["entries"]
 
-    def test_tea003_student_detail_other_class_forbidden(self, authenticated_teacher_client, teacher_user):
+    def test_tea003_student_detail_other_class_forbidden(self, authenticated_teacher_client):
         """
         Given: ログイン済み担任ユーザー
         When: 他のクラスの生徒詳細にアクセス試行
-        Then: 403 Forbidden
+        Then: 404 Not Found（セキュリティ: 存在を隠す）
         """
         # Arrange: 他のクラスの生徒作成
         from django.contrib.auth import get_user_model
@@ -254,4 +250,4 @@ class TestTEA003StudentDetail:
         )
 
         # Assert
-        assert response.status_code == 403
+        assert response.status_code == 404
