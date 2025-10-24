@@ -12,3 +12,24 @@ venv
 .git
 .envs/
 .ipython
+
+# Test files (プロダクションビルドから除外)
+tests/
+**/test_*.py
+**/*_test.py
+.pytest_cache/
+pytest.ini
+.coverage
+htmlcov/
+coverage.xml
+
+# Documentation (プロダクションビルドから除外)
+docs/
+*.md
+!README.md
+
+# Development tools
+.ruff_cache/
+.mypy_cache/
+*.pyc
+__pycache__/
