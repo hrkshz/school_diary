@@ -651,3 +651,240 @@ class TestClassifyStudentsWeekendHandling:
             # カウント確認（「未対応」として表示される人数）
             needs_response_count = len(result["not_submitted"]) + len(result["unread"]) + len(result["no_reaction"])
             assert needs_response_count >= 1, "「未対応」が1名以上いるべき"
+
+    def test_classify_needs_action_with_internal_action_pending(self, setup_classroom):
+        """internal_actionが設定されaction_status=PENDINGの生徒はneeds_actionに分類される"""
+        from school_diary.diary.models import ActionStatus
+        from school_diary.diary.models import InternalAction
+
+        classroom = setup_classroom["classroom"]
+        student = setup_classroom["students"][0]
+        today = timezone.now().date()
+
+        # internal_action設定済み、action_status=PENDINGのエントリー作成
+        DiaryEntry.objects.create(
+            student=student,
+            entry_date=today,
+            health_condition=4,
+            mental_condition=3,
+            reflection="テスト",
+            internal_action=InternalAction.NEEDS_FOLLOW_UP,
+            action_status=ActionStatus.PENDING,
+        )
+
+        result = alert_service.classify_students(classroom)
+
+        # needs_actionに分類されることを確認
+        assert len(result["needs_action"]) == 1
+        student_in_needs_action, entry_in_needs_action = result["needs_action"][0]
+        assert student_in_needs_action.id == student.id
+        assert entry_in_needs_action.internal_action == InternalAction.NEEDS_FOLLOW_UP
+
+        # 他のカテゴリに分類されていないことを確認
+        assert student not in result["important"]
+        assert student not in result["needs_attention"]
+        assert student not in result["not_submitted"]
+        assert student not in result["unread"]
+        assert student not in result["no_reaction"]
+
+    def test_classify_needs_action_with_internal_action_in_progress(self, setup_classroom):
+        """internal_actionが設定されaction_status=IN_PROGRESSの生徒はneeds_actionに分類される"""
+        from school_diary.diary.models import ActionStatus
+        from school_diary.diary.models import InternalAction
+
+        classroom = setup_classroom["classroom"]
+        student = setup_classroom["students"][0]
+        today = timezone.now().date()
+
+        # internal_action設定済み、action_status=IN_PROGRESSのエントリー作成
+        DiaryEntry.objects.create(
+            student=student,
+            entry_date=today,
+            health_condition=4,
+            mental_condition=3,
+            reflection="テスト",
+            internal_action=InternalAction.URGENT,
+            action_status=ActionStatus.IN_PROGRESS,
+        )
+
+        result = alert_service.classify_students(classroom)
+
+        # needs_actionに分類されることを確認
+        assert len(result["needs_action"]) == 1
+        student_in_needs_action, entry_in_needs_action = result["needs_action"][0]
+        assert student_in_needs_action.id == student.id
+        assert entry_in_needs_action.internal_action == InternalAction.URGENT
+
+    def test_classify_not_needs_action_when_completed(self, setup_classroom):
+        """internal_actionが設定されていてもaction_status=COMPLETEDならneeds_actionに分類されない"""
+        from school_diary.diary.models import ActionStatus
+        from school_diary.diary.models import InternalAction
+        from school_diary.diary.models import PublicReaction
+
+        classroom = setup_classroom["classroom"]
+        student = setup_classroom["students"][0]
+        teacher = setup_classroom["teacher"]
+        today = timezone.now().date()
+
+        # internal_action設定済み、action_status=COMPLETEDのエントリー作成
+        DiaryEntry.objects.create(
+            student=student,
+            entry_date=today,
+            health_condition=4,
+            mental_condition=3,
+            reflection="テスト",
+            internal_action=InternalAction.NEEDS_FOLLOW_UP,
+            action_status=ActionStatus.COMPLETED,
+            is_read=True,
+            read_by=teacher,
+            read_at=timezone.now(),
+            public_reaction=PublicReaction.THUMBS_UP,
+        )
+
+        result = alert_service.classify_students(classroom)
+
+        # needs_actionに分類されないことを確認
+        assert len(result["needs_action"]) == 0
+
+        # completedに分類されることを確認
+        completed_ids = [s.id for s, d in result["completed"]]
+        assert student.id in completed_ids
+
+    def test_classify_needs_action_priority_over_unread(self, setup_classroom):
+        """internal_action設定済みの生徒は、未読でもneeds_actionに優先的に分類される"""
+        from school_diary.diary.models import ActionStatus
+        from school_diary.diary.models import InternalAction
+
+        classroom = setup_classroom["classroom"]
+        student = setup_classroom["students"][0]
+        today = timezone.now().date()
+
+        # internal_action設定済み、未読のエントリー作成
+        DiaryEntry.objects.create(
+            student=student,
+            entry_date=today,
+            health_condition=4,
+            mental_condition=3,
+            reflection="テスト",
+            internal_action=InternalAction.PARENT_CONTACTED,
+            action_status=ActionStatus.PENDING,
+            is_read=False,  # 未読
+        )
+
+        result = alert_service.classify_students(classroom)
+
+        # needs_actionに分類されることを確認（unreadより優先）
+        assert len(result["needs_action"]) == 1
+        assert len(result["unread"]) == 0
+
+
+@pytest.mark.django_db
+class TestTriageSystem:
+    """トリアージシステムのテスト（action_status=PENDINGフィルタリング）"""
+
+    def test_important_excludes_triaged_entries(self, setup_classroom):
+        """P0（重要）: トリアージ済み（action_status != PENDING）のメンタル★1は除外される"""
+        from school_diary.diary.models import ActionStatus
+
+        classroom = setup_classroom["classroom"]
+        student = setup_classroom["students"][0]
+        teacher = setup_classroom["teacher"]
+        today = timezone.now().date()
+
+        # メンタル★1だが、action_status=NOT_REQUIRED（トリアージ済み）
+        DiaryEntry.objects.create(
+            student=student,
+            entry_date=today,
+            health_condition=4,
+            mental_condition=1,  # ★1
+            reflection="つらい",
+            action_status=ActionStatus.NOT_REQUIRED,  # トリアージ済み
+            is_read=True,
+            read_by=teacher,
+        )
+
+        result = alert_service.classify_students(classroom)
+
+        # importantに分類されないことを確認
+        assert student not in result["important"]
+        # no_reactionに分類される（既読だが反応未選択）
+        assert student in result["no_reaction"]
+
+    def test_important_includes_untriaged_mental_1(self, setup_classroom):
+        """P0（重要）: action_status=PENDINGのメンタル★1は分類される"""
+        from school_diary.diary.models import ActionStatus
+
+        classroom = setup_classroom["classroom"]
+        student = setup_classroom["students"][0]
+        today = timezone.now().date()
+
+        # メンタル★1、action_status=PENDING（未トリアージ）
+        DiaryEntry.objects.create(
+            student=student,
+            entry_date=today,
+            health_condition=4,
+            mental_condition=1,  # ★1
+            reflection="つらい",
+            action_status=ActionStatus.PENDING,  # 未トリアージ
+        )
+
+        result = alert_service.classify_students(classroom)
+
+        # importantに分類されることを確認
+        assert student in result["important"]
+
+    def test_needs_attention_excludes_triaged_entries(self, setup_classroom):
+        """P1（要注意）: トリアージ済み（action_status != PENDING）の3日連続低下は除外される"""
+        from school_diary.diary.models import ActionStatus
+
+        classroom = setup_classroom["classroom"]
+        student = setup_classroom["students"][0]
+        teacher = setup_classroom["teacher"]
+        today = timezone.now().date()
+
+        # 3日連続低下（5→4→3）だが、最新がaction_status=NOT_REQUIRED
+        for i, mental in enumerate([5, 4, 3]):
+            date = today - timedelta(days=2 - i)
+            action_status = ActionStatus.NOT_REQUIRED if i == 2 else ActionStatus.PENDING
+            DiaryEntry.objects.create(
+                student=student,
+                entry_date=date,
+                health_condition=4,
+                mental_condition=mental,
+                reflection=f"Day {i}",
+                action_status=action_status,  # 最新日のみトリアージ済み
+                is_read=(i == 2),
+                read_by=teacher if i == 2 else None,
+            )
+
+        result = alert_service.classify_students(classroom)
+
+        # needs_attentionに分類されないことを確認
+        assert student not in result["needs_attention"]
+        # no_reactionに分類される（既読だが反応未選択）
+        assert student in result["no_reaction"]
+
+    def test_needs_attention_includes_untriaged_decline(self, setup_classroom):
+        """P1（要注意）: action_status=PENDINGの3日連続低下は分類される"""
+        from school_diary.diary.models import ActionStatus
+
+        classroom = setup_classroom["classroom"]
+        student = setup_classroom["students"][0]
+        today = timezone.now().date()
+
+        # 3日連続低下（5→4→3）、action_status=PENDING
+        for i, mental in enumerate([5, 4, 3]):
+            date = today - timedelta(days=2 - i)
+            DiaryEntry.objects.create(
+                student=student,
+                entry_date=date,
+                health_condition=4,
+                mental_condition=mental,
+                reflection=f"Day {i}",
+                action_status=ActionStatus.PENDING,  # 未トリアージ
+            )
+
+        result = alert_service.classify_students(classroom)
+
+        # needs_attentionに分類されることを確認
+        assert student in result["needs_attention"]

@@ -10,6 +10,7 @@ from django.db.models import Prefetch
 from django.db.models import Q
 from django.http import HttpResponseForbidden
 from django.http import HttpResponseNotAllowed
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.shortcuts import redirect
 from django.shortcuts import render
@@ -271,7 +272,7 @@ class TeacherDashboardView(LoginRequiredMixin, TemplateView):
 
         context["alerts"] = alerts
 
-        # Inbox Pattern: 6カテゴリ分類（Important/NeedsAttention/NotSubmitted/Unread/NoReaction/Completed）
+        # Inbox Pattern: 7カテゴリ分類（Important/NeedsAttention/NeedsAction/NotSubmitted/Unread/NoReaction/Completed）
         classified_students = alert_service.classify_students(classroom)
 
         # 未対応の合計を計算（テンプレート側での複雑な計算を避ける）
@@ -305,9 +306,12 @@ class TeacherDashboardView(LoginRequiredMixin, TemplateView):
                         student.latest_snippet = alert_service.get_snippet(
                             student.recent_entries_for_history[0],
                         )
+                        # カードボタン用にlatest_entry_idを設定
+                        student.latest_entry_id = student.recent_entries_for_history[0].id
                     else:
                         student.inline_history = ""
                         student.latest_snippet = "未提出"
+                        student.latest_entry_id = None
 
                 classified_students[tier] = students_with_history
 
@@ -338,15 +342,61 @@ class TeacherDashboardView(LoginRequiredMixin, TemplateView):
                     student.latest_snippet = alert_service.get_snippet(
                         student.recent_entries_for_history[0],
                     )
+                    # カードボタン用にlatest_entry_idを設定
+                    student.latest_entry_id = student.recent_entries_for_history[0].id
                 else:
                     student.inline_history = ""
                     student.latest_snippet = "未提出"
+                    student.latest_entry_id = None
 
                 # 日付情報を付加
                 student.completed_date = entry_date
                 students_with_dates.append(student)
 
             classified_students["completed"] = students_with_dates
+
+        # needs_actionは (student, entry) のタプルのリストなので、studentのみ抽出してprefetch
+        needs_action_tuples = classified_students["needs_action"]
+        if needs_action_tuples:
+            needs_action_student_ids = [s.id for s, _ in needs_action_tuples]
+            students_with_history = list(
+                classroom.students.filter(id__in=needs_action_student_ids).prefetch_related(
+                    Prefetch(
+                        "diary_entries",
+                        queryset=DiaryEntry.objects.order_by("-entry_date")[:3],
+                        to_attr="recent_entries_for_history",
+                    ),
+                ),
+            )
+
+            # 各生徒に履歴文字列 + entryの詳細情報を追加
+            students_with_action_details = []
+            for student in students_with_history:
+                # タプルからentryを取得
+                entry = next(e for s, e in needs_action_tuples if s.id == student.id)
+
+                if hasattr(student, "recent_entries_for_history") and student.recent_entries_for_history:
+                    student.inline_history = alert_service.format_inline_history(
+                        student.recent_entries_for_history,
+                    )
+                    student.latest_snippet = alert_service.get_snippet(
+                        student.recent_entries_for_history[0],
+                    )
+                else:
+                    student.inline_history = ""
+                    student.latest_snippet = "未提出"
+
+                # internal_action情報を付加
+                student.internal_action = entry.internal_action
+                student.internal_action_label = entry.get_internal_action_display()
+                student.action_status = entry.action_status
+                student.entry_date = entry.entry_date
+                student.action_entry_id = entry.id
+                # カードボタン用にlatest_entry_idを設定（P1.5では action_entry_id と同じ）
+                student.latest_entry_id = entry.id
+                students_with_action_details.append(student)
+
+            classified_students["needs_action"] = students_with_action_details
 
         context["classified_students"] = classified_students
         context["needs_response_count"] = needs_response_count
@@ -655,12 +705,8 @@ def teacher_mark_action_completed(request, diary_id):
         f"{diary.student.get_full_name()}さんの{diary.entry_date}の対応を完了にしました。",
     )
 
-    # ダッシュボードまたは生徒詳細ページにリダイレクト
-    # リファラーを確認して適切にリダイレクト
-    referer = request.META.get("HTTP_REFERER", "")
-    if "teacher/student/" in referer:
-        return redirect("diary:teacher_student_detail", student_id=diary.student.id)
-    return redirect("diary:teacher_dashboard")
+    # 生徒詳細ページにリダイレクト
+    return redirect("diary:teacher_student_detail", student_id=diary.student.id)
 
 
 def home_redirect_view(request):
@@ -1398,3 +1444,106 @@ def password_change_view(request):
         form = PasswordChangeForm(user=request.user)
 
     return render(request, "diary/password_change.html", {"form": form})
+
+
+@login_required
+def teacher_mark_as_read_quick(request, diary_id):
+    """カードから既読のみ（AJAX用）
+
+    POSTリクエストで連絡帳を既読にする。
+    action_status=NO_ACTION_NEEDEDを設定（対応不要）。
+    権限チェック: 担任が自分のクラスの生徒の連絡帳のみ操作可能。
+
+    Returns:
+        JsonResponse: {'status': 'success'} or {'status': 'error', 'message': '...'}
+    """
+    if request.method != "POST":
+        return JsonResponse({"status": "error", "message": "POSTリクエストのみ許可"}, status=405)
+
+    # 担任のクラスを取得
+    classroom = request.user.homeroom_classes.first()
+    if not classroom:
+        return JsonResponse({"status": "error", "message": "権限がありません"}, status=403)
+
+    # 連絡帳を取得（クラスの生徒のもののみ）
+    diary = get_object_or_404(
+        DiaryEntry,
+        id=diary_id,
+        student__classes=classroom,
+    )
+
+    # 既読処理
+    diary.is_read = True
+    diary.read_by = request.user
+    diary.read_at = timezone.now()
+
+    # action_status = NOT_REQUIRED（対応不要）
+    diary.action_status = ActionStatus.NOT_REQUIRED
+
+    diary.save()
+
+    return JsonResponse({"status": "success", "message": "既読にしました"})
+
+
+@login_required
+def teacher_create_task_from_card(request, diary_id):
+    """カードからタスク化（AJAX用）
+
+    POSTリクエストで連絡帳を既読にし、タスク化する。
+    action_status=IN_PROGRESSを設定。
+    権限チェック: 担任が自分のクラスの生徒の連絡帳のみ操作可能。
+
+    Request JSON body:
+        internal_action: 要対応内容（needs_follow_up, urgent, など）
+
+    Returns:
+        JsonResponse: {'status': 'success'} or {'status': 'error', 'message': '...'}
+    """
+    import json
+
+    if request.method != "POST":
+        return JsonResponse({"status": "error", "message": "POSTリクエストのみ許可"}, status=405)
+
+    # 担任のクラスを取得
+    classroom = request.user.homeroom_classes.first()
+    if not classroom:
+        return JsonResponse({"status": "error", "message": "権限がありません"}, status=403)
+
+    # 連絡帳を取得（クラスの生徒のもののみ）
+    diary = get_object_or_404(
+        DiaryEntry,
+        id=diary_id,
+        student__classes=classroom,
+    )
+
+    # JSONボディからinternal_actionを取得
+    try:
+        data = json.loads(request.body)
+        internal_action = data.get("internal_action")
+    except json.JSONDecodeError:
+        return JsonResponse({"status": "error", "message": "Invalid JSON"}, status=400)
+
+    if not internal_action:
+        return JsonResponse({"status": "error", "message": "internal_actionが必要です"}, status=400)
+
+    # 既読処理
+    diary.is_read = True
+    diary.read_by = request.user
+    diary.read_at = timezone.now()
+
+    # タスク化
+    diary.internal_action = internal_action
+    diary.action_status = ActionStatus.IN_PROGRESS
+
+    diary.save()
+
+    return JsonResponse({"status": "success", "message": "タスク化しました"})
+
+
+def health_check(request):
+    """ALB Health Check endpoint
+
+    Returns HTTP 200 with JSON status for AWS Application Load Balancer health checks.
+    This endpoint does not require authentication.
+    """
+    return JsonResponse({"status": "healthy"})

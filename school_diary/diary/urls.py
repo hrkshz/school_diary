@@ -7,6 +7,8 @@ from . import views
 app_name = "diary"
 
 urlpatterns = [
+    # Health Check (ALB用、認証不要)
+    path("health/", views.health_check, name="health_check"),
     # 生徒用
     path(
         "student/dashboard/",
@@ -48,6 +50,18 @@ urlpatterns = [
         "teacher/diary/<int:diary_id>/mark-as-read/",
         views.teacher_mark_as_read,
         name="teacher_mark_as_read",
+    ),
+    # カードから既読のみ（AJAX用）
+    path(
+        "teacher/diary/<int:diary_id>/mark-as-read-quick/",
+        views.teacher_mark_as_read_quick,
+        name="teacher_mark_as_read_quick",
+    ),
+    # カードからタスク化（AJAX用）
+    path(
+        "teacher/diary/<int:diary_id>/create-task/",
+        views.teacher_create_task_from_card,
+        name="teacher_create_task_from_card",
     ),
     path(
         "teacher/diary/<int:diary_id>/mark-action-completed/",

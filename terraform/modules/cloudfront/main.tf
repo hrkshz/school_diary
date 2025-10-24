@@ -6,8 +6,8 @@ resource "aws_cloudfront_distribution" "main" {
   wait_for_deployment = false
 
   origin {
-    domain_name = var.nlb_dns_name
-    origin_id   = "nlb-origin"
+    domain_name = var.alb_dns_name
+    origin_id   = "alb-origin"
 
     custom_origin_config {
       http_port              = 80
@@ -20,7 +20,7 @@ resource "aws_cloudfront_distribution" "main" {
   default_cache_behavior {
     allowed_methods  = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
     cached_methods   = ["GET", "HEAD"]
-    target_origin_id = "nlb-origin"
+    target_origin_id = "alb-origin"
 
     # AWS Managed Cache Policy: CachingDisabled
     cache_policy_id = "4135ea2d-6df8-44a3-9df3-4b5a84be39ad"

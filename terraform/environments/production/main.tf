@@ -1,12 +1,13 @@
 module "vpc" {
   source = "../../modules/vpc"
 
-  project_name          = var.project_name
-  environment           = var.environment
-  vpc_cidr              = var.vpc_cidr
-  public_subnet_cidr    = var.public_subnet_cidr
-  private_subnet_cidr   = var.private_subnet_cidr
-  private_subnet_cidr_2 = var.private_subnet_cidr_2
+  project_name           = var.project_name
+  environment            = var.environment
+  vpc_cidr               = var.vpc_cidr
+  public_subnet_cidr     = var.public_subnet_cidr
+  public_subnet_cidr_2   = var.public_subnet_cidr_2
+  private_subnet_cidr    = var.private_subnet_cidr
+  private_subnet_cidr_2  = var.private_subnet_cidr_2
 }
 
 module "security_groups" {
@@ -74,20 +75,21 @@ module "ec2" {
   iam_instance_profile = module.iam.instance_profile_name
 }
 
-module "nlb" {
-  source = "../../modules/nlb"
+module "alb" {
+  source = "../../modules/alb"
 
-  project_name    = var.project_name
-  environment     = var.environment
-  vpc_id          = module.vpc.vpc_id
-  subnet_id       = module.vpc.public_subnet_id
-  ec2_instance_id = module.ec2.instance_id
+  project_name      = var.project_name
+  environment       = var.environment
+  vpc_id            = module.vpc.vpc_id
+  subnet_ids        = module.vpc.public_subnet_ids
+  security_group_id = module.security_groups.alb_security_group_id
+  ec2_instance_id   = module.ec2.instance_id
 }
 
 module "cloudfront" {
   source = "../../modules/cloudfront"
 
-  nlb_dns_name = module.nlb.dns_name
+  alb_dns_name = module.alb.dns_name
   environment  = var.environment
 }
 

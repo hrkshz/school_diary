@@ -261,6 +261,41 @@ class TestTeacherCreationFlow(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertIn("/teacher/", response.url)
 
+    def test_teacher_with_is_staff_login_redirect(self):
+        """担任（is_staff=True）でもroleベースでリダイレクトされることを確認
+
+        管理画面で作成された担任は is_staff=True になるが、
+        ログイン後は /admin/ ではなく /teacher/ にリダイレクトされるべき。
+        """
+        user = User.objects.create_user(
+            username="staff_teacher@example.com",
+            email="staff_teacher@example.com",
+            password="password123",
+            is_staff=True,  # 管理画面でユーザー作成時の設定を再現
+        )
+        user.profile.role = "teacher"
+        user.profile.save()
+
+        ClassRoom.objects.create(
+            grade=2,
+            class_name="B",
+            academic_year=2025,
+            homeroom_teacher=user,
+        )
+
+        # ログイン
+        self.client.login(
+            username="staff_teacher@example.com",
+            password="password123",
+        )
+
+        # リダイレクト確認: is_staff=True でも role='teacher' なら担任ダッシュボードへ
+        response = self.client.get("/")
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/teacher/", response.url)
+        # /admin/ にはリダイレクトされないことを確認
+        self.assertNotIn("/admin/", response.url)
+
 
 class TestGradeLeaderCreationFlow(TestCase):
     """学年主任作成フロー統合テスト"""
@@ -335,6 +370,35 @@ class TestGradeLeaderCreationFlow(TestCase):
         response = self.client.get("/")
         self.assertEqual(response.status_code, 302)
         self.assertIn("/grade-overview/", response.url)
+
+    def test_grade_leader_with_is_staff_login_redirect(self):
+        """学年主任（is_staff=True）でもroleベースでリダイレクトされることを確認
+
+        管理画面で作成された学年主任は is_staff=True になるが、
+        ログイン後は /admin/ ではなく /grade-overview/ にリダイレクトされるべき。
+        """
+        user = User.objects.create_user(
+            username="staff_leader@example.com",
+            email="staff_leader@example.com",
+            password="password123",
+            is_staff=True,  # 管理画面でユーザー作成時の設定を再現
+        )
+        user.profile.role = "grade_leader"
+        user.profile.managed_grade = 2
+        user.profile.save()
+
+        # ログイン
+        self.client.login(
+            username="staff_leader@example.com",
+            password="password123",
+        )
+
+        # リダイレクト確認: is_staff=True でも role='grade_leader' なら学年ダッシュボードへ
+        response = self.client.get("/")
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/grade-overview/", response.url)
+        # /admin/ にはリダイレクトされないことを確認
+        self.assertNotIn("/admin/", response.url)
 
 
 class TestSchoolLeaderCreationFlow(TestCase):

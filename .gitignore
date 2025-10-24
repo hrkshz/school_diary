@@ -301,6 +301,13 @@ docs/VS_Code_拡張機能ガイド.md
 docs/kits*.md
 docs/通知機能テスト手順書.md
 
+# 個人学習用ドキュメント（インターン提出外）
+docs/methodologies/
+docs/testing/screenshots/
+
+# アーカイブ（参考資料・旧ファイル保存用、Git管理外）
+docs/archive/
+
 # プロジェクトバックアップファイル
 *.tar.gz
 

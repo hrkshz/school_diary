@@ -11,6 +11,25 @@
     transform: translateY(-5px);
     box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
 }
+.card-actions {
+    display: flex;
+    gap: 4px;
+    margin-top: 12px;
+}
+.card-actions .btn {
+    flex: 1;
+    font-size: 0.875rem;
+    padding: 6px 8px;
+    white-space: nowrap;
+}
+.fade-out-success {
+    animation: fadeOutGreen 0.5s ease-out forwards;
+}
+@keyframes fadeOutGreen {
+    0% { opacity: 1; transform: scale(1); }
+    50% { background-color: #d4edda; }
+    100% { opacity: 0; transform: scale(0.95); }
+}
 </style>
 {% endblock %}
 
@@ -139,7 +158,25 @@
                                 {% else %}
                                 <p class="card-text small text-muted">未提出</p>
                                 {% endif %}
-                                <a href="{% url 'diary:teacher_student_detail' student_id=student.id %}" class="btn btn-sm btn-danger">詳細を見る</a>
+
+                                <!-- ボタンセット -->
+                                <div class="card-actions">
+                                    <button class="btn btn-sm btn-success"
+                                            onclick="markAsReadQuick({{ student.latest_entry_id }}, '{{ student.get_full_name }}', this)">
+                                        ✓ 既読
+                                    </button>
+                                    <button class="btn btn-sm btn-warning"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#taskModal"
+                                            data-entry-id="{{ student.latest_entry_id }}"
+                                            data-student-name="{{ student.get_full_name }}">
+                                        📋 タスク
+                                    </button>
+                                    <a href="{% url 'diary:teacher_student_detail' student_id=student.id %}"
+                                       class="btn btn-sm btn-outline-secondary">
+                                        📖 詳細
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -171,7 +208,73 @@
                                 {% else %}
                                 <p class="card-text small text-muted">未提出</p>
                                 {% endif %}
-                                <a href="{% url 'diary:teacher_student_detail' student_id=student.id %}" class="btn btn-sm btn-warning">詳細を見る</a>
+
+                                <!-- ボタンセット -->
+                                <div class="card-actions">
+                                    <button class="btn btn-sm btn-success"
+                                            onclick="markAsReadQuick({{ student.latest_entry_id }}, '{{ student.get_full_name }}', this)">
+                                        ✓ 既読
+                                    </button>
+                                    <button class="btn btn-sm btn-warning"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#taskModal"
+                                            data-entry-id="{{ student.latest_entry_id }}"
+                                            data-student-name="{{ student.get_full_name }}">
+                                        📋 タスク
+                                    </button>
+                                    <a href="{% url 'diary:teacher_student_detail' student_id=student.id %}"
+                                       class="btn btn-sm btn-outline-secondary">
+                                        📖 詳細
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- P1.5: 要対応タスク（オレンジ）- internal_action設定済み -->
+        {% if classified_students.needs_action %}
+        <div class="card border-warning mb-3" id="needs_action" style="border-left: 5px solid #fd7e14 !important;">
+            <div class="card-header text-dark" style="background-color: #fff3cd;">
+                <h5 class="mb-0">📋 要対応タスク（{{ classified_students.needs_action|length }}名）</h5>
+                <small>P1.5: 対応記録が設定されています - 優先的に対応してください</small>
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    {% for student in classified_students.needs_action %}
+                    <div class="list-group-item list-group-item-action hover-lift mb-2">
+                        <div class="d-flex w-100 justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">
+                                    <span class="fw-bold">{{ student.get_full_name }}</span>
+                                    <span class="badge" style="background-color: #fd7e14;">{{ student.internal_action_label }}</span>
+                                    {% if student.action_status == 'in_progress' %}
+                                    <span class="badge bg-info">対応中</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">未対応</span>
+                                    {% endif %}
+                                </h6>
+                                <p class="mb-1 small text-muted">
+                                    <strong>日付:</strong> {{ student.entry_date|date:"Y/m/d" }}
+                                    {% if student.inline_history %}
+                                    | <span class="badge bg-secondary">📊 {{ student.inline_history }}</span>
+                                    {% endif %}
+                                </p>
+                                {% if student.latest_snippet %}
+                                <p class="mb-2 small text-muted">{{ student.latest_snippet }}</p>
+                                {% endif %}
+
+                                <!-- ボタンセット -->
+                                <div class="card-actions">
+                                    <a href="{% url 'diary:teacher_student_detail' student_id=student.id %}"
+                                       class="btn btn-sm btn-primary">
+                                        📖 詳細
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -189,21 +292,34 @@
                 <small>P2: 日常タスク - 上から順に対応を進めてください</small>
             </div>
             <div class="card-body">
-                <!-- サブセクション1: 未提出 -->
+                <!-- サブセクション1: 未提出（折りたたみ可能） -->
                 {% if classified_students.not_submitted %}
-                <h6 class="text-primary fw-bold mb-2">📅 未提出（{{ classified_students.not_submitted|length }}名）- 声かけを検討</h6>
-                <div class="row mb-4">
-                    {% for student in classified_students.not_submitted %}
-                    <div class="col-12 col-md-6 col-lg-4 mb-3">
-                        <div class="card border-primary shadow-sm hover-lift">
-                            <div class="card-body">
-                                <h6 class="card-title">{{ student.get_full_name }}</h6>
-                                <p class="card-text small text-muted">昨日の連絡帳が未提出です</p>
-                                <a href="{% url 'diary:teacher_student_detail' student_id=student.id %}" class="btn btn-sm btn-primary">詳細を見る</a>
+                <h6 class="text-primary fw-bold mb-2">
+                    <button class="btn btn-link text-primary text-decoration-none p-0" type="button" data-bs-toggle="collapse" data-bs-target="#notSubmittedSection" aria-expanded="false" aria-controls="notSubmittedSection">
+                        📅 未提出（{{ classified_students.not_submitted|length }}名）<small class="ms-2">クリックして展開/非表示</small>
+                    </button>
+                </h6>
+                <div class="collapse" id="notSubmittedSection">
+                    <div class="row mb-4">
+                        {% for student in classified_students.not_submitted %}
+                        <div class="col-12 col-md-6 col-lg-4 mb-3">
+                            <div class="card border-primary shadow-sm hover-lift">
+                                <div class="card-body">
+                                    <h6 class="card-title">{{ student.get_full_name }}</h6>
+                                    <p class="card-text small text-muted">昨日の連絡帳が未提出です</p>
+
+                                    <!-- ボタンセット -->
+                                    <div class="card-actions">
+                                        <a href="{% url 'diary:teacher_student_detail' student_id=student.id %}"
+                                           class="btn btn-sm btn-outline-secondary">
+                                            📖 詳細
+                                        </a>
+                                    </div>
+                                </div>
                             </div>
                         </div>
+                        {% endfor %}
                     </div>
-                    {% endfor %}
                 </div>
                 <hr>
                 {% endif %}
@@ -225,7 +341,25 @@
                                 {% else %}
                                 <p class="card-text small text-muted">連絡帳が未読です</p>
                                 {% endif %}
-                                <a href="{% url 'diary:teacher_student_detail' student_id=student.id %}" class="btn btn-sm btn-primary">詳細を見る</a>
+
+                                <!-- ボタンセット -->
+                                <div class="card-actions">
+                                    <button class="btn btn-sm btn-success"
+                                            onclick="markAsReadQuick({{ student.latest_entry_id }}, '{{ student.get_full_name }}', this)">
+                                        ✓ 既読
+                                    </button>
+                                    <button class="btn btn-sm btn-warning"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#taskModal"
+                                            data-entry-id="{{ student.latest_entry_id }}"
+                                            data-student-name="{{ student.get_full_name }}">
+                                        📋 タスク
+                                    </button>
+                                    <a href="{% url 'diary:teacher_student_detail' student_id=student.id %}"
+                                       class="btn btn-sm btn-outline-secondary">
+                                        📖 詳細
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -251,7 +385,24 @@
                                 {% else %}
                                 <p class="card-text small text-muted">反応未選択</p>
                                 {% endif %}
-                                <a href="{% url 'diary:teacher_student_detail' student_id=student.id %}" class="btn btn-sm btn-primary">詳細を見る</a>
+
+                                <!-- ボタンセット -->
+                                <div class="card-actions">
+                                    <button class="btn btn-sm btn-success" disabled title="既読済み">
+                                        ✓ 既読
+                                    </button>
+                                    <button class="btn btn-sm btn-warning"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#taskModal"
+                                            data-entry-id="{{ student.latest_entry_id }}"
+                                            data-student-name="{{ student.get_full_name }}">
+                                        📋 タスク
+                                    </button>
+                                    <a href="{% url 'diary:teacher_student_detail' student_id=student.id %}"
+                                       class="btn btn-sm btn-outline-secondary">
+                                        📖 詳細
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -299,7 +450,24 @@
                                     </p>
                                     <p class="card-text small text-muted">{{ student.latest_snippet }}</p>
                                     {% endif %}
-                                    <a href="{% url 'diary:teacher_student_detail' student_id=student.id %}" class="btn btn-sm btn-success btn-sm">詳細</a>
+
+                                    <!-- ボタンセット -->
+                                    <div class="card-actions">
+                                        <button class="btn btn-sm btn-success" disabled title="対応済み">
+                                            ✓ 既読
+                                        </button>
+                                        <button class="btn btn-sm btn-warning"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#taskModal"
+                                                data-entry-id="{{ student.latest_entry_id }}"
+                                                data-student-name="{{ student.get_full_name }}">
+                                            📋 タスク
+                                        </button>
+                                        <a href="{% url 'diary:teacher_student_detail' student_id=student.id %}"
+                                           class="btn btn-sm btn-outline-secondary">
+                                            📖 詳細
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -500,7 +668,156 @@
     </div>
 </div>
 
+<!-- タスク化モーダル -->
+<div class="modal fade" id="taskModal" tabindex="-1" aria-labelledby="taskModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="taskModalLabel">📋 タスク化</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p><strong id="taskStudentName"></strong> の連絡帳をタスク化します。</p>
+                <div class="mb-3">
+                    <label for="internalAction" class="form-label">対応内容を選択してください</label>
+                    <select class="form-select" id="internalAction" required>
+                        <option value="">選択してください</option>
+                        <option value="needs_follow_up">⚠️ 要フォロー</option>
+                        <option value="urgent">🔴 緊急対応必要</option>
+                        <option value="parent_contacted">📞 保護者連絡</option>
+                        <option value="individual_talk">🗣️ 個別面談</option>
+                        <option value="shared_meeting">👥 学年共有</option>
+                        <option value="monitoring">📝 継続観察</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                <button type="button" class="btn btn-primary" onclick="submitTaskCreation()">✅ タスク化</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
+// CSRF Token取得
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// ✓既読ボタン - カードから既読のみ（AJAX）
+function markAsReadQuick(entryId, studentName, button) {
+    if (!confirm(`${studentName} の連絡帳を既読にしますか？`)) {
+        return;
+    }
+
+    const csrftoken = getCookie('csrftoken');
+    const url = `/diary/teacher/diary/${entryId}/mark-as-read-quick/`;
+
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrftoken,
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            // カード全体を取得（最も近い .card または .list-group-item）
+            const card = button.closest('.card, .list-group-item');
+            if (card) {
+                // フェードアウトアニメーション
+                card.classList.add('fade-out-success');
+                setTimeout(() => {
+                    card.remove();
+                    // カウンター更新（ページリロード推奨、またはカウンター要素を特定して--）
+                    location.reload();
+                }, 500);
+            }
+        } else {
+            alert('エラー: ' + (data.message || '既読処理に失敗しました'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('通信エラーが発生しました');
+    });
+}
+
+// タスクモーダルの初期化
+let currentTaskEntryId = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // タスクモーダルが開かれたときに情報を設定
+    const taskModal = document.getElementById('taskModal');
+    if (taskModal) {
+        taskModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            currentTaskEntryId = button.getAttribute('data-entry-id');
+            const studentName = button.getAttribute('data-student-name');
+
+            document.getElementById('taskStudentName').textContent = studentName;
+            document.getElementById('internalAction').value = '';
+        });
+    }
+});
+
+// タスク化の送信
+function submitTaskCreation() {
+    const internalAction = document.getElementById('internalAction').value;
+
+    if (!internalAction) {
+        alert('対応内容を選択してください');
+        return;
+    }
+
+    const csrftoken = getCookie('csrftoken');
+    const url = `/diary/teacher/diary/${currentTaskEntryId}/create-task/`;
+
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrftoken,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            internal_action: internalAction
+        }),
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            // モーダルを閉じる
+            const modal = bootstrap.Modal.getInstance(document.getElementById('taskModal'));
+            modal.hide();
+
+            // 成功メッセージ
+            alert('タスク化しました');
+
+            // ページをリロード
+            location.reload();
+        } else {
+            alert('エラー: ' + (data.message || 'タスク化に失敗しました'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('通信エラーが発生しました');
+    });
+}
+
 // 出席状況が「欠席」の時のみ欠席理由を有効化
 document.addEventListener('DOMContentLoaded', function() {
     const statusSelects = document.querySelectorAll('.attendance-status');

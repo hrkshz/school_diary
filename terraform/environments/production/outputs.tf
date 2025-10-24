@@ -1,6 +1,6 @@
-output "nlb_dns_name" {
-  description = "DNS name of the Network Load Balancer"
-  value       = module.nlb.dns_name
+output "alb_dns_name" {
+  description = "DNS name of the Application Load Balancer"
+  value       = module.alb.dns_name
 }
 
 output "ec2_public_ip" {

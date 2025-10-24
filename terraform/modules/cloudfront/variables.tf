@@ -1,5 +1,5 @@
-variable "nlb_dns_name" {
-  description = "DNS name of the Network Load Balancer"
+variable "alb_dns_name" {
+  description = "DNS name of the Application Load Balancer"
   type        = string
 }
 

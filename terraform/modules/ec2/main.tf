@@ -25,6 +25,11 @@ resource "aws_instance" "main" {
 
   user_data = file("${path.module}/../../files/user_data.sh")
 
+  root_block_device {
+    volume_size = 20
+    volume_type = "gp2"
+  }
+
   tags = {
     Name        = "${var.project_name}-${var.environment}-ec2"
     Environment = var.environment

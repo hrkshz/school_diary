@@ -9,7 +9,7 @@ class RoleBasedRedirectAdapter(DefaultAccountAdapter):
 
     ログイン後、ユーザーの役割に応じて適切なページにリダイレクトします。
 
-    - 管理者（is_staff=True）: Django Admin画面
+    - システム管理者（is_superuser=True）: Django Admin画面
     - 校長/教頭（role='school_leader'）: 学校全体ダッシュボード
     - 学年主任（role='grade_leader'）: 学年ダッシュボード
     - 担任（ClassRoom.homeroom_teacherとして登録）: 担任ダッシュボード
@@ -65,21 +65,22 @@ class RoleBasedRedirectAdapter(DefaultAccountAdapter):
         UserProfile が存在しない場合でも正常に動作します。
 
         優先順位:
-        1. 管理者（is_staff=True） → Django Admin
+        1. システム管理者（is_superuser=True） → Django Admin
         2. 校長/教頭（role='school_leader'） → 学校全体ダッシュボード
         3. 学年主任（role='grade_leader'） → 学年ダッシュボード
         4. 担任（ClassRoom.homeroom_teacher） → 担任ダッシュボード
         5. 生徒（デフォルト） → 生徒ダッシュボード
 
         Note:
-            getattr()を使用してUserProfileに安全にアクセスしています。
-            これにより、プロファイルが存在しない場合でも
-            RelatedObjectDoesNotExist例外を回避できます。
+            - is_staff は管理画面アクセス権限を意味し、リダイレクト先の判定には使用しない
+            - getattr()を使用してUserProfileに安全にアクセスしています。
+              これにより、プロファイルが存在しない場合でも
+              RelatedObjectDoesNotExist例外を回避できます。
         """
         user = request.user
 
-        # 管理者（is_staff=Trueで管理画面にアクセス可能）
-        if user.is_staff:
+        # システム管理者のみ管理画面へリダイレクト
+        if user.is_superuser:
             return "/admin/"
 
         # プロファイルを安全に取得（存在しない場合はNone）

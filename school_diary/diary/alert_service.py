@@ -1,10 +1,11 @@
 """Alert Service for Inbox Pattern (Teacher Dashboard)
 
-This module provides backend logic for classifying students into 4 tiers + subsections:
+This module provides backend logic for classifying students into 5 tiers + subsections:
 
 Main tiers:
 - Important (P0): Mental★1, immediate action required
 - Needs Attention (P1): 3-day consecutive mental decline, early detection
+- Needs Action (P1.5): internal_action set and pending/in-progress
 - Needs Response (P2): Daily tasks
   - P2-1: Not submitted (yesterday's diary missing)
   - P2-2: Unread (submitted today but not read)
@@ -28,25 +29,28 @@ from .utils import get_previous_school_day
 
 
 def classify_students(classroom):
-    """生徒を4段階に分類（Inbox Pattern + サブセクション）
+    """生徒を5段階に分類（Inbox Pattern + サブセクション）
 
     Args:
         classroom: ClassRoomインスタンス
 
     Returns:
         dict: {
-            'important': [student1, ...],      # P0: メンタル★1（重要）
-            'needs_attention': [student2, ...], # P1: 3日連続低下（要注意）
-            'not_submitted': [student3, ...],   # P2-1: 未提出
-            'unread': [student4, ...],          # P2-2: 未読
-            'no_reaction': [student5, ...],     # P2-3: 反応未選択
-            'completed': [(student6, date), ...] # P3: 対応済み（日付付き）
+            'important': [student1, ...],              # P0: メンタル★1（重要）
+            'needs_attention': [student2, ...],         # P1: 3日連続低下（要注意）
+            'needs_action': [(student3, entry3), ...],  # P1.5: 要対応タスク（internal_action設定済み）
+            'not_submitted': [student4, ...],           # P2-1: 未提出
+            'unread': [student5, ...],                  # P2-2: 未読
+            'no_reaction': [student6, ...],             # P2-3: 反応未選択
+            'completed': [(student7, date), ...]        # P3: 対応済み（日付付き）
         }
 
     Performance:
         - N+1問題回避: 一括取得（2-3クエリ）
         - 35名クラスで数ミリ秒
     """
+    from .models import ActionStatus
+
     today = timezone.now().date()
     yesterday = get_previous_school_day(today)
 
@@ -68,6 +72,7 @@ def classify_students(classroom):
     # 3. 各生徒を分類（排他的、優先度順）
     important = []
     needs_attention = []
+    needs_action = []
     not_submitted = []
     unread = []
     no_reaction = []
@@ -82,9 +87,15 @@ def classify_students(classroom):
             important.append(student)
             continue
 
-        # P1: 要注意（3日連続メンタル低下）
-        if _check_consecutive_decline(recent_entries):
-            needs_attention.append(student)
+        # P1: 要注意（3日連続メンタル低下、未トリアージのみ）
+        if latest_entry and latest_entry.action_status == ActionStatus.PENDING:
+            if _check_consecutive_decline(recent_entries):
+                needs_attention.append(student)
+                continue
+
+        # P1.5: 要対応タスク（internal_actionが設定され、対応待ち）
+        if _needs_action(latest_entry):
+            needs_action.append((student, latest_entry))
             continue
 
         # P2-1: 未提出（エントリーなし or 昨日より古い）
@@ -109,6 +120,7 @@ def classify_students(classroom):
     return {
         "important": important,
         "needs_attention": needs_attention,
+        "needs_action": needs_action,
         "not_submitted": not_submitted,
         "unread": unread,
         "no_reaction": no_reaction,
@@ -147,12 +159,45 @@ def _is_critical(latest_entry, recent_entries, today, yesterday):
 
     条件:
     - メンタル★1（最優先）
+    - action_status=PENDING（未トリアージのみ）
     """
+    from .models import ActionStatus
+
     if not latest_entry:
+        return False
+
+    # トリアージ済みは除外（既読・対応不要・対応完了など）
+    if latest_entry.action_status != ActionStatus.PENDING:
         return False
 
     # メンタル★1
     return latest_entry.mental_condition == 1
+
+
+def _needs_action(latest_entry):
+    """要対応タスクに分類されるかチェック
+
+    条件:
+    - internal_actionが設定されている
+    - action_statusがPENDINGまたはIN_PROGRESS
+
+    Args:
+        latest_entry: 最新のDiaryEntry（またはNone）
+
+    Returns:
+        bool: 要対応タスクに分類される場合True
+    """
+    from .models import ActionStatus
+
+    if not latest_entry:
+        return False
+
+    # internal_actionが設定されている
+    if not latest_entry.internal_action:
+        return False
+
+    # action_statusがPENDINGまたはIN_PROGRESS
+    return latest_entry.action_status in (ActionStatus.PENDING, ActionStatus.IN_PROGRESS)
 
 
 def format_inline_history(entries):
