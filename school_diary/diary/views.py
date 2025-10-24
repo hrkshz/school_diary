@@ -1,5 +1,6 @@
 """Views for diary app."""
 
+import json
 from datetime import timedelta
 
 from django.contrib import messages
@@ -1374,7 +1375,7 @@ def teacher_save_attendance(request):
     classroom = request.user.homeroom_classes.first()
     if not classroom:
         if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-            return JsonResponse({"success": False, "message": "担任権限がありません"})
+            return JsonResponse({"status": "error", "message": "担任権限がありません"})
         messages.error(request, "担任権限がありません")
         return redirect("diary:teacher_dashboard")
 
@@ -1386,11 +1387,11 @@ def teacher_save_attendance(request):
 
         # バリデーション
         if not student_id or not date_str or not status:
-            return JsonResponse({"success": False, "message": "必須パラメータが不足しています"})
+            return JsonResponse({"status": "error", "message": "必須パラメータが不足しています"})
 
         # 生徒が自分のクラスに所属しているか確認
         if not classroom.students.filter(id=student_id).exists():
-            return JsonResponse({"success": False, "message": "生徒が見つかりません"})
+            return JsonResponse({"status": "error", "message": "生徒が見つかりません"})
 
         from datetime import date as dt_date
 
@@ -1408,7 +1409,7 @@ def teacher_save_attendance(request):
             },
         )
 
-        return JsonResponse({"success": True, "message": "出席データを保存しました"})
+        return JsonResponse({"status": "success", "message": "出席データを保存しました"})
 
     # 通常のフォームリクエスト（複数生徒一括）
     today = timezone.now().date()
@@ -1464,7 +1465,7 @@ def mark_shared_note_read(request, note_id):
     # 自分が作成したメモは既読にできない
     if note.teacher == request.user:
         if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-            return JsonResponse({"success": False, "message": "自分が作成したメモは既読にできません。"})
+            return JsonResponse({"status": "error", "message": "自分が作成したメモは既読にできません。"})
         messages.warning(request, "自分が作成したメモは既読にできません。")
         return redirect("diary:teacher_dashboard")
 
@@ -1478,7 +1479,7 @@ def mark_shared_note_read(request, note_id):
 
     # AJAXリクエストの場合はJSON返却
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-        return JsonResponse({"success": True, "message": f"{student_name}さんの共有メモを既読にしました。"})
+        return JsonResponse({"status": "success", "message": f"{student_name}さんの共有メモを既読にしました。"})
 
     messages.success(request, f"{student_name}さんの共有メモを既読にしました。")
     return redirect("diary:teacher_dashboard")
@@ -1518,22 +1519,22 @@ def teacher_mark_as_read_quick(request, diary_id):
     権限チェック: 担任が自分のクラスの生徒の連絡帳のみ操作可能。
 
     Returns:
-        JsonResponse: {'success': True/False, 'message': '...'}
+        JsonResponse: {'status': 'success'/'error', 'message': '...'}
     """
     if request.method != "POST":
-        return JsonResponse({"success": False, "message": "POSTリクエストのみ許可"}, status=405)
+        return JsonResponse({"status": "error", "message": "POSTリクエストのみ許可"}, status=405)
 
     # 担任のクラスを取得
     classroom = request.user.homeroom_classes.first()
     if not classroom:
-        return JsonResponse({"success": False, "message": "権限がありません"}, status=403)
+        return JsonResponse({"status": "error", "message": "権限がありません"}, status=403)
 
     # 連絡帳を取得
     diary = get_object_or_404(DiaryEntry, id=diary_id)
 
     # クラスの生徒のもののみアクセス可能
     if diary.student not in classroom.students.all():
-        return JsonResponse({"success": False, "message": "このクラスの生徒の連絡帳ではありません"}, status=403)
+        return JsonResponse({"status": "error", "message": "このクラスの生徒の連絡帳ではありません"}, status=403)
 
     # 既読処理
     diary.is_read = True
@@ -1545,7 +1546,7 @@ def teacher_mark_as_read_quick(request, diary_id):
 
     diary.save()
 
-    return JsonResponse({"success": True, "message": "既読にしました"})
+    return JsonResponse({"status": "success", "message": "既読にしました"})
 
 
 @login_required
@@ -1560,28 +1561,32 @@ def teacher_create_task_from_card(request, diary_id):
         internal_action: 要対応内容（parent_contact, health_check, counseling, home_visit, meeting_needed）
 
     Returns:
-        JsonResponse: {'success': True/False, 'message': '...'}
+        JsonResponse: {'status': 'success'/'error', 'message': '...'}
     """
     if request.method != "POST":
-        return JsonResponse({"success": False, "message": "POSTリクエストのみ許可"}, status=405)
+        return JsonResponse({"status": "error", "message": "POSTリクエストのみ許可"}, status=405)
 
     # 担任のクラスを取得
     classroom = request.user.homeroom_classes.first()
     if not classroom:
-        return JsonResponse({"success": False, "message": "権限がありません"}, status=403)
+        return JsonResponse({"status": "error", "message": "権限がありません"}, status=403)
 
     # 連絡帳を取得
     diary = get_object_or_404(DiaryEntry, id=diary_id)
 
     # クラスの生徒のもののみアクセス可能
     if diary.student not in classroom.students.all():
-        return JsonResponse({"success": False, "message": "このクラスの生徒の連絡帳ではありません"}, status=403)
+        return JsonResponse({"status": "error", "message": "このクラスの生徒の連絡帳ではありません"}, status=403)
 
-    # POST dataからinternal_actionを取得
-    internal_action = request.POST.get("internal_action")
+    # JSON dataからinternal_actionを取得
+    try:
+        data = json.loads(request.body)
+        internal_action = data.get("internal_action")
+    except (json.JSONDecodeError, KeyError):
+        return JsonResponse({"status": "error", "message": "不正なリクエストです"}, status=400)
 
     if not internal_action:
-        return JsonResponse({"success": False, "message": "internal_actionが必要です"}, status=400)
+        return JsonResponse({"status": "error", "message": "internal_actionが必要です"}, status=400)
 
     # 既読処理
     diary.is_read = True
@@ -1594,7 +1599,7 @@ def teacher_create_task_from_card(request, diary_id):
 
     diary.save()
 
-    return JsonResponse({"success": True, "message": "タスク化しました"})
+    return JsonResponse({"status": "success", "message": "タスク化しました"})
 
 
 def health_check(request):

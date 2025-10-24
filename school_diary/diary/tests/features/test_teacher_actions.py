@@ -146,7 +146,7 @@ class TestTEAACT008MarkAsReadQuick:
         # Assert
         assert response.status_code == 200
         data = json.loads(response.content)
-        assert data["success"]
+        assert data["status"] == "success"
 
         unread_diary_entry.refresh_from_db()
         assert unread_diary_entry.is_read
@@ -176,14 +176,15 @@ class TestTEAACT009CreateTask:
         # Act
         response = authenticated_teacher_client.post(
             reverse("diary:teacher_create_task_from_card", kwargs={"diary_id": unread_diary_entry.id}),
-            data,
+            data=json.dumps(data),
+            content_type="application/json",
             HTTP_X_REQUESTED_WITH="XMLHttpRequest",
         )
 
         # Assert
         assert response.status_code == 200
-        data = json.loads(response.content)
-        assert data["success"]
+        response_data = json.loads(response.content)
+        assert response_data["status"] == "success"
 
         unread_diary_entry.refresh_from_db()
         assert unread_diary_entry.is_read
@@ -452,7 +453,7 @@ class TestTEAACT006MarkSharedNoteRead:
         # Assert
         assert response.status_code == 200
         data = json.loads(response.content)
-        assert data["success"]
+        assert data["status"] == "success"
 
         # 既読ステータスが作成されていることを確認
         read_status = TeacherNoteReadStatus.objects.filter(
@@ -496,7 +497,7 @@ class TestTEAACT007AttendanceSave:
         # Assert
         assert response.status_code == 200
         data = json.loads(response.content)
-        assert data["success"]
+        assert data["status"] == "success"
 
         # DailyAttendanceが作成されていることを確認
         attendance = DailyAttendance.objects.filter(
