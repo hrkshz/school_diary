@@ -356,7 +356,7 @@ class ReportSchedule(models.Model):
     )
 
     # 送信設定
-    send_to_users = models.ManyToManyField(
+    send_to_users = models.ManyToManyField(  # type: ignore[var-annotated]
         User,
         blank=True,
         related_name="scheduled_reports",

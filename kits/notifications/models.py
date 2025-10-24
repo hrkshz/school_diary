@@ -282,5 +282,5 @@ class Notification(models.Model):
     @property
     def can_retry(self) -> bool:
         """リトライ可能かどうか"""
-        max_retries = settings.NOTIFICATIONS_CONFIG.get("RETRY_ATTEMPTS", 3)
+        max_retries: int = settings.NOTIFICATIONS_CONFIG.get("RETRY_ATTEMPTS", 3)
         return self.status == NotificationStatus.FAILED and self.retry_count < max_retries

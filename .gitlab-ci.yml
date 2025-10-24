@@ -40,6 +40,7 @@ cache:
   paths:
     - .venv/
     - .cache/pip/
+    - .cache/uv/  # uv用キャッシュ（依存関係解決の高速化）
   policy: pull-push
 
 # 📚 学習ポイント:

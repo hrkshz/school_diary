@@ -3,6 +3,7 @@ from datetime import timedelta
 
 import pytest  # type: ignore[import-untyped]
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import AbstractUser
 
 User = get_user_model()
 
@@ -13,7 +14,7 @@ def _media_storage(settings, tmpdir) -> None:
 
 
 @pytest.fixture
-def user(db) -> User:
+def user(db) -> AbstractUser:
     return User.objects.create_user(
         username="testuser",
         email="test@example.com",

@@ -496,9 +496,9 @@ class TestGetSnippet:
 class TestClassifyStudentsWeekendHandling:
     """土日を考慮した未提出判定のテスト（TDD: Red→Green→Refactor）"""
 
-    @pytest.fixture(autouse=True)
+    @pytest.fixture
     def setup_data(self):
-        """テストデータ準備（各テストメソッド前に自動実行）"""
+        """テストデータ準備"""
         # 担任を作成
         self.teacher = User.objects.create_user(
             username="teacher_weekend",
@@ -508,10 +508,10 @@ class TestClassifyStudentsWeekendHandling:
             last_name="先生",
         )
 
-        # クラスを作成
+        # クラスを作成（他のテストと重複しないようにgrade=2, class_name="B"）
         self.classroom = ClassRoom.objects.create(
-            class_name="A",
-            grade=1,
+            class_name="B",
+            grade=2,
             academic_year=2025,
             homeroom_teacher=self.teacher,
         )
@@ -534,9 +534,9 @@ class TestClassifyStudentsWeekendHandling:
             last_name="生徒B",
         )
         self.student_b.classes.add(self.classroom)
-        yield  # テスト実行
+        return self
 
-    def test_monday_with_friday_entry_should_be_completed(self):
+    def test_monday_with_friday_entry_should_be_completed(self, setup_data):
         """月曜日: 金曜日に提出した生徒は「対応済み」に分類される"""
         from datetime import date
         from datetime import datetime
@@ -570,7 +570,7 @@ class TestClassifyStudentsWeekendHandling:
             # 生徒Aは「未提出」に分類されない
             assert self.student_a not in result["not_submitted"], "金曜日に提出した生徒Aは「未提出」に分類されないべき"
 
-    def test_monday_without_friday_entry_should_be_not_submitted(self):
+    def test_monday_without_friday_entry_should_be_not_submitted(self, setup_data):
         """月曜日: 金曜日に提出していない生徒は「未提出」に分類される"""
         from datetime import date
         from datetime import datetime
@@ -604,7 +604,7 @@ class TestClassifyStudentsWeekendHandling:
             completed_ids = [s.id for s, d in result["completed"]]
             assert self.student_b.id not in completed_ids, "金曜日に提出していない生徒Bは「対応済み」に分類されないべき"
 
-    def test_monday_integrated_multiple_students(self):
+    def test_monday_integrated_multiple_students(self, setup_data):
         """月曜日: 複数生徒の分類が正しく動作する統合テスト"""
         from datetime import date
         from datetime import datetime
