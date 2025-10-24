@@ -496,8 +496,9 @@ class TestGetSnippet:
 class TestClassifyStudentsWeekendHandling:
     """土日を考慮した未提出判定のテスト（TDD: Red→Green→Refactor）"""
 
-    def setup_method(self):
-        """テストデータ準備"""
+    @pytest.fixture(autouse=True)
+    def setup_data(self):
+        """テストデータ準備（各テストメソッド前に自動実行）"""
         # 担任を作成
         self.teacher = User.objects.create_user(
             username="teacher_weekend",
@@ -533,6 +534,7 @@ class TestClassifyStudentsWeekendHandling:
             last_name="生徒B",
         )
         self.student_b.classes.add(self.classroom)
+        yield  # テスト実行
 
     def test_monday_with_friday_entry_should_be_completed(self):
         """月曜日: 金曜日に提出した生徒は「対応済み」に分類される"""
