@@ -316,3 +316,8 @@ mock_*.html
 
 # Claude詳細ルールバックアップ
 CLAUDE_DETAILED_RULES.md
+
+# テスト結果（途中経過）
+docs/07-testing/results/
+docs/07-testing/test-summary.md
+docs/07-testing/traceability-matrix-*.md

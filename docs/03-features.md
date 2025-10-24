@@ -160,4 +160,241 @@ Inbox Pattern実装、早期警告システム、要対応タスク管理
 
 ---
 
+## API仕様（AJAX）
+
+### JSONレスポンス形式
+
+全てのAJAX APIは統一された形式でレスポンスを返す。
+
+#### 成功時
+
+```json
+{
+  "success": true,
+  "message": "処理が完了しました"
+}
+```
+
+#### 失敗時
+
+```json
+{
+  "success": false,
+  "message": "エラーの理由"
+}
+```
+
+### リクエストデータ形式
+
+AJAX APIは `application/x-www-form-urlencoded` 形式（POST data）でデータを受け取る。
+
+```javascript
+// 例: teacher_save_attendance
+fetch('/diary/teacher/attendance/save/', {
+  method: 'POST',
+  headers: {
+    'X-CSRFToken': csrfToken,
+    'X-Requested-With': 'XMLHttpRequest'
+  },
+  body: new URLSearchParams({
+    'student_id': '123',
+    'date': '2025-10-24',
+    'status': 'present'
+  })
+})
+```
+
+### AJAX検出
+
+サーバー側は `X-Requested-With: XMLHttpRequest` ヘッダーでAJAXリクエストを判定する。
+
+```python
+if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+    return JsonResponse({"success": True, "message": "..."})
+```
+
+---
+
+## セキュリティポリシー
+
+### HTTPステータスコード使い分け
+
+| ケース | HTTPステータス | 理由 |
+|--------|---------------|------|
+| リソースが存在しない | 404 Not Found | 正常な挙動 |
+| **他クラスの連絡帳にアクセス** | **403 Forbidden** | **IDの存在を隠蔽（セキュリティ）** |
+| **他担任のメモにアクセス** | **403 Forbidden** | **IDの存在を隠蔽（セキュリティ）** |
+| 担任権限なし | 403 Forbidden | 権限不足 |
+| メソッド不正 | 405 Method Not Allowed | POST以外のリクエスト |
+| バリデーションエラー | 400 Bad Request | データ不正 |
+
+### 権限チェックの順序
+
+セキュリティ上、以下の順序で権限チェックを実施する：
+
+```python
+# ステップ1: リソースを取得（IDの存在確認）
+diary = get_object_or_404(DiaryEntry, id=diary_id)
+
+# ステップ2: 権限チェック（クラス所属確認）
+if diary.student not in classroom.students.all():
+    return HttpResponseForbidden("このクラスの生徒の連絡帳ではありません。")
+```
+
+**理由**: `get_object_or_404(DiaryEntry, id=diary_id, student__classes=classroom)` のように一度に取得すると、他クラスの連絡帳に対して404を返してしまい、IDの存在が推測可能になる。
+
+### 情報漏洩防止
+
+エラーメッセージは以下の原則に従う：
+
+| ケース | ❌ 悪い例 | ✅ 良い例 |
+|--------|----------|----------|
+| 他クラスの連絡帳 | "連絡帳が見つかりません"（404） | "このクラスの生徒の連絡帳ではありません"（403） |
+| 他担任のメモ | "メモが見つかりません"（404） | "このメモを編集する権限がありません"（403） |
+| 存在しないID | "権限がありません"（403） | "連絡帳が見つかりません"（404） |
+
+---
+
+## AJAX API詳細仕様
+
+### TEA-ACT-006: 共有メモ既読
+
+**URL**: `/diary/teacher/note/<int:note_id>/mark-read/`
+
+**リクエスト**:
+```http
+POST /diary/teacher/note/123/mark-read/
+X-Requested-With: XMLHttpRequest
+X-CSRFToken: <token>
+```
+
+**レスポンス**:
+```json
+{
+  "success": true,
+  "message": "山田太郎さんの共有メモを既読にしました。"
+}
+```
+
+**エラー**:
+```json
+{
+  "success": false,
+  "message": "自分が作成したメモは既読にできません。"
+}
+```
+
+**ビジネスルール**:
+- 共有メモ（is_shared=True）のみ既読可能
+- 自分が作成したメモは既読にできない
+- 冪等性保証（既に既読の場合も成功）
+
+---
+
+### TEA-ACT-007: 出席保存
+
+**URL**: `/diary/teacher/attendance/save/`
+
+**リクエスト**:
+```http
+POST /diary/teacher/attendance/save/
+X-Requested-With: XMLHttpRequest
+X-CSRFToken: <token>
+Content-Type: application/x-www-form-urlencoded
+
+student_id=123&date=2025-10-24&status=present
+```
+
+**リクエストパラメータ**:
+| パラメータ | 型 | 必須 | 説明 |
+|-----------|---|------|------|
+| student_id | integer | ✅ | 生徒ID |
+| date | string (YYYY-MM-DD) | ✅ | 出席日 |
+| status | string | ✅ | 出席状況（present, absent, late, early_leave） |
+
+**レスポンス**:
+```json
+{
+  "success": true,
+  "message": "出席データを保存しました"
+}
+```
+
+**エラー**:
+```json
+{
+  "success": false,
+  "message": "必須パラメータが不足しています"
+}
+```
+
+---
+
+### TEA-ACT-008: 既読処理Quick（AJAX）
+
+**URL**: `/diary/teacher/diary/<int:diary_id>/mark-as-read-quick/`
+
+**リクエスト**:
+```http
+POST /diary/teacher/diary/456/mark-as-read-quick/
+X-Requested-With: XMLHttpRequest
+X-CSRFToken: <token>
+```
+
+**レスポンス**:
+```json
+{
+  "success": true,
+  "message": "既読にしました"
+}
+```
+
+**副作用**:
+- `is_read = True`
+- `read_by = request.user`
+- `read_at = timezone.now()`
+- `action_status = NOT_REQUIRED`（対応不要として記録）
+
+**ユースケース**: カード一覧から「対応不要」として既読にする場合
+
+---
+
+### TEA-ACT-009: タスク化（AJAX）
+
+**URL**: `/diary/teacher/diary/<int:diary_id>/create-task/`
+
+**リクエスト**:
+```http
+POST /diary/teacher/diary/456/create-task/
+X-Requested-With: XMLHttpRequest
+X-CSRFToken: <token>
+Content-Type: application/x-www-form-urlencoded
+
+internal_action=parent_contact
+```
+
+**リクエストパラメータ**:
+| パラメータ | 型 | 必須 | 説明 |
+|-----------|---|------|------|
+| internal_action | string | ✅ | 対応内容（parent_contact, health_check, counseling, home_visit, meeting_needed） |
+
+**レスポンス**:
+```json
+{
+  "success": true,
+  "message": "タスク化しました"
+}
+```
+
+**副作用**:
+- `is_read = True`
+- `read_by = request.user`
+- `read_at = timezone.now()`
+- `internal_action = <指定値>`
+- `action_status = IN_PROGRESS`（対応中として記録）
+
+**ユースケース**: カード一覧から「要対応」としてタスク化する場合
+
+---
+
 **最終更新**: 2025-10-24

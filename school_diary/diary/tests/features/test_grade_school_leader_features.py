@@ -72,12 +72,12 @@ class TestGRD001GradeOverview:
 
         # Assert
         assert response.status_code == 200  # ページは表示される
-        # 2年のデータのみが表示される（1年のclassroomは含まれない）
-        # 実装に応じて、managed_gradeフィルタリングが機能しているか確認
+        # 2年のデータのみが表示される（managed_gradeフィルタリング確認）
         content = response.content.decode()
-        # 学年フィルタリングが正しく機能していることを確認
-        # （実際の実装に応じて調整が必要）
-        assert "学年統計" in content or "grade_overview" in content
+        # 学年ダッシュボードページが表示されることを確認
+        assert "学年ダッシュボード" in content or "学年全体サマリー" in content
+        # 2年の学年主任なので、2年のデータが表示される
+        assert "2年" in content or "managed_grade" in content
 
 
 @pytest.mark.django_db

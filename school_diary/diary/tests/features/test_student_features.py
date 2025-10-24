@@ -49,40 +49,42 @@ class TestSTU001StudentDashboard:
 class TestSTU002DiaryCreation:
     """STU-002: 連絡帳作成機能のテスト"""
 
-    def test_stu002_create_valid_entry_success(self, authenticated_student_client, student_user, today):
+    def test_stu002_create_valid_entry_success(self, authenticated_student_client, student_user, yesterday):
         """
         Given: ログイン済み生徒ユーザー
-        When: 有効な連絡帳データを送信
+        When: 有効な連絡帳データを送信（前登校日）
         Then: 連絡帳が作成され、ダッシュボードにリダイレクト
         """
         # Arrange
         data = {
+            "entry_date": yesterday.strftime("%Y-%m-%d"),
             "health_condition": 4,
             "mental_condition": 4,
             "reflection": "今日は楽しかった",
         }
 
         # Act
-        response = authenticated_student_client.post(reverse("diary:create"), data)
+        response = authenticated_student_client.post(reverse("diary:diary_create"), data)
 
         # Assert
         assert response.status_code == 302
         assert response.url == reverse("diary:student_dashboard")
 
         # 連絡帳が作成されたことを確認
-        entry = DiaryEntry.objects.get(student=student_user, entry_date=today)
+        entry = DiaryEntry.objects.get(student=student_user, entry_date=yesterday)
         assert entry.health_condition == 4
         assert entry.mental_condition == 4
         assert entry.reflection == "今日は楽しかった"
 
     def test_stu002_create_duplicate_date_rejected(self, authenticated_student_client, student_user, diary_entry):
         """
-        Given: 既に今日の連絡帳が存在する
+        Given: 既に昨日の連絡帳が存在する
         When: 同じ日付で連絡帳作成を試行
-        Then: エラーメッセージが表示され、作成失敗
+        Then: リダイレクトされ、エラーメッセージが表示される
         """
         # Arrange
         data = {
+            "entry_date": diary_entry.entry_date.strftime("%Y-%m-%d"),
             "health_condition": 4,
             "mental_condition": 4,
             "reflection": "2件目の連絡帳",
@@ -90,13 +92,13 @@ class TestSTU002DiaryCreation:
 
         # Act
         response = authenticated_student_client.post(
-            reverse("diary:create"),
+            reverse("diary:diary_create"),
             data,
         )
 
         # Assert
-        assert response.status_code == 200  # フォーム再表示
-        assert "既に連絡帳が存在します" in response.content.decode()
+        assert response.status_code == 302  # リダイレクト
+        assert response.url == reverse("diary:student_dashboard")
 
     def test_stu002_create_missing_required_field_rejected(self, authenticated_student_client):
         """
@@ -105,14 +107,17 @@ class TestSTU002DiaryCreation:
         Then: バリデーションエラーが表示される
         """
         # Arrange
+        from datetime import date
+
         data = {
+            "entry_date": date.today().strftime("%Y-%m-%d"),
             "health_condition": 4,
             "mental_condition": 4,
             # reflection なし
         }
 
         # Act
-        response = authenticated_student_client.post(reverse("diary:create"), data)
+        response = authenticated_student_client.post(reverse("diary:diary_create"), data)
 
         # Assert
         assert response.status_code == 200  # フォーム再表示
@@ -133,6 +138,7 @@ class TestSTU003DiaryEditing:
         assert not diary_entry.is_read  # 既読前であることを確認
 
         data = {
+            "entry_date": diary_entry.entry_date.strftime("%Y-%m-%d"),
             "health_condition": 3,
             "mental_condition": 3,
             "reflection": "修正しました",
@@ -140,7 +146,7 @@ class TestSTU003DiaryEditing:
 
         # Act
         response = authenticated_student_client.post(
-            reverse("diary:edit", kwargs={"pk": diary_entry.pk}),
+            reverse("diary:diary_update", kwargs={"pk": diary_entry.pk}),
             data,
         )
 
@@ -160,7 +166,7 @@ class TestSTU003DiaryEditing:
         diary_entry.save()
 
         # Act
-        response = authenticated_student_client.get(reverse("diary:edit", kwargs={"pk": diary_entry.pk}))
+        response = authenticated_student_client.get(reverse("diary:diary_update", kwargs={"pk": diary_entry.pk}))
 
         # Assert
         assert response.status_code == 403
@@ -206,7 +212,7 @@ class TestSTU003DiaryEditing:
         client.force_login(student_b)
 
         # Act: 生徒Bが生徒Aの連絡帳を編集試行
-        response = client.get(reverse("diary:edit", kwargs={"pk": entry_a.pk}))
+        response = client.get(reverse("diary:diary_update", kwargs={"pk": entry_a.pk}))
 
         # Assert
         assert response.status_code == 403
@@ -223,9 +229,9 @@ class TestSTU004DiaryHistory:
         Then: 過去の連絡帳一覧が表示される
         """
         # Act
-        response = authenticated_student_client.get(reverse("diary:history"))
+        response = authenticated_student_client.get(reverse("diary:diary_history"))
 
         # Assert
         assert response.status_code == 200
-        assert "diary/history.html" in [t.name for t in response.templates]
+        assert "diary/diary_history.html" in [t.name for t in response.templates]
         assert diary_entry in response.context["entries"]

@@ -57,8 +57,8 @@ class TestTEAACT001MarkAsRead:
         assert not unread_diary_entry.is_read
 
         data = {
-            "teacher_reaction": "確認しました",
-            "teacher_action": "保護者に連絡します",
+            "public_reaction": "確認しました",
+            "internal_action": "保護者に連絡します",
         }
 
         # Act
@@ -71,8 +71,8 @@ class TestTEAACT001MarkAsRead:
         assert response.status_code == 302  # リダイレクト
         unread_diary_entry.refresh_from_db()
         assert unread_diary_entry.is_read
-        assert unread_diary_entry.teacher_reaction == "確認しました"
-        assert unread_diary_entry.teacher_action == "保護者に連絡します"
+        assert unread_diary_entry.public_reaction == "確認しました"
+        assert unread_diary_entry.internal_action == "保護者に連絡します"
 
     def test_teaact001_mark_as_read_other_class_forbidden(self, authenticated_teacher_client, teacher_user):
         """
@@ -302,7 +302,7 @@ class TestTEAACT003To005TeacherNotes:
         """
         # Arrange
         data = {
-            "note": "更新後のメモ内容",
+            "note": "更新後のメモ内容（詳細追記）",
             "is_shared": False,
         }
 
@@ -315,7 +315,7 @@ class TestTEAACT003To005TeacherNotes:
         # Assert
         assert response.status_code == 302  # リダイレクト
         teacher_note.refresh_from_db()
-        assert teacher_note.note == "更新後のメモ内容"
+        assert teacher_note.note == "更新後のメモ内容（詳細追記）"
 
     def test_teaact004_edit_note_other_teacher_forbidden(
         self,

@@ -71,7 +71,8 @@ class TestAUTH001Login:
 
         # Assert
         assert response.status_code == 200  # ログインページ再表示
-        assert "ユーザー名かパスワードが正しくありません" in response.content.decode() or "incorrect" in response.content.decode().lower()
+        # allauthのエラーメッセージを確認
+        assert "入力されたメールアドレスもしくはパスワードが正しくありません" in response.content.decode() or "incorrect" in response.content.decode().lower()
 
 
 @pytest.mark.django_db
@@ -202,13 +203,13 @@ class TestAUTH003PasswordChange:
         """
         # Arrange
         data = {
-            "oldpassword": "testpass123",
-            "password1": "newpass456!",
-            "password2": "newpass456!",
+            "old_password": "testpass123",
+            "new_password1": "newpass456!",
+            "new_password2": "newpass456!",
         }
 
         # Act
-        response = authenticated_student_client.post(reverse("password_change"), data)
+        response = authenticated_student_client.post(reverse("account_change_password"), data)
 
         # Assert
         assert response.status_code == 302
@@ -228,17 +229,17 @@ class TestAUTH003PasswordChange:
         """
         # Arrange
         data = {
-            "oldpassword": "wrongpass",
-            "password1": "newpass456!",
-            "password2": "newpass456!",
+            "old_password": "wrongpass",
+            "new_password1": "newpass456!",
+            "new_password2": "newpass456!",
         }
 
         # Act
-        response = authenticated_student_client.post(reverse("password_change"), data)
+        response = authenticated_student_client.post(reverse("account_change_password"), data)
 
         # Assert
         assert response.status_code == 200  # フォーム再表示
-        assert "oldpassword" in response.context["form"].errors or "password" in response.content.decode().lower()
+        assert "old_password" in response.context["form"].errors or "password" in response.content.decode().lower()
 
     def test_auth003_password_change_password_mismatch(self, authenticated_student_client):
         """
@@ -248,17 +249,17 @@ class TestAUTH003PasswordChange:
         """
         # Arrange
         data = {
-            "oldpassword": "testpass123",
-            "password1": "newpass456!",
-            "password2": "differentpass789!",
+            "old_password": "testpass123",
+            "new_password1": "newpass456!",
+            "new_password2": "differentpass789!",
         }
 
         # Act
-        response = authenticated_student_client.post(reverse("password_change"), data)
+        response = authenticated_student_client.post(reverse("account_change_password"), data)
 
         # Assert
         assert response.status_code == 200  # フォーム再表示
-        assert "password2" in response.context["form"].errors or "match" in response.content.decode().lower()
+        assert "new_password2" in response.context["form"].errors or "match" in response.content.decode().lower()
 
 
 @pytest.mark.django_db
@@ -280,7 +281,7 @@ class TestAUTH004To007PasswordReset:
         # Assert
         assert response.status_code == 200
         # allauthのリセット完了ページにリダイレクトされる
-        assert "account/password_reset_done" in response.request["PATH_INFO"] or "sent" in response.content.decode().lower()
+        assert "/accounts/password/reset/done/" in response.request["PATH_INFO"] or "送信" in response.content.decode()
 
     def test_auth005_password_reset_done_display(self, client):
         """
