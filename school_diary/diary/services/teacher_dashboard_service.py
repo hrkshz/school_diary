@@ -35,7 +35,6 @@ class TeacherDashboardService:
                 - unread_total: 未読連絡帳の総数
                 - pending_action_count: 対応待ちの連絡帳数
                 - urgent_action_count: 緊急対応が必要な連絡帳数
-                - no_reaction_count: 既読だが反応なしの連絡帳数
 
         パフォーマンス:
             - 1つのクエリで全て集計（N+1問題回避）
@@ -54,13 +53,6 @@ class TeacherDashboardService:
             urgent_action_count=Count(
                 "id",
                 filter=Q(internal_action=InternalAction.URGENT),
-            ),
-            no_reaction_count=Count(
-                "id",
-                filter=Q(
-                    is_read=True,
-                    public_reaction__isnull=True,
-                ),
             ),
         )
 

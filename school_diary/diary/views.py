@@ -37,6 +37,7 @@ from .models import AttendanceStatus
 from .models import ClassRoom
 from .models import DailyAttendance
 from .models import DiaryEntry
+from .models import PublicReaction
 from .models import TeacherNote
 from .models import TeacherNoteReadStatus
 from .services.diary_entry_service import DiaryEntryService
@@ -169,7 +170,6 @@ class TeacherDashboardView(LoginRequiredMixin, TemplateView):
                 "not_submitted_today": 0,
                 "urgent_action_count": 0,
                 "pending_action_count": 0,
-                "no_reaction_count": 0,
             }
             context["filter_type"] = "all"
             return context
@@ -274,18 +274,17 @@ class TeacherDashboardView(LoginRequiredMixin, TemplateView):
 
         context["alerts"] = alerts
 
-        # Inbox Pattern: 7カテゴリ分類（Important/NeedsAttention/NeedsAction/NotSubmitted/Unread/NoReaction/Completed）
+        # Inbox Pattern: 6カテゴリ分類（Important/NeedsAttention/NeedsAction/NotSubmitted/Unread/Completed）
         classified_students = alert_service.classify_students(classroom)
 
         # 未対応の合計を計算（テンプレート側での複雑な計算を避ける）
         needs_response_count = (
             len(classified_students["not_submitted"])
             + len(classified_students["unread"])
-            + len(classified_students["no_reaction"])
         )
 
         # 各分類の生徒に最新3件の連絡帳をprefetch（N+1問題回避、履歴表示用）
-        for tier in ["important", "needs_attention", "not_submitted", "unread", "no_reaction"]:
+        for tier in ["important", "needs_attention", "not_submitted", "unread"]:
             student_ids = [s.id for s in classified_students[tier]]
             if student_ids:
                 # prefetch_relatedで最新3件を取得（履歴統合用）
@@ -1541,6 +1540,9 @@ def teacher_mark_as_read_quick(request, diary_id):
     diary.read_by = request.user
     diary.read_at = timezone.now()
 
+    # 既読時に「📖 読んだよ」を自動設定
+    diary.public_reaction = PublicReaction.CHECKED
+
     # action_status = NOT_REQUIRED（対応不要）
     diary.action_status = ActionStatus.NOT_REQUIRED
 
@@ -1592,6 +1594,9 @@ def teacher_create_task_from_card(request, diary_id):
     diary.is_read = True
     diary.read_by = request.user
     diary.read_at = timezone.now()
+
+    # 既読時に「📖 読んだよ」を自動設定
+    diary.public_reaction = PublicReaction.CHECKED
 
     # タスク化
     diary.internal_action = internal_action

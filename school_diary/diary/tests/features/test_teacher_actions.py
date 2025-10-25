@@ -132,7 +132,7 @@ class TestTEAACT008MarkAsReadQuick:
         """
         Given: 未読の連絡帳エントリー
         When: 既読Quick処理（AJAX）を実行
-        Then: is_read=True、action_status=NOT_REQUIRED
+        Then: is_read=True、public_reaction=CHECKED、action_status=NOT_REQUIRED
         """
         # Arrange
         assert not unread_diary_entry.is_read
@@ -150,6 +150,7 @@ class TestTEAACT008MarkAsReadQuick:
 
         unread_diary_entry.refresh_from_db()
         assert unread_diary_entry.is_read
+        assert unread_diary_entry.public_reaction == "checked"
         assert unread_diary_entry.action_status == ActionStatus.NOT_REQUIRED
 
 
@@ -166,7 +167,7 @@ class TestTEAACT009CreateTask:
         """
         Given: 未読の連絡帳エントリー
         When: タスク化（AJAX）を実行
-        Then: is_read=True、internal_action設定、action_status=IN_PROGRESS
+        Then: is_read=True、public_reaction=CHECKED、internal_action設定、action_status=IN_PROGRESS
         """
         # Arrange
         assert not unread_diary_entry.is_read
@@ -188,6 +189,7 @@ class TestTEAACT009CreateTask:
 
         unread_diary_entry.refresh_from_db()
         assert unread_diary_entry.is_read
+        assert unread_diary_entry.public_reaction == "checked"
         assert unread_diary_entry.internal_action == "parent_contact"
         assert unread_diary_entry.action_status == ActionStatus.IN_PROGRESS
 

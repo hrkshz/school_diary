@@ -292,8 +292,8 @@
         </div>
         {% endif %}
 
-        <!-- P2: 未対応（青）- サブセクション（未提出/未読/反応未選択） -->
-        {% if classified_students.not_submitted or classified_students.unread or classified_students.no_reaction %}
+        <!-- P2: 未対応（青）- サブセクション（未提出/未読） -->
+        {% if classified_students.not_submitted or classified_students.unread %}
         <!-- モバイル: 展開ボタン -->
         <button class="mobile-expand-section d-md-none" onclick="toggleMobileSection('needs_response')">
             🔵 未対応を表示 ({{ needs_response_count }}名) ▼
@@ -358,49 +358,6 @@
                                 <div class="card-actions">
                                     <button class="btn btn-sm btn-success"
                                             onclick="markAsReadQuick({{ student.latest_entry_id }}, '{{ student.get_full_name }}', this)">
-                                        ✓ 既読
-                                    </button>
-                                    <button class="btn btn-sm btn-warning"
-                                            data-bs-toggle="modal"
-                                            data-bs-target="#taskModal"
-                                            data-entry-id="{{ student.latest_entry_id }}"
-                                            data-student-name="{{ student.get_full_name }}">
-                                        📋 タスク
-                                    </button>
-                                    <a href="{% url 'diary:teacher_student_detail' student_id=student.id %}"
-                                       class="btn btn-sm btn-outline-secondary">
-                                        📖 詳細
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-                <hr>
-                {% endif %}
-
-                <!-- サブセクション3: 反応未選択 -->
-                {% if classified_students.no_reaction %}
-                <h6 class="text-primary fw-bold mb-2">⚠️ 反応未選択（{{ classified_students.no_reaction|length }}名）- 反応を選択</h6>
-                <div class="row">
-                    {% for student in classified_students.no_reaction %}
-                    <div class="col-12 col-md-6 col-lg-4 mb-3">
-                        <div class="card border-primary shadow-sm hover-lift">
-                            <div class="card-body">
-                                <h6 class="card-title">{{ student.get_full_name }}</h6>
-                                {% if student.inline_history %}
-                                <p class="card-text small mb-1">
-                                    <span class="badge bg-secondary">📊 {{ student.inline_history }}</span>
-                                </p>
-                                <p class="card-text small text-muted">{{ student.latest_snippet }}</p>
-                                {% else %}
-                                <p class="card-text small text-muted">反応未選択</p>
-                                {% endif %}
-
-                                <!-- ボタンセット -->
-                                <div class="card-actions">
-                                    <button class="btn btn-sm btn-success" disabled title="既読済み">
                                         ✓ 既読
                                     </button>
                                     <button class="btn btn-sm btn-warning"

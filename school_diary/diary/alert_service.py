@@ -9,7 +9,6 @@ Main tiers:
 - Needs Response (P2): Daily tasks
   - P2-1: Not submitted (yesterday's diary missing)
   - P2-2: Unread (submitted today but not read)
-  - P2-3: No reaction (read but no reaction selected)
 - Completed (P3): Read + reaction selected, past 3 days only
 
 Design principles:
@@ -41,8 +40,7 @@ def classify_students(classroom):
             'needs_action': [(student3, entry3), ...],  # P1.5: 要対応タスク（internal_action設定済み）
             'not_submitted': [student4, ...],           # P2-1: 未提出
             'unread': [student5, ...],                  # P2-2: 未読
-            'no_reaction': [student6, ...],             # P2-3: 反応未選択
-            'completed': [(student7, date), ...]        # P3: 対応済み（日付付き）
+            'completed': [(student6, date), ...]        # P3: 対応済み（日付付き）
         }
 
     Performance:
@@ -75,7 +73,6 @@ def classify_students(classroom):
     needs_action = []
     not_submitted = []
     unread = []
-    no_reaction = []
     completed = []
 
     for student in classroom.students.all():
@@ -108,11 +105,6 @@ def classify_students(classroom):
             unread.append(student)
             continue
 
-        # P2-3: 反応未選択（既読だが反応なし）
-        if latest_entry.is_read and not latest_entry.public_reaction:
-            no_reaction.append(student)
-            continue
-
         # P3: 対応済み（前登校日以降のみ表示、土日を考慮）
         if latest_entry.entry_date >= yesterday:
             completed.append((student, latest_entry.entry_date))
@@ -123,7 +115,6 @@ def classify_students(classroom):
         "needs_action": needs_action,
         "not_submitted": not_submitted,
         "unread": unread,
-        "no_reaction": no_reaction,
         "completed": completed,
     }
 
