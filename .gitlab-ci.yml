@@ -247,6 +247,10 @@ deploy-production:
         # 📚 学習ポイント:
         # - exec -T: TTY無しで実行（CI/CD環境用）
 
+        echo "=== 静的ファイル収集 ==="
+        docker compose -f docker-compose.production.yml exec -T django \
+          python manage.py collectstatic --noinput
+
         echo "=== ヘルスチェック ==="
         docker compose -f docker-compose.production.yml exec -T django \
           python manage.py check --deploy
