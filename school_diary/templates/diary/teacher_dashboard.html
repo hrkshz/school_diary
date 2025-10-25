@@ -722,7 +722,7 @@ function markAsReadQuick(entryId, studentName, button) {
         return;
     }
 
-    const csrftoken = getCookie('csrftoken');
+    const csrftoken = getCookie('__Secure-csrftoken') || getCookie('csrftoken');
     const url = `/diary/teacher/diary/${entryId}/mark-as-read-quick/`;
 
     fetch(url, {
@@ -783,7 +783,7 @@ function submitTaskCreation() {
         return;
     }
 
-    const csrftoken = getCookie('csrftoken');
+    const csrftoken = getCookie('__Secure-csrftoken') || getCookie('csrftoken');
     const url = `/diary/teacher/diary/${currentTaskEntryId}/create-task/`;
 
     fetch(url, {
