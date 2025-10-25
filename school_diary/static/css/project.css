@@ -11,3 +11,294 @@
   background-color: #f2dede;
   border-color: #eed3d7;
 }
+
+/* ========================================
+   モバイル最適化（768px以下）
+   Phase 1-2実装: 2025-10-25
+   ======================================== */
+
+@media (max-width: 768px) {
+  /* ========================================
+     Phase 1: 基本レイアウト最適化
+     ======================================== */
+
+  /* 全画面: 横1列表示 */
+  .col-md-6,
+  .col-md-8,
+  .col-lg-4,
+  .col-md-12 {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+
+  /* ボタン: タッチターゲット拡大 */
+  .btn-lg {
+    font-size: 1.25rem;
+    padding: 16px 24px;
+    min-height: 60px;
+  }
+
+  .btn {
+    min-height: 48px;
+    font-size: 1rem;
+    padding: 12px 16px;
+  }
+
+  .btn-sm {
+    min-height: 44px;
+    font-size: 0.9rem;
+    padding: 10px 14px;
+  }
+
+  /* カード: 余白調整 */
+  .card-body {
+    padding: 1.25rem;
+  }
+
+  .card {
+    margin-bottom: 1rem;
+  }
+
+  /* フォーム: 入力しやすく */
+  .form-control,
+  .form-select,
+  textarea.form-control {
+    min-height: 48px;
+    font-size: 1rem;
+    padding: 12px;
+  }
+
+  /* ラベル: 読みやすく */
+  label {
+    font-size: 1rem;
+    font-weight: 500;
+    margin-bottom: 8px;
+  }
+
+  /* 送信ボタン: 固定（スティッキー） */
+  .d-grid.gap-2 {
+    position: sticky;
+    bottom: 0;
+    background: white;
+    padding: 16px;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+    z-index: 10;
+    margin: 0 -1.25rem -1.25rem;
+  }
+
+  /* ナビゲーション: ハンバーガーメニュー最適化 */
+  .navbar-brand {
+    font-size: 1.1rem;
+  }
+
+  .nav-link {
+    padding: 12px 16px;
+    font-size: 1rem;
+  }
+
+  /* アラート: モバイル最適化 */
+  .alert {
+    padding: 1rem;
+    font-size: 0.95rem;
+  }
+
+  /* テーブル: レスポンシブ */
+  .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* ========================================
+     Phase 2: 担任ダッシュボード最適化
+     ======================================== */
+
+  /* トップボタングループ: 縦積み */
+  .d-flex.gap-2 {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  /* トップボタン: テキスト簡素化 */
+  .btn-lg br {
+    display: none;
+  }
+
+  .btn-lg small {
+    display: inline;
+    font-size: 0.85rem;
+  }
+
+  /* カードアクション: 縦積み */
+  .card-actions {
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .card-actions .btn {
+    width: 100%;
+    flex: none;
+  }
+
+  /* Table Viewボタン: モバイルで非表示（Inbox Viewのみ） */
+  a[href*="view=table"] {
+    display: none;
+  }
+
+  /* 学年共有アラート: 強調 */
+  .border-info {
+    box-shadow: 0 4px 12px rgba(23, 162, 184, 0.25);
+    border-width: 2px;
+  }
+
+  /* 優先度カード: 視認性向上 */
+  .border-danger {
+    border-width: 3px;
+  }
+
+  .border-warning {
+    border-width: 2px;
+  }
+
+  /* セクション折りたたみボタン */
+  .mobile-expand-section {
+    display: block;
+    width: 100%;
+    padding: 14px;
+    margin: 12px 0;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    text-align: center;
+    font-weight: 500;
+    color: #495057;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .mobile-expand-section:hover {
+    background: #e9ecef;
+    border-color: #adb5bd;
+  }
+
+  .mobile-expand-section:active {
+    background: #dee2e6;
+  }
+
+  /* P1以下のセクション: デフォルト折りたたみ */
+  .mobile-collapsible {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease-out;
+  }
+
+  .mobile-collapsible.show {
+    max-height: 10000px;
+    transition: max-height 0.6s ease-in;
+  }
+
+  /* モーダル: フルスクリーン化（Phase 2強化） */
+  .modal-dialog {
+    margin: 0;
+    max-width: 100%;
+    min-height: 100vh;
+  }
+
+  .modal-content {
+    min-height: 100vh;
+    border-radius: 0;
+    border: none;
+  }
+
+  .modal-header {
+    padding: 1rem 1.25rem;
+  }
+
+  .modal-body {
+    padding: 1.25rem;
+  }
+
+  .modal-footer {
+    padding: 1rem 1.25rem;
+  }
+
+  /* モーダル内のテーブル: スクロール改善 */
+  .modal .table-responsive {
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+
+  /* モーダル内のselect: タップしやすく */
+  .modal .form-select {
+    min-height: 50px;
+    font-size: 1.05rem;
+  }
+
+  /* 生徒ダッシュボード: CTA強調 */
+  .student-dashboard .btn-primary {
+    font-size: 1.3rem;
+    padding: 18px 24px;
+    min-height: 64px;
+  }
+
+  /* 過去記録: 初期状態で折りたたみ（オプション） */
+  .recent-entries-toggle {
+    display: block;
+    margin-top: 1rem;
+    padding: 12px;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    text-align: center;
+    cursor: pointer;
+  }
+
+  /* ヘッダー: コンパクト化 */
+  h2 {
+    font-size: 1.5rem;
+  }
+
+  h3 {
+    font-size: 1.3rem;
+  }
+
+  h5 {
+    font-size: 1.1rem;
+  }
+
+  h6 {
+    font-size: 1rem;
+  }
+
+  /* lead: コンパクト化 */
+  .lead {
+    font-size: 1.1rem;
+  }
+
+  /* バッジ: 読みやすく */
+  .badge {
+    font-size: 0.85rem;
+    padding: 0.4em 0.6em;
+  }
+}
+
+/* ========================================
+   タブレット対応（769px-1024px）
+   ======================================== */
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  /* タブレットでは2列表示 */
+  .col-lg-4 {
+    flex: 0 0 50%;
+    max-width: 50%;
+  }
+
+  /* ボタンサイズ: 中間 */
+  .btn-lg {
+    min-height: 52px;
+  }
+
+  .btn {
+    min-height: 44px;
+  }
+}

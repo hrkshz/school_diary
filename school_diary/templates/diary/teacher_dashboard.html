@@ -188,7 +188,11 @@
 
         <!-- P1: 要注意（黄）- 3日連続メンタル低下 -->
         {% if classified_students.needs_attention %}
-        <div class="card border-warning mb-3" id="needs_attention">
+        <!-- モバイル: 展開ボタン -->
+        <button class="mobile-expand-section d-md-none" onclick="toggleMobileSection('needs_attention')">
+            🟡 要注意を表示 ({{ classified_students.needs_attention|length }}名) ▼
+        </button>
+        <div class="card border-warning mb-3 mobile-collapsible" id="needs_attention">
             <div class="card-header bg-warning text-dark">
                 <h5 class="mb-0">🟡 要注意（{{ classified_students.needs_attention|length }}名）</h5>
                 <small>P1: 3日連続メンタル低下 - 注意して見守ってください</small>
@@ -238,7 +242,11 @@
 
         <!-- P1.5: 要対応タスク（オレンジ）- internal_action設定済み -->
         {% if classified_students.needs_action %}
-        <div class="card border-warning mb-3" id="needs_action" style="border-left: 5px solid #fd7e14 !important;">
+        <!-- モバイル: 展開ボタン -->
+        <button class="mobile-expand-section d-md-none" onclick="toggleMobileSection('needs_action')">
+            📋 要対応タスクを表示 ({{ classified_students.needs_action|length }}名) ▼
+        </button>
+        <div class="card border-warning mb-3 mobile-collapsible" id="needs_action" style="border-left: 5px solid #fd7e14 !important;">
             <div class="card-header text-dark" style="background-color: #fff3cd;">
                 <h5 class="mb-0">📋 要対応タスク（{{ classified_students.needs_action|length }}名）</h5>
                 <small>P1.5: 対応記録が設定されています - 優先的に対応してください</small>
@@ -286,7 +294,11 @@
 
         <!-- P2: 未対応（青）- サブセクション（未提出/未読/反応未選択） -->
         {% if classified_students.not_submitted or classified_students.unread or classified_students.no_reaction %}
-        <div class="card border-primary mb-3" id="needs_response">
+        <!-- モバイル: 展開ボタン -->
+        <button class="mobile-expand-section d-md-none" onclick="toggleMobileSection('needs_response')">
+            🔵 未対応を表示 ({{ needs_response_count }}名) ▼
+        </button>
+        <div class="card border-primary mb-3 mobile-collapsible" id="needs_response">
             <div class="card-header bg-primary text-white">
                 <h5 class="mb-0">🔵 未対応（{{ needs_response_count }}名）</h5>
                 <small>P2: 日常タスク - 上から順に対応を進めてください</small>
@@ -837,6 +849,20 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
+
+// モバイル: セクション折りたたみ機能
+function toggleMobileSection(sectionId) {
+    const section = document.getElementById(sectionId);
+    const button = event.target;
+
+    if (section.classList.contains('show')) {
+        section.classList.remove('show');
+        button.textContent = button.textContent.replace('▲', '▼');
+    } else {
+        section.classList.add('show');
+        button.textContent = button.textContent.replace('▼', '▲');
+    }
+}
 </script>
 
 {% endblock %}
