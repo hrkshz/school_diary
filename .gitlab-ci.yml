@@ -199,6 +199,16 @@ deploy-production:
         docker compose -f docker-compose.production.yml exec -T django \
           python manage.py check --deploy
 
+        echo "=== 古いDockerイメージ削除 ==="
+        docker image prune -af --filter "until=24h" || true
+
+        echo "=== Build Cache削除 ==="
+        docker builder prune -af --filter "until=24h" || true
+
+        echo "=== ディスク状況確認 ==="
+        df -h / || true
+        docker system df || true
+
         echo "=== デプロイ完了！ ==="
       ENDSSH
 
