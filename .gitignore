@@ -322,3 +322,7 @@ CLAUDE_DETAILED_RULES.md
 docs/07-testing/results/
 docs/07-testing/test-summary.md
 docs/07-testing/traceability-matrix-*.md
+
+# Terraform plan files (一時ファイル、機密情報含む)
+terraform/**/*.tfplan*
+terraform/**/tfplan-*

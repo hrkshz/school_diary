@@ -33,3 +33,34 @@ docs/
 .mypy_cache/
 *.pyc
 __pycache__/
+
+# Infrastructure as Code (本番イメージに不要)
+terraform/
+
+# JavaScript dependencies (本番イメージに不要)
+node_modules/
+
+# Development scripts (評価者向けツール)
+setup.sh
+verify.sh
+
+# Development Docker Compose files (production以外)
+docker-compose.local.yml
+docker-compose.docs.yml
+
+# Development/Mock files
+mock_*.html
+*.csv
+
+# VS Code settings
+.vscode/
+
+# Development container config
+.devcontainer/
+
+# GitLab CI logs
+.gitlab-ci.yml
+
+# Cursor AI settings
+.cursorignore
+.cursorrules
