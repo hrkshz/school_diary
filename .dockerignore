@@ -76,4 +76,3 @@ package.json
 package-lock.json
 pyrightconfig.json
 scripts/
-uv.lock
