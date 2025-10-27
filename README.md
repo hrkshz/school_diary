@@ -6,8 +6,6 @@
 
 - **Backend**: Python 3.12 / Django 5.1
 - **Database**: PostgreSQL 16
-- **Cache/Queue**: Redis 7
-- **Task Queue**: Celery 5.4
 - **Infrastructure**: Docker / Docker Compose
 - **Admin UI**: django-jazzmin
 - **Forms**: django-crispy-forms (Bootstrap 5)

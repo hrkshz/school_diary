@@ -34,7 +34,6 @@
 
 - **モノリシック構成**: 単一のDjangoアプリケーション
 - **PostgreSQLデータベース**: リレーショナルデータの管理
-- **非同期処理**: Celery + Redis（将来の拡張用）
 - **静的ファイル配信**: Whitenoise
 - **フロントエンド**: サーバーサイドレンダリング（Django Templates）
 
@@ -49,8 +48,6 @@
 | **Python** | 3.12 | プログラミング言語 |
 | **Django** | 5.1.x | Webフレームワーク |
 | **PostgreSQL** | 16 | データベース |
-| **Celery** | 最新 | 非同期タスク処理（将来用） |
-| **Redis** | 最新 | Celeryのブローカー |
 | **Gunicorn** | 最新 | WSGIサーバー（本番環境） |
 
 #### 主要Djangoライブラリ
@@ -119,14 +116,12 @@
 | - Admin          |
 +--------+---------+
          |
-         +------------------+
-         |                  |
-         v                  v
-+------------------+  +------------------+
-| PostgreSQL       |  | Redis (将来)     |
-| - User           |  | - Celery Broker  |
-| - DiaryEntry     |  | - Cache          |
-| - ClassRoom      |  +------------------+
+         v
++------------------+
+| PostgreSQL       |
+| - User           |
+| - DiaryEntry     |
+| - ClassRoom      |
 | - TeacherNote    |
 +------------------+
 ```
@@ -288,11 +283,6 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
-  redis:
-    image: redis:latest
-    ports:
-      - "6379:6379"
-
   django:
     build: .
     command: python manage.py runserver 0.0.0.0:8000
@@ -300,23 +290,11 @@ services:
       - "8000:8000"
     depends_on:
       - postgres
-      - redis
     volumes:
       - .:/app
     environment:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/school_diary
-      REDIS_URL: redis://redis:6379/0
       DEBUG: "True"
-
-  celery:
-    build: .
-    command: celery -A school_diary worker -l info
-    depends_on:
-      - postgres
-      - redis
-    environment:
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/school_diary
-      REDIS_URL: redis://redis:6379/0
 ```
 
 #### 起動手順
@@ -547,28 +525,9 @@ MIDDLEWARE = [
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 ```
 
-### 7.3 キャッシュ戦略（将来の拡張）
+### 7.3 キャッシュ戦略
 
-```python
-# settings.py
-CACHES = {
-    'default': {
-        'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': REDIS_URL,
-        'OPTIONS': {
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-        }
-    }
-}
-
-# views.py
-from django.views.decorators.cache import cache_page
-
-@cache_page(60 * 15)  # 15分キャッシュ
-def classroom_statistics(request):
-    # 統計情報の計算
-    pass
-```
+現在のPoC段階ではキャッシュ機能は未実装。将来的にはRedisを使用したキャッシュ戦略の導入を検討。
 
 ### 7.4 ページネーション
 
