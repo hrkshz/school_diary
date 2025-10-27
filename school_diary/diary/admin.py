@@ -794,12 +794,7 @@ try:
 except (ImportError, NotRegistered):
     pass  # socialaccount未インストール、またはadmin登録されていない
 
-try:
-    from kits.demos.models import DemoRequest
-
-    admin.site.unregister(DemoRequest)
-except (ImportError, NotRegistered):
-    pass  # demos未インストール、またはadmin登録されていない
+# kits.demos は削除済み（django-fsmを直接使用）
 
 # 不要なモデルを削除（確実に存在するもの）
 with contextlib.suppress(NotRegistered):

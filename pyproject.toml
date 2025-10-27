@@ -214,6 +214,7 @@ ignore = [
     "PERF403",  # manual dict comprehension（1件、最適化対象）
     "PD901",    # pandas df variable name（6件、スタイル改善）
     "S308",     # mark_safe usage（6件、Django標準パターン）
+    "S311",     # pseudo-random generator（テストデータ生成用、暗号学的安全性不要）
     "S105",     # hardcoded password string（1件、テストコード）
     "S110",     # try-except-pass（1件、意図的）
     "DJ007",    # django ModelForm.Meta.fields（2件、スタイル改善）

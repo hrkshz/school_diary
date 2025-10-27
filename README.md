@@ -35,18 +35,17 @@
 ## クイックスタート
 
 ```bash
-# 1. Docker起動
-docker compose -f docker-compose.local.yml up -d
+# 自動セットアップ（推奨）
+./setup.sh
 
-# 2. マイグレーション
-docker compose -f docker-compose.local.yml run --rm django python manage.py migrate
+# 動作確認
+./verify.sh
 
-# 3. テストデータ投入
-docker compose -f docker-compose.local.yml run --rm django python manage.py setup_dev
-
-# 4. アクセス
-# http://localhost:8000 (管理者: admin/admin123)
+# ブラウザで http://localhost:8000 にアクセス
+# 管理者: admin / admin123
 ```
+
+**詳細な手順・トラブルシューティング**: [SETUP.md](SETUP.md) を参照
 
 ### アクセス URL
 
@@ -58,65 +57,43 @@ docker compose -f docker-compose.local.yml run --rm django python manage.py setu
 
 ### 管理者
 
-- ユーザー名: `admin`
-- パスワード: `admin123`
+- メールアドレス: `admin@example.com`
+- パスワード: `password123`
 
 ### 担任
 
-- ユーザー名: `teacher_1_A` ～ `teacher_3_B`（6 名）
+- メールアドレス: `teacher_1_a@example.com` ～ `teacher_3_c@example.com`（9 名）
 - パスワード: `password123`
-- 担当クラス: 1 年 A 組 ～ 3 年 B 組
+- 担当クラス: 1 年 A 組 ～ 3 年 C 組
 
 ### 生徒
 
-- ユーザー名: `student_001` ～ `student_030`（30 名）
+- メールアドレス: `student_1_a_01@example.com` ～ `student_3_c_30@example.com`（270 名）
 - パスワード: `password123`
-- 各クラス 5 名ずつ配置済み
+- 各クラス 30 名ずつ配置済み
 
 ## ドキュメント
 
 プロジェクトの設計・仕様に関するドキュメントは `docs/` ディレクトリに格納されています。
 
-- [要件定義書](docs/要件定義書.md)
-- [データモデル設計書](docs/データモデル設計書.md)
-- [機能仕様書](docs/機能仕様書.md)
-- [システムアーキテクチャ設計書](docs/システムアーキテクチャ設計書.md)
-- [テスト計画書](docs/テスト計画書.md)
+- [要件定義書](docs/01-requirements.md)
+- [システム概要](docs/02-system-overview.md)
+- [機能一覧](docs/03-features.md)
+- [データモデル設計書](docs/04-data-model.md)
+- [アーキテクチャ設計書](docs/05-architecture.md)
+- [テスト戦略・結果](docs/07-testing/)
 
 ## コード品質管理
 
-### Lint 設定の方針
+本プロジェクトは Django ベストプラクティスに従い、以下のツールで品質を担保しています。
 
-本プロジェクトは日本語業務アプリケーションのため、ruff 設定を業界標準（Instagram, Sentry, GitLab等）に準拠させています。
-
-**主な設定:**
-- `line-length: 120`（Django標準）
-- 全角文字許可: `RUF001/002/003`（日本語UI対応）
-- print文許可: `T201`（開発スクリプト用）
-- テストコード緩和: `S106`（ハードコードパスワード）、`PT009`（unittest assertion）
-
-### 技術的負債
-
-現在362件のlint警告をignore設定しており、全てスタイル・保守性に関する項目です。セキュリティ・バグリスクは解決済みです。
-
-**優先度 High: なし**
+**Lint / Format:**
+- Ruff（Django 標準設定、line-length: 120）
+- 日本語 UI 対応のため一部ルール緩和（`RUF001/002/003`）
 - セキュリティ・バグリスクは全て解決済み
 
-**優先度 Medium: 73件（AWS Phase完了後に対応予定）**
-- `ERA001`（55件）: コメントアウトコード削除
-- `DTZ011`（13件）: timezone対応
-- `E402`（5件）: import順序修正
+**Type Check:**
+- mypy（strict モード）
 
-**優先度 Low: 289件（将来の改善タスク）**
-- `PLC0415`（99件）: import位置（保守性改善）
-- `PLR2004`（63件）: マジックナンバー（可読性改善）
-- その他: 複雑度、logging、スタイル改善
-
-**設計判断の根拠:**
-- データ駆動の意思決定（ROI計算、リスク評価）
-- クリティカルパス保護（デプロイ成功を最優先）
-- 透明性（負債を明示し、計画的に管理）
-
-## 開発環境
-
-本プロジェクトは Claude Code（AI ペアプログラミングツール）を使用して開発されました。AI はコード生成補助、デバッグ支援を担当し、設計・実装・テストの最終判断は開発者が実施しています。
+**Testing:**
+- pytest（カバレッジ: 150+ テスト）

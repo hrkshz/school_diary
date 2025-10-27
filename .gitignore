@@ -277,6 +277,7 @@ school_diary/media/
 .ipython/
 .env
 .envs/*
+!.envs.example/
 
 # 開発管理ドキュメント（プライベート・Git管理外）
 /docs-private/

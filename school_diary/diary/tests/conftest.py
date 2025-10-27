@@ -9,8 +9,6 @@ Fixture Pyramid:
 - Level 3: 複雑なシナリオ（setup_inbox_scenario）
 """
 
-from datetime import timedelta
-
 import pytest
 from django.contrib.auth import get_user_model
 from django.test import Client
@@ -157,8 +155,16 @@ def today():
 
 @pytest.fixture
 def yesterday():
-    """昨日の日付（一日一件制約テスト用）"""
-    return timezone.now().date() - timedelta(days=1)
+    """前登校日の日付（一日一件制約テスト用）
+
+    Note:
+        forms.py の clean_entry_date() は get_previous_school_day() で
+        前登校日（土日を除く）を検証するため、テストも同じロジックを使用。
+        単純な timedelta(days=1) では月曜日のテストが失敗する。
+    """
+    from school_diary.diary.utils import get_previous_school_day
+
+    return get_previous_school_day(timezone.now().date())
 
 
 @pytest.fixture

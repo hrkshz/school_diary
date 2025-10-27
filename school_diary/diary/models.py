@@ -3,8 +3,7 @@ from django.core.validators import MaxValueValidator
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils import timezone
-
-from kits.audit.models import AuditMixin
+from simple_history.models import HistoricalRecords
 
 from .constants import GRADE_CHOICES
 from .constants import ConditionLevel
@@ -52,7 +51,7 @@ class ActionStatus(models.TextChoices):
 
 
 class DiaryEntryQuerySet(models.QuerySet):
-    """DiaryEntry用の最適化されたQuerySet"""
+    """DiaryEntry用のQuerySet"""
 
     def with_related(self):
         """関連オブジェクトをprefetch（N+1クエリ解消）"""
@@ -269,7 +268,7 @@ class DiaryEntry(models.Model):
 
 
 class ClassRoomQuerySet(models.QuerySet):
-    """ClassRoom用の最適化されたQuerySet"""
+    """ClassRoom用のQuerySet"""
 
     def with_related(self):
         """関連オブジェクトをprefetch（N+1クエリ解消）"""
@@ -366,8 +365,10 @@ class ClassRoom(models.Model):
         return self.assistant_teachers.filter(id=user.id).exists()
 
 
-class UserProfile(AuditMixin):
+class UserProfile(models.Model):
     """ユーザープロフィール（役割ベースの権限管理、変更履歴を自動記録）"""
+
+    history = HistoricalRecords()
 
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
@@ -443,7 +444,7 @@ class UserProfile(AuditMixin):
 
 
 class TeacherNoteQuerySet(models.QuerySet):
-    """TeacherNote用の最適化されたQuerySet"""
+    """TeacherNote用のQuerySet"""
 
     def with_related(self):
         """関連オブジェクトをprefetch（N+1クエリ解消）"""
@@ -508,7 +509,7 @@ class TeacherNote(models.Model):
 
 
 class TeacherNoteReadStatusQuerySet(models.QuerySet):
-    """TeacherNoteReadStatus用の最適化されたQuerySet"""
+    """TeacherNoteReadStatus用のQuerySet"""
 
     def with_related(self):
         """関連オブジェクトをprefetch（N+1クエリ解消）"""
@@ -581,7 +582,7 @@ class AbsenceReason(models.TextChoices):
 
 
 class DailyAttendanceQuerySet(models.QuerySet):
-    """DailyAttendance用の最適化されたQuerySet"""
+    """DailyAttendance用のQuerySet"""
 
     def with_related(self):
         """関連オブジェクトをprefetch（N+1クエリ解消）"""

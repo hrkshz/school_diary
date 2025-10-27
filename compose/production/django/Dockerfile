@@ -89,4 +89,9 @@ RUN DATABASE_URL="" \
   DJANGO_SETTINGS_MODULE="config.settings.test" \
   python manage.py compilemessages
 
+# Collect static files during build (prevents 500 errors on container startup)
+RUN DATABASE_URL="" \
+  DJANGO_SETTINGS_MODULE="config.settings.test" \
+  python manage.py collectstatic --noinput
+
 ENTRYPOINT ["/entrypoint"]

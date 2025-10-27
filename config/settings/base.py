@@ -80,21 +80,12 @@ THIRD_PARTY_APPS = [
     "allauth.socialaccount",
     "rest_framework",
     "anymail",
-    "kits",
     "simple_history",
 ]
 
 LOCAL_APPS = [
     # Your stuff: custom apps go here
     "school_diary.diary.apps.DiaryConfig",
-    # KITS: Common reusable components
-    "kits.demos.apps.DemosConfig",
-    "kits.accounts.apps.AccountsConfig",
-    # "kits.approvals.apps.ApprovalsConfig",  # Disabled: Not used in application
-    "kits.audit.apps.AuditConfig",
-    # "kits.notifications.apps.NotificationsConfig",  # Disabled: Celery dependency removed
-    "kits.reports",
-    # "kits.io",  # Disabled: Not used in application
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
 INSTALLED_APPS = ["jazzmin", *DJANGO_APPS, *THIRD_PARTY_APPS, *LOCAL_APPS]
@@ -304,7 +295,7 @@ REST_FRAMEWORK = {
     "PAGE_SIZE": 100,
 }
 
-# kits.notifications (Disabled: Celery dependency removed in Option D-Ultra)
+# Notifications (Disabled: Celery dependency removed in Option D-Ultra)
 # ------------------------------------------------------------------------------
 NOTIFICATIONS_CONFIG = {
     "ENABLED": False,
@@ -314,7 +305,7 @@ NOTIFICATIONS_CONFIG = {
     "RETENTION_DAYS": 90,  # 通知履歴の保持期間(日)
 }
 
-# kits.reports
+# Reports
 # ------------------------------------------------------------------------------
 REPORTS_CONFIG = {
     "ENABLED": True,
@@ -330,7 +321,7 @@ REPORTS_CONFIG = {
 # WeasyPrint設定(オプション)
 WEASYPRINT_BASEURL = "file://" + str(BASE_DIR)
 
-# kits.io
+# IO
 # ------------------------------------------------------------------------------
 IO_CONFIG = {
     "ENABLED": True,
