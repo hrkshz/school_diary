@@ -26,7 +26,6 @@ coverage.xml
 # Documentation (プロダクションビルドから除外)
 docs/
 *.md
-!README.md
 
 # Development tools
 .ruff_cache/
@@ -64,3 +63,17 @@ mock_*.html
 # Cursor AI settings
 .cursorignore
 .cursorrules
+
+# Build-time only files (本番イメージに不要)
+.dockerignore
+.envs.example
+.python-version
+compose/
+docker-compose.*.yml
+gitlab-ci-ecr-policy.json
+mypy.ini
+package.json
+package-lock.json
+pyrightconfig.json
+scripts/
+uv.lock
