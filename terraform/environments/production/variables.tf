@@ -131,3 +131,10 @@ variable "ses_sender_email" {
   type        = string
   default     = "hiroki0107@gmail.com"
 }
+
+# CloudWatch Variables
+variable "cloudwatch_alarm_email" {
+  description = "Email address to receive CloudWatch alarms"
+  type        = string
+  default     = "hiroki0107@gmail.com"
+}

@@ -103,3 +103,23 @@ module "ses" {
     Project     = var.project_name
   }
 }
+
+module "cloudwatch" {
+  source = "../../modules/cloudwatch"
+
+  project_name                  = var.project_name
+  environment                   = var.environment
+  alarm_email                   = var.cloudwatch_alarm_email
+  alb_arn_suffix                = module.alb.alb_arn_suffix
+  alb_target_group_arn_suffix   = module.alb.target_group_arn_suffix
+  ec2_instance_id               = module.ec2.instance_id
+  rds_instance_id               = module.rds.db_instance_identifier
+}
+
+module "cloudwatch_logs" {
+  source = "../../modules/cloudwatch_logs"
+
+  project_name = var.project_name
+  environment  = var.environment
+  aws_region   = var.aws_region
+}

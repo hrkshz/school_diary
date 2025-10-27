@@ -29,3 +29,8 @@ output "db_arn" {
   description = "RDS instance ARN"
   value       = aws_db_instance.main.arn
 }
+
+output "db_instance_identifier" {
+  description = "RDS instance identifier for CloudWatch metrics"
+  value       = aws_db_instance.main.identifier
+}
