@@ -21,11 +21,6 @@ variables:
   DJANGO_SETTINGS_MODULE: "config.settings.test"
   DATABASE_URL: "sqlite:///test.db"
 
-# 📚 学習ポイント:
-# - variables: 全ジョブで使用できる環境変数
-# - ${変数名}: 変数の参照
-# - ECR_REGISTRY: <account-id>.dkr.ecr.<region>.amazonaws.comの形式
-
 # ステージ定義（実行順序）
 stages:
   - test # テスト実行
@@ -42,10 +37,6 @@ cache:
     - .cache/pip/
     - .cache/uv/  # uv用キャッシュ（依存関係解決の高速化）
   policy: pull-push
-
-# 📚 学習ポイント:
-# - cache: ビルド時間を短縮（依存関係を再利用）
-# - key: キャッシュの識別子
 
 # 全ジョブ共通の事前処理
 before_script:
@@ -66,10 +57,6 @@ lint:
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-
-# 📚 学習ポイント:
-# - stage: test - testステージに属する
-# - rules: 実行条件（MRまたはmainブランチ）
 
 # Type Checking
 type-check:
@@ -108,11 +95,6 @@ unit-test:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
-# 📚 学習ポイント:
-# - services: 追加のコンテナ（PostgreSQL）
-# - artifacts: ビルド成果物を保存
-# - coverage: カバレッジ率を抽出
-
 #━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # Stage 2: Build（ECRにpush）
 #━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -132,10 +114,6 @@ build-image:
     # AWS CLIインストール
     - apk add --no-cache aws-cli python3 py3-pip
 
-    # 📚 学習ポイント:
-    # - apk: Alpine Linuxのパッケージマネージャー
-    # - aws-cli: ECRログインに必要
-
     # デバッグ: 環境変数確認
     - echo "AWS_ACCESS_KEY_ID exists = $(test -n "$AWS_ACCESS_KEY_ID" && echo YES || echo NO)"
     - echo "AWS_SECRET_ACCESS_KEY exists = $(test -n "$AWS_SECRET_ACCESS_KEY" && echo YES || echo NO)"
@@ -147,11 +125,6 @@ build-image:
       aws ecr get-login-password --region $AWS_DEFAULT_REGION | \
         docker login --username AWS --password-stdin $ECR_REGISTRY
 
-    # 📚 学習ポイント:
-    # - aws ecr get-login-password: ECRのパスワード取得（12時間有効）
-    # - docker login: Dockerに認証情報を設定
-    # - --password-stdin: パスワードを標準入力から受け取る（セキュア）
-
   script:
     # Dockerイメージビルド
     - |
@@ -161,17 +134,9 @@ build-image:
         -t $ECR_REGISTRY/$ECR_REPOSITORY:$CI_COMMIT_SHORT_SHA \
         .
 
-    # 📚 学習ポイント:
-    # - -t: タグを指定（複数可）
-    # - latest: 最新版
-    # - $CI_COMMIT_SHORT_SHA: コミットハッシュ（例: abc123）
-
     # ECRにpush
     - docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
     - docker push $ECR_REGISTRY/$ECR_REPOSITORY:$CI_COMMIT_SHORT_SHA
-
-    # 📚 学習ポイント:
-    # - docker push: レジストリにイメージをアップロード
 
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH # mainブランチのみ
@@ -196,18 +161,10 @@ deploy-production:
     - chmod 600 ~/.ssh/id_rsa
     - ssh-keyscan -H $EC2_HOST >> ~/.ssh/known_hosts
 
-    # 📚 学習ポイント:
-    # - chmod 600: 所有者のみ読み書き可能（SSHセキュリティ要件）
-    # - ssh-keyscan: ホスト鍵を取得（MITM攻撃防止）
-
   script:
     # docker-compose.ymlをEC2に転送（イメージタグ更新のため）
     - echo "=== ファイル転送 ==="
     - scp docker-compose.production.yml $EC2_USER@$EC2_HOST:/opt/app/
-
-    # 📚 学習ポイント:
-    # - scp: セキュアコピー（SSH経由でファイル転送）
-    # - .envsは初回のみ手動配置（機密情報のため、Gitリポジトリ外で管理）
 
     # EC2にSSH接続してデプロイ
     - |
@@ -224,28 +181,15 @@ deploy-production:
         aws ecr get-login-password --region ap-northeast-1 | \
           docker login --username AWS --password-stdin \$ECR_REGISTRY
 
-        # 📚 学習ポイント:
-        # - EC2のIAM roleで自動認証（パスワード不要）
-
         echo "=== Dockerイメージpull ==="
         docker compose -f docker-compose.production.yml pull
-
-        # 📚 学習ポイント:
-        # - docker compose pull: ECRから最新イメージ取得
 
         echo "=== コンテナ再起動 ==="
         docker compose -f docker-compose.production.yml up -d --force-recreate
 
-        # 📚 学習ポイント:
-        # - up -d: バックグラウンドで起動
-        # - --force-recreate: 常に新しいコンテナを作成
-
         echo "=== マイグレーション ==="
         docker compose -f docker-compose.production.yml exec -T django \
           python manage.py migrate --noinput
-
-        # 📚 学習ポイント:
-        # - exec -T: TTY無しで実行（CI/CD環境用）
 
         echo "=== 静的ファイル収集 ==="
         docker compose -f docker-compose.production.yml exec -T django \
@@ -265,7 +209,3 @@ deploy-production:
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
       when: manual # 手動実行（安全のため）
-
-# 📚 学習ポイント:
-# - environment: GitLabのEnvironments機能
-# - when: manual - 手動トリガーが必要

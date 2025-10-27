@@ -10,7 +10,3 @@ output "repository_name" {
   value       = aws_ecr_repository.django.name
   # 例: school-diary-production-django
 }
-
-# 📚 学習ポイント:
-# - outputは他のTerraformモジュールや外部で使用する値を出力
-# - repository_urlはdocker pushするときに使用

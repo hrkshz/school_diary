@@ -572,7 +572,6 @@ class CustomUserAdmin(BaseUserAdmin):
                 obj.save()
 
             # Welcome emailを送信（一時的に無効化：AWS SESサンドボックス制限のため）
-            # TODO: ドメイン取得後、以下のコメントを解除してメール送信を有効化
             # email_sent = False
             # try:
             #     send_mail(

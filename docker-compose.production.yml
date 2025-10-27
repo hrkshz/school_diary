@@ -1,15 +1,6 @@
 services:
   django:
-    # ✅ ECRイメージを使用（環境変数で切り替え）
     image: ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG:-latest}
-
-    # 📚 学習ポイント:
-    # - ${変数名:-デフォルト値}: 環境変数、未設定ならデフォルト値
-    # - ECR_REGISTRY: 123456789012.dkr.ecr.ap-northeast-1.amazonaws.com
-    # - ECR_REPOSITORY: school-diary-production-django
-    # - IMAGE_TAG: latest（デフォルト）
-
-    # buildセクションは削除（ECRから取得するため不要）
     # build:
     #   context: .
     #   dockerfile: ./compose/production/django/Dockerfile
@@ -24,6 +15,14 @@ services:
       - '8000:5000'
 
     restart: unless-stopped
+
+    logging:
+      driver: awslogs
+      options:
+        awslogs-region: ap-northeast-1
+        awslogs-group: /aws/ec2/school-diary/production/django
+        awslogs-stream: django
+        awslogs-create-group: "false"
 
     healthcheck:
       test: ["CMD", "python", "manage.py", "check", "--deploy"]

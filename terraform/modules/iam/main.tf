@@ -81,7 +81,8 @@ resource "aws_iam_role_policy" "cloudwatch_policy" {
         "logs:DescribeLogStreams"
       ]
       Resource = [
-        "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/ec2/${var.project_name}-${var.environment}*"
+        "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/ec2/${var.project_name}/*",
+        "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/ec2/${var.project_name}/${var.environment}/*"
       ]
     }]
   })
@@ -95,11 +96,6 @@ resource "aws_iam_role_policy_attachment" "ecr_read" {
   # どの権限を付与するか（AWS管理ポリシー）
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
 }
-
-# 📚 学習ポイント:
-# - aws_iam_role_policy_attachment: 既存のIAM roleにポリシーを追加
-# - AmazonEC2ContainerRegistryReadOnly: ECR pullのみ許可（pushは不可）
-# - AWS管理ポリシー: AWSが提供する既製の権限セット
 
 # EC2 Instance Profile
 resource "aws_iam_instance_profile" "ec2_profile" {
