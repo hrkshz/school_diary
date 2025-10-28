@@ -41,7 +41,7 @@
 
 | ID | 画面名 | URL | アクセス権 | 主要機能 | 実装場所 |
 |----|--------|-----|-----------|---------|---------|
-| TEA-001 | 担任ダッシュボード | /diary/teacher/dashboard/ | 担任 | Inbox Pattern（7カテゴリ分類）、アラート表示、出席記録、要対応タスク管理、未提出セクション折りたたみ、タスク化AJAX | views.py::TeacherDashboardView |
+| TEA-001 | 担任ダッシュボード | /diary/teacher/dashboard/ | 担任 | Inbox Pattern（6カテゴリ分類）、アラート表示、出席記録、要対応タスク管理、未提出セクション折りたたみ、タスク化AJAX | views.py::TeacherDashboardView |
 | TEA-002 | クラス健康ダッシュボード | /diary/teacher/class-health/ | 担任 | クラス健康状態ヒートマップ（7日/14日） | views.py::ClassHealthDashboardView |
 | TEA-003 | 生徒詳細 | /diary/teacher/student/&lt;int:student_id&gt;/ | 担任（担当クラスのみ） | 個別生徒の連絡帳履歴、担任メモ表示 | views.py::TeacherStudentDetailView |
 
@@ -101,7 +101,7 @@ Inbox Pattern実装、早期警告システム、要対応タスク管理
 
 | 関数名 | 責務 |
 |--------|------|
-| classify_students() | 生徒を7カテゴリに分類（P0重要、P1要注意、P1.5要対応タスク、P2-1未提出、P2-2未読、P2-3反応待ち、P3完了済み） |
+| classify_students() | 生徒を6カテゴリに分類（P0重要、P1要注意、P1.5要対応タスク、P2-1未提出、P2-2未読、P3完了済み） |
 | _check_consecutive_decline() | 3日連続メンタル低下検知 |
 | _is_critical() | メンタル★1検知（即時対応） |
 | _needs_action() | internal_action設定済みかつaction_status=PENDING/IN_PROGRESS検知 |
@@ -126,7 +126,11 @@ Inbox Pattern実装、早期警告システム、要対応タスク管理
 
 | クラス名 | メソッド | 責務 |
 |---------|---------|------|
-| TeacherDashboardService | get_classroom_summary() | サマリー統計計算（未読数、対応待ち数など） |
+| TeacherDashboardService | get_classroom_summary() | サマリー統計計算（未読数、対応待ち数、緊急対応数） |
+| TeacherDashboardService | get_student_list_with_unread_count() | 生徒一覧取得（未読件数アノテーション、N+1最適化） |
+| TeacherDashboardService | get_absence_data() | 本日の欠席者情報集計（欠席理由別集計） |
+| TeacherDashboardService | get_attendance_data_for_modal() | 出席モーダル用データ取得（既存データ読み込み） |
+| TeacherDashboardService | get_shared_notes() | 学年共有メモ取得（14日以内、他担任作成、未読のみ） |
 
 ---
 

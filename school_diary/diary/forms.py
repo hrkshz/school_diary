@@ -251,11 +251,14 @@ class CustomUserCreationForm(UserCreationForm):
             profile.save()
 
             # メールアドレスを認証済みとして登録
-            EmailAddress.objects.create(
+            # Note: signals.pyで自動作成されるが、念のためget_or_create()で冪等性を保つ
+            EmailAddress.objects.get_or_create(
                 user=user,
-                email=user.email,
-                verified=True,
-                primary=True,
+                email=user.email.lower(),
+                defaults={
+                    "verified": True,
+                    "primary": True,
+                },
             )
 
         return user

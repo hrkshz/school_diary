@@ -280,3 +280,11 @@ def shared_teacher_note(db, teacher_user, student_user, classroom):
         note="学年共有メモ：要配慮事項あり（アレルギー：卵、乳製品）",
         is_shared=True,
     )
+
+
+@pytest.fixture
+def rf():
+    """DjangoのRequestFactoryインスタンス（Unit Test用）"""
+    from django.test import RequestFactory
+
+    return RequestFactory()

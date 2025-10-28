@@ -326,3 +326,14 @@ docs/07-testing/traceability-matrix-*.md
 # Terraform plan files (一時ファイル、機密情報含む)
 terraform/**/*.tfplan*
 terraform/**/tfplan-*
+
+# E2Eテスト関連（一時ファイル、Git管理外）
+/tests/
+playwright.config.js
+scripts/
+
+# Playwright実行結果（一時ファイル）
+playwright-report/
+test-results/
+test-results.json
+test-output*.txt
