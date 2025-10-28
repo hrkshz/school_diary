@@ -1625,13 +1625,14 @@ def trigger_test_data_generation(request):
     """
     # Superuserチェック
     if not request.user.is_superuser:
-        raise PermissionDenied("管理者のみがアクセス可能です")
+        msg = "管理者のみがアクセス可能です"
+        raise PermissionDenied(msg)
 
-    # GETリクエスト: 確認画面を表示
+    # GETリクエスト
     if request.method == "GET":
         return render(request, "diary/admin/generate_test_data_confirm.html")
 
-    # POSTリクエスト: SSM Run Commandを実行
+    # POSTリクエスト
     if request.method == "POST":
         import boto3
         from django.conf import settings
