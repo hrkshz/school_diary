@@ -12,9 +12,16 @@ from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
+from school_diary.diary.models import AbsenceReason
+from school_diary.diary.models import ActionStatus
+from school_diary.diary.models import AttendanceStatus
 from school_diary.diary.models import ClassRoom
 from school_diary.diary.models import ConditionLevel
+from school_diary.diary.models import DailyAttendance
 from school_diary.diary.models import DiaryEntry
+from school_diary.diary.models import InternalAction
+from school_diary.diary.models import PublicReaction
+from school_diary.diary.models import TeacherNote
 
 User = get_user_model()
 
@@ -41,6 +48,18 @@ class Command(BaseCommand):
 
         # 5. 日記作成（過去7日分）
         self.create_diaries(students, classrooms)
+
+        # 6. 特別パターン作成（P0/P1/P1.5/P2-1/P3）
+        self.create_special_diary_patterns(classrooms)
+
+        # 7. 既読・反応データ作成
+        self.update_some_diaries_as_read(classrooms)
+
+        # 8. 担任メモ作成
+        self.create_teacher_notes(classrooms)
+
+        # 9. 出席記録作成
+        self.create_attendance_records(classrooms)
 
         # 統計表示
         self.show_statistics()
@@ -270,6 +289,276 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS(f"✅ {entry_date}: 作成完了"))
 
         self.stdout.write(self.style.SUCCESS(f"\n合計 {diary_count}件の日記を作成"))
+
+    def create_special_diary_patterns(self, classrooms):
+        """特別パターン作成（Inbox Pattern全カテゴリ検証用）"""
+        self.stdout.write(self.style.SUCCESS("\n【特別パターン作成】Inbox Pattern検証用"))
+
+        # 1年A組を使用
+        classroom_1a = classrooms[0]  # 1年A組
+        today = date.today()
+        yesterday = today - timedelta(days=1)
+
+        # 生徒を取得（最初の5名を特別パターンに使用）
+        students = list(classroom_1a.students.all()[:5])
+        if len(students) < 5:
+            self.stdout.write(self.style.WARNING("⚠️  生徒が5名未満のためスキップ"))
+            return
+
+        # P0: メンタル★1（最優先対応）
+        student_p0 = students[0]
+        DiaryEntry.objects.update_or_create(
+            student=student_p0,
+            entry_date=yesterday,
+            defaults={
+                "classroom": classroom_1a,
+                "submission_date": timezone.now() - timedelta(hours=12),
+                "health_condition": ConditionLevel.BAD,
+                "mental_condition": ConditionLevel.VERY_BAD,  # ★1
+                "reflection": "最近とても気分が沈んでいて、学校に行くのがつらいです。誰とも話したくない気分です。",
+            },
+        )
+        self.stdout.write(self.style.SUCCESS(f"✅ P0重要: {student_p0.get_full_name()}（メンタル★1）"))
+
+        # P1: 3日連続メンタル低下（早期警告）
+        student_p1 = students[1]
+        for i, mental in enumerate([ConditionLevel.GOOD, ConditionLevel.NORMAL, ConditionLevel.BAD]):
+            entry_date = today - timedelta(days=i + 1)
+            DiaryEntry.objects.update_or_create(
+                student=student_p1,
+                entry_date=entry_date,
+                defaults={
+                    "classroom": classroom_1a,
+                    "submission_date": timezone.now() - timedelta(days=i, hours=12),
+                    "health_condition": ConditionLevel.NORMAL,
+                    "mental_condition": mental,
+                    "reflection": f"{i+1}日前の振り返りです。だんだん気分が落ち込んできました。",
+                },
+            )
+        self.stdout.write(self.style.SUCCESS(f"✅ P1要注意: {student_p1.get_full_name()}（3日連続低下）"))
+
+        # P1.5: 既読+タスク化済み（要対応タスク）
+        student_p15 = students[2]
+        teacher = classroom_1a.homeroom_teacher
+        DiaryEntry.objects.update_or_create(
+            student=student_p15,
+            entry_date=yesterday,
+            defaults={
+                "classroom": classroom_1a,
+                "submission_date": timezone.now() - timedelta(hours=18),
+                "health_condition": ConditionLevel.NORMAL,
+                "mental_condition": ConditionLevel.BAD,
+                "reflection": "家族のことで悩んでいます。先生に相談したいです。",
+                "is_read": True,
+                "read_by": teacher,
+                "read_at": timezone.now() - timedelta(hours=6),
+                "public_reaction": PublicReaction.SUPPORT,
+                "internal_action": InternalAction.PARENT_CONTACTED,
+                "action_status": ActionStatus.IN_PROGRESS,
+            },
+        )
+        self.stdout.write(self.style.SUCCESS(f"✅ P1.5タスク: {student_p15.get_full_name()}（保護者連絡中）"))
+
+        # P2-1: 今日未提出
+        student_p21 = students[3]
+        # 今日の日記を作成しない（未提出）
+        self.stdout.write(self.style.SUCCESS(f"✅ P2-1未提出: {student_p21.get_full_name()}（今日未提出）"))
+
+        # P3: 既読済み（完了）
+        student_p3 = students[4]
+        DiaryEntry.objects.update_or_create(
+            student=student_p3,
+            entry_date=yesterday,
+            defaults={
+                "classroom": classroom_1a,
+                "submission_date": timezone.now() - timedelta(hours=20),
+                "health_condition": ConditionLevel.VERY_GOOD,
+                "mental_condition": ConditionLevel.VERY_GOOD,
+                "reflection": "今日はとても楽しい1日でした。友達とたくさん遊びました！",
+                "is_read": True,
+                "read_by": teacher,
+                "read_at": timezone.now() - timedelta(hours=4),
+                "public_reaction": PublicReaction.EXCELLENT,
+                "action_status": ActionStatus.NOT_REQUIRED,
+            },
+        )
+        self.stdout.write(self.style.SUCCESS(f"✅ P3完了: {student_p3.get_full_name()}（既読済み）"))
+
+    def update_some_diaries_as_read(self, classrooms):
+        """既読・反応データ作成（過去の日記の一部を既読にする）"""
+        self.stdout.write(self.style.SUCCESS("\n【既読・反応データ作成】"))
+
+        today = date.today()
+        reactions = [
+            PublicReaction.THUMBS_UP,
+            PublicReaction.WELL_DONE,
+            PublicReaction.GOOD_EFFORT,
+            PublicReaction.CHECKED,
+        ]
+
+        read_count = 0
+        for classroom in classrooms[:3]:  # 最初の3クラスのみ（1年A, B, C）
+            if not classroom.homeroom_teacher:
+                continue
+
+            teacher = classroom.homeroom_teacher
+            # 過去3日分の日記の50%を既読にする
+            diaries = DiaryEntry.objects.filter(
+                classroom=classroom,
+                entry_date__gte=today - timedelta(days=3),
+                is_read=False,
+            )
+
+            for diary in diaries:
+                if random.random() > 0.5:
+                    continue
+
+                diary.is_read = True
+                diary.read_by = teacher
+                diary.read_at = timezone.now() - timedelta(hours=random.randint(1, 48))
+                diary.public_reaction = random.choice(reactions)
+                diary.action_status = ActionStatus.NOT_REQUIRED
+                diary.save()
+                read_count += 1
+
+        self.stdout.write(self.style.SUCCESS(f"✅ {read_count}件の日記を既読に設定"))
+
+    def create_teacher_notes(self, classrooms):
+        """担任メモ作成（個人メモ・学年共有メモ）"""
+        self.stdout.write(self.style.SUCCESS("\n【担任メモ作成】"))
+
+        # 1年A組の最初の2名についてメモ作成
+        classroom_1a = classrooms[0]
+        teacher_1a = classroom_1a.homeroom_teacher
+        if not teacher_1a:
+            self.stdout.write(self.style.WARNING("⚠️  担任が設定されていないためスキップ"))
+            return
+
+        students = list(classroom_1a.students.all()[:2])
+        if len(students) < 2:
+            self.stdout.write(self.style.WARNING("⚠️  生徒が不足しているためスキップ"))
+            return
+
+        # 個人メモ
+        TeacherNote.objects.get_or_create(
+            student=students[0],
+            teacher=teacher_1a,
+            defaults={
+                "note": "最近元気がない様子。継続的に様子を見る必要あり。",
+                "is_shared": False,
+            },
+        )
+        self.stdout.write(self.style.SUCCESS(f"✅ 個人メモ作成: {students[0].get_full_name()}"))
+
+        # 学年共有メモ
+        TeacherNote.objects.get_or_create(
+            student=students[1],
+            teacher=teacher_1a,
+            defaults={
+                "note": "家庭環境の変化があり、配慮が必要。学年会議で情報共有済み。",
+                "is_shared": True,
+            },
+        )
+        self.stdout.write(self.style.SUCCESS(f"✅ 学年共有メモ作成: {students[1].get_full_name()}"))
+
+        # 1年B組からも学年共有メモ作成（学年アラート表示用）
+        classroom_1b = classrooms[1]
+        teacher_1b = classroom_1b.homeroom_teacher
+        if teacher_1b:
+            student_1b = classroom_1b.students.first()
+            if student_1b:
+                TeacherNote.objects.get_or_create(
+                    student=student_1b,
+                    teacher=teacher_1b,
+                    defaults={
+                        "note": "クラスでのリーダーシップが見られる。学年行事での活躍が期待できる。",
+                        "is_shared": True,
+                    },
+                )
+                self.stdout.write(self.style.SUCCESS(f"✅ 学年共有メモ作成（1年B組）: {student_1b.get_full_name()}"))
+
+    def create_attendance_records(self, classrooms):
+        """出席記録作成（今日の出席状況）"""
+        self.stdout.write(self.style.SUCCESS("\n【出席記録作成】"))
+
+        today = date.today()
+        total_count = 0
+
+        for classroom in classrooms[:3]:  # 最初の3クラス（1年A, B, C）
+            if not classroom.homeroom_teacher:
+                continue
+
+            teacher = classroom.homeroom_teacher
+            students = list(classroom.students.all())
+
+            # 大半を出席にする
+            for i, student in enumerate(students):
+                if i < len(students) - 5:
+                    # 出席
+                    DailyAttendance.objects.get_or_create(
+                        student=student,
+                        classroom=classroom,
+                        date=today,
+                        defaults={
+                            "status": AttendanceStatus.PRESENT,
+                            "noted_by": teacher,
+                        },
+                    )
+                    total_count += 1
+                elif i == len(students) - 5:
+                    # 欠席（病気）
+                    DailyAttendance.objects.get_or_create(
+                        student=student,
+                        classroom=classroom,
+                        date=today,
+                        defaults={
+                            "status": AttendanceStatus.ABSENT,
+                            "absence_reason": AbsenceReason.ILLNESS,
+                            "noted_by": teacher,
+                        },
+                    )
+                    total_count += 1
+                elif i == len(students) - 4:
+                    # 欠席（家庭の都合）
+                    DailyAttendance.objects.get_or_create(
+                        student=student,
+                        classroom=classroom,
+                        date=today,
+                        defaults={
+                            "status": AttendanceStatus.ABSENT,
+                            "absence_reason": AbsenceReason.FAMILY,
+                            "noted_by": teacher,
+                        },
+                    )
+                    total_count += 1
+                elif i == len(students) - 3:
+                    # 遅刻
+                    DailyAttendance.objects.get_or_create(
+                        student=student,
+                        classroom=classroom,
+                        date=today,
+                        defaults={
+                            "status": AttendanceStatus.LATE,
+                            "noted_by": teacher,
+                        },
+                    )
+                    total_count += 1
+                elif i == len(students) - 2:
+                    # 早退
+                    DailyAttendance.objects.get_or_create(
+                        student=student,
+                        classroom=classroom,
+                        date=today,
+                        defaults={
+                            "status": AttendanceStatus.EARLY_LEAVE,
+                            "noted_by": teacher,
+                        },
+                    )
+                    total_count += 1
+
+            self.stdout.write(self.style.SUCCESS(f"✅ {classroom}: 出席記録作成完了"))
+
+        self.stdout.write(self.style.SUCCESS(f"✅ 合計 {total_count}件の出席記録を作成"))
 
     def show_statistics(self):
         """統計表示"""

@@ -17,7 +17,7 @@
                 <div class="card-body">
                     <div class="alert alert-warning" role="alert">
                         <h5 class="alert-heading">⚠️ 注意事項</h5>
-                        <p>以下のテストデータが本番環境に追加されます：</p>
+                        <p>以下のテストデータがデータベースに追加されます：</p>
                         <ul>
                             <li><strong>学年主任</strong>: 3名（1-3年）</li>
                             <li><strong>担任</strong>: 10名（9クラス分 + 予備1名）</li>
@@ -34,15 +34,14 @@
 
                     <h5 class="mt-4 mb-3">実行内容</h5>
                     <ol>
-                        <li>EC2インスタンス上でDjangoコマンドを実行</li>
                         <li>テストデータをデータベースに追加</li>
-                        <li>実行完了（約1-2分）</li>
+                        <li>完了まで約1-2分かかります</li>
                     </ol>
 
                     <div class="alert alert-info mt-4">
                         <i class="bi bi-info-circle-fill me-2"></i>
-                        <strong>実行時間</strong>: 約1-2分かかります。<br>
-                        コマンドIDが表示されたら、AWSコンソールのSystems Managerから実行結果を確認できます。
+                        バックグラウンドで実行されます。<br>
+                        開始時にメッセージが表示されます。
                     </div>
 
                     <form method="post" class="mt-4">
