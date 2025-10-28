@@ -26,14 +26,14 @@
     <div class="col-12">
         <h5 class="mb-3">📊 学校全体サマリー（過去7日間）</h5>
         <div class="row g-3">
-            <!-- 提出率 -->
+            <!-- 出席率 -->
             <div class="col-lg-3 col-md-6">
-                <div class="card border-{% if summary.avg_submission_rate >= 90 %}success{% elif summary.avg_submission_rate >= 70 %}warning{% else %}danger{% endif %} shadow-sm h-100">
+                <div class="card border-{% if summary.avg_attendance_rate >= 90 %}success{% elif summary.avg_attendance_rate >= 70 %}warning{% else %}danger{% endif %} shadow-sm h-100">
                     <div class="card-body text-center">
-                        <div class="display-4 text-{% if summary.avg_submission_rate >= 90 %}success{% elif summary.avg_submission_rate >= 70 %}warning{% else %}danger{% endif %} fw-bold">
-                            {{ summary.avg_submission_rate }}%
+                        <div class="display-4 text-{% if summary.avg_attendance_rate >= 90 %}success{% elif summary.avg_attendance_rate >= 70 %}warning{% else %}danger{% endif %} fw-bold">
+                            {{ summary.avg_attendance_rate }}%
                         </div>
-                        <div class="text-muted small mt-2">📝 平均提出率</div>
+                        <div class="text-muted small mt-2">📝 平均出席率</div>
                     </div>
                 </div>
             </div>
@@ -88,7 +88,7 @@
                                 <th>学年</th>
                                 <th class="text-center">クラス数</th>
                                 <th class="text-center">生徒数</th>
-                                <th class="text-center">提出率</th>
+                                <th class="text-center">出席率</th>
                                 <th class="text-center">本日欠席</th>
                                 <th class="text-center">欠席率</th>
                                 <th class="text-center">体調不良</th>
@@ -103,8 +103,8 @@
                                 <td class="text-center">{{ stat.class_count }}クラス</td>
                                 <td class="text-center">{{ stat.student_count }}名</td>
                                 <td class="text-center">
-                                    <span class="badge bg-{% if stat.submission_rate >= 90 %}success{% elif stat.submission_rate >= 70 %}warning{% else %}danger{% endif %}">
-                                        {{ stat.submission_rate }}%
+                                    <span class="badge bg-{% if stat.attendance_rate >= 90 %}success{% elif stat.attendance_rate >= 70 %}warning{% else %}danger{% endif %}">
+                                        {{ stat.attendance_rate }}%
                                     </span>
                                 </td>
                                 <td class="text-center">

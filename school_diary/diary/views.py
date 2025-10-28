@@ -1143,9 +1143,8 @@ class GradeOverviewView(LoginRequiredMixin, TemplateView):
             ).count()
 
             # 統計計算
-            total_entries = entries.count()
-            expected_entries = student_count * 7
-            submission_rate = round((total_entries / expected_entries * 100), 1) if expected_entries > 0 else 0
+            # 本日の出席率 = (学生数 - 欠席者数) / 学生数 × 100
+            attendance_rate = round(((student_count - absent_count) / student_count * 100), 1) if student_count > 0 else 0
 
             poor_health_count = (
                 entries.filter(health_condition__lte=HealthThresholds.POOR_CONDITION)
@@ -1177,7 +1176,7 @@ class GradeOverviewView(LoginRequiredMixin, TemplateView):
                 {
                     "classroom": classroom,
                     "student_count": student_count,
-                    "submission_rate": submission_rate,
+                    "attendance_rate": attendance_rate,
                     "absent_count": absent_count,
                     "absent_illness": absent_illness,
                     "poor_health_count": poor_health_count,
@@ -1188,8 +1187,8 @@ class GradeOverviewView(LoginRequiredMixin, TemplateView):
 
         # 学年全体サマリー
         total_students = sum(s["student_count"] for s in classroom_stats)
-        avg_submission_rate = (
-            round(sum(s["submission_rate"] for s in classroom_stats) / len(classroom_stats), 1)
+        avg_attendance_rate = (
+            round(sum(s["attendance_rate"] for s in classroom_stats) / len(classroom_stats), 1)
             if classroom_stats
             else 0
         )
@@ -1203,7 +1202,7 @@ class GradeOverviewView(LoginRequiredMixin, TemplateView):
         context["summary"] = {
             "total_students": total_students,
             "class_count": len(classroom_stats),
-            "avg_submission_rate": avg_submission_rate,
+            "avg_attendance_rate": avg_attendance_rate,
             "total_absent": total_absent,
             "total_absent_illness": total_absent_illness,
             "total_poor_health": total_poor_health,
@@ -1295,9 +1294,8 @@ class SchoolOverviewView(LoginRequiredMixin, TemplateView):
             absence_rate = round((absent_count / student_count * 100), 1) if student_count > 0 else 0
 
             # 統計計算
-            total_entries = entries.count()
-            expected_entries = student_count * 7
-            submission_rate = round((total_entries / expected_entries * 100), 1) if expected_entries > 0 else 0
+            # 本日の出席率 = (学生数 - 欠席者数) / 学生数 × 100
+            attendance_rate = round(((student_count - absent_count) / student_count * 100), 1) if student_count > 0 else 0
 
             poor_health_count = (
                 entries.filter(health_condition__lte=HealthThresholds.POOR_CONDITION)
@@ -1325,7 +1323,7 @@ class SchoolOverviewView(LoginRequiredMixin, TemplateView):
                     "grade_display": f"{grade}年",
                     "class_count": classrooms.count(),
                     "student_count": student_count,
-                    "submission_rate": submission_rate,
+                    "attendance_rate": attendance_rate,
                     "absent_count": absent_count,
                     "absent_illness": absent_illness,
                     "absence_rate": absence_rate,
@@ -1341,7 +1339,7 @@ class SchoolOverviewView(LoginRequiredMixin, TemplateView):
         total_absent_illness = sum(s["absent_illness"] for s in grade_stats)
         total_poor_health = sum(s["poor_health_count"] for s in grade_stats)
         total_poor_mental = sum(s["poor_mental_count"] for s in grade_stats)
-        avg_submission_rate = round(sum(s["submission_rate"] for s in grade_stats) / 3, 1) if grade_stats else 0
+        avg_attendance_rate = round(sum(s["attendance_rate"] for s in grade_stats) / 3, 1) if grade_stats else 0
 
         # 全体の警告レベル
         school_alert_level = "success"
@@ -1353,7 +1351,7 @@ class SchoolOverviewView(LoginRequiredMixin, TemplateView):
         context["grade_stats"] = grade_stats
         context["summary"] = {
             "total_students": total_students,
-            "avg_submission_rate": avg_submission_rate,
+            "avg_attendance_rate": avg_attendance_rate,
             "total_absent": total_absent,
             "total_absent_illness": total_absent_illness,
             "total_poor_health": total_poor_health,

@@ -80,13 +80,13 @@ class Command(BaseCommand):
                     )
 
                 # UserProfile の role 設定（新規・既存共通）
-                # 1年A組担任は学年主任・校長を兼任（E2Eテスト用）
+                # 1年A組担任は学年主任を兼任
                 if grade == 1 and i == 0:
-                    teacher.profile.role = "school_leader"  # 校長権限
+                    teacher.profile.role = "grade_leader"  # 学年主任権限
                     teacher.profile.managed_grade = grade
                     teacher.profile.save()
                     self.stdout.write(
-                        self.style.SUCCESS(f"   → {email}を校長兼学年主任（{grade}年）に設定"),
+                        self.style.SUCCESS(f"   → {email}を学年主任（{grade}年）に設定"),
                     )
                 else:
                     teacher.profile.role = "teacher"

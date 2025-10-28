@@ -163,21 +163,21 @@
 
 | メールアドレス | パスワード | 担当クラス | 兼任役割 |
 |-------------|----------|-----------|---------|
-| teacher_1_a@example.com | password123 | 1年A組 | **学年主任（1年）兼 校長** |
+| teacher_1_a@example.com | password123 | 1年A組 | **学年主任（1年）** |
 | teacher_1_b@example.com | password123 | 1年B組 | - |
 | teacher_2_a@example.com | password123 | 2年A組 | - |
 | teacher_2_b@example.com | password123 | 2年B組 | - |
 | teacher_3_a@example.com | password123 | 3年A組 | - |
 | teacher_3_b@example.com | password123 | 3年B組 | - |
 
-> **💡 ヒント**: `teacher_1_a@example.com` でログインすると、担任・学年主任・校長の3つの役割を体験できます。
+> **💡 ヒント**: `teacher_1_a@example.com` でログインすると、担任と学年主任の2つの役割を体験できます。
 
 ### 🏫 校長/教頭（2名）
 
 | メールアドレス | パスワード | 役割 |
 |-------------|----------|------|
 | principal@example.com | password123 | 校長 |
-| teacher_1_a@example.com | password123 | 校長権限も持つ（兼任） |
+| vice_principal@example.com | password123 | 教頭 |
 
 ### 👤 管理者（1名）
 
