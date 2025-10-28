@@ -1,7 +1,11 @@
 """
-Unit Tests for Models Business Logic
+Models Unit Tests
 
-このモジュールは以下のビジネスロジックをテストします:
+このモジュールは内部ロジックの正確性をテストします（Unit Tests）。
+統合テスト（Integration Tests）とは粒度が異なりますが、
+両方を features/ ディレクトリで管理することで、保守性を向上させています。
+
+テスト対象ビジネスロジック:
 - DiaryEntry.clean(): action_status=COMPLETED時のバリデーション
 - DiaryEntry.mark_as_read(): 既読処理
 - DiaryEntry.mark_action_completed(): 対応完了処理

@@ -1,7 +1,11 @@
 """
-Unit Tests for Alert Service Logic
+Alert Service Unit Tests
 
-このモジュールは以下のロジックをテストします:
+このモジュールは内部ロジックの正確性をテストします（Unit Tests）。
+統合テスト（Integration Tests）とは粒度が異なりますが、
+両方を features/ ディレクトリで管理することで、保守性を向上させています。
+
+テスト対象ロジック:
 - classify_students(): 5段階分類アルゴリズム
 - _check_consecutive_decline(): 3日連続メンタル低下判定
 - _is_critical(): メンタル★1検知

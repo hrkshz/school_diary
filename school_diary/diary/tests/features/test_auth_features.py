@@ -297,3 +297,195 @@ class TestAUTH004To007PasswordReset:
         # allauthのテンプレートが表示される
         content = response.content.decode().lower()
         assert "email" in content or "sent" in content or "メール" in content
+
+
+# =============================================================================
+# Adapter Tests (RoleBasedRedirectAdapter)
+# =============================================================================
+
+
+@pytest.mark.django_db
+class TestRoleBasedRedirectAdapterCleanEmail:
+    """RoleBasedRedirectAdapter.clean_email()のテスト
+
+    Note:
+        get_login_redirect_url()は既存テスト（TestSYS002LoginRedirect）でカバー済み
+    """
+
+    def test_clean_email_with_lowercase_success(self, db):
+        """
+        Given: 小文字のみのメールアドレス
+        When: clean_email()を呼ぶ
+        Then: エラーなし
+        """
+        # Arrange
+        from school_diary.diary.adapters import RoleBasedRedirectAdapter
+
+        adapter = RoleBasedRedirectAdapter()
+        email = "test@example.com"
+
+        # Act
+        result = adapter.clean_email(email)
+
+        # Assert
+        assert result == "test@example.com"
+
+    def test_clean_email_with_uppercase_raises_error(self, db):
+        """
+        Given: 大文字を含むメールアドレス
+        When: clean_email()を呼ぶ
+        Then: ValidationError発生
+        """
+        # Arrange
+        from django.core.exceptions import ValidationError
+
+        from school_diary.diary.adapters import RoleBasedRedirectAdapter
+
+        adapter = RoleBasedRedirectAdapter()
+        email = "Test@Example.COM"
+
+        # Act & Assert
+        with pytest.raises(ValidationError) as exc_info:
+            adapter.clean_email(email)
+
+        assert "小文字のみ" in str(exc_info.value)
+
+    def test_clean_email_strips_whitespace(self, db):
+        """
+        Given: 前後に空白を含むメールアドレス
+        When: clean_email()を呼ぶ
+        Then: 空白が削除される
+        """
+        # Arrange
+        from school_diary.diary.adapters import RoleBasedRedirectAdapter
+
+        adapter = RoleBasedRedirectAdapter()
+        email = "  test@example.com  "
+
+        # Act
+        result = adapter.clean_email(email)
+
+        # Assert
+        assert result == "test@example.com"
+
+
+@pytest.mark.django_db
+class TestRoleBasedRedirectAdapterIsOpenForSignup:
+    """RoleBasedRedirectAdapter.is_open_for_signup()のテスト"""
+
+    def test_is_open_for_signup_returns_false(self, db, rf):
+        """
+        Given: 任意のリクエスト
+        When: is_open_for_signup()を呼ぶ
+        Then: False（サインアップ無効）
+        """
+        # Arrange
+        from school_diary.diary.adapters import RoleBasedRedirectAdapter
+
+        adapter = RoleBasedRedirectAdapter()
+        request = rf.get("/")
+
+        # Act
+        result = adapter.is_open_for_signup(request)
+
+        # Assert
+        assert result is False
+
+
+# =============================================================================
+# Signal Tests (create_user_profile)
+# =============================================================================
+
+
+@pytest.mark.django_db
+class TestCreateUserProfileSignal:
+    """create_user_profile シグナルのテスト"""
+
+    def test_user_creation_auto_creates_user_profile(self, db):
+        """
+        Given: 新規ユーザー作成
+        When: User.objects.create_user()を呼ぶ
+        Then: UserProfileが自動作成される
+        """
+        # Arrange
+        from django.contrib.auth import get_user_model
+
+        from school_diary.diary.models import UserProfile
+
+        User = get_user_model()
+
+        # Act
+        user = User.objects.create_user(
+            username="newuser@test.com",
+            email="newuser@test.com",
+            password="testpass123",
+        )
+
+        # Assert
+        assert hasattr(user, "profile")
+        assert isinstance(user.profile, UserProfile)
+        assert user.profile.role == UserProfile.ROLE_STUDENT  # デフォルト
+
+    def test_user_creation_auto_creates_email_address(self, db):
+        """
+        Given: 新規ユーザー作成（メールアドレスあり）
+        When: User.objects.create_user()を呼ぶ
+        Then: EmailAddressが自動作成される
+        """
+        # Arrange
+        from allauth.account.models import EmailAddress
+        from django.contrib.auth import get_user_model
+
+        User = get_user_model()
+
+        # Act
+        user = User.objects.create_user(
+            username="newuser2@test.com",
+            email="newuser2@test.com",
+            password="testpass123",
+        )
+
+        # Assert
+        email_address = EmailAddress.objects.filter(user=user).first()
+        assert email_address is not None
+        assert email_address.email == "newuser2@test.com"
+        assert email_address.primary
+
+    def test_user_creation_without_email_does_not_create_email_address(self, db):
+        """
+        Given: 新規ユーザー作成（メールアドレスなし）
+        When: User.objects.create_user()を呼ぶ
+        Then: EmailAddressは作成されない
+        """
+        # Arrange
+        from allauth.account.models import EmailAddress
+        from django.contrib.auth import get_user_model
+
+        User = get_user_model()
+
+        # Act
+        user = User.objects.create_user(
+            username="nomail",
+            password="testpass123",
+        )
+
+        # Assert
+        email_address = EmailAddress.objects.filter(user=user).first()
+        assert email_address is None
+
+    def test_signal_does_not_run_on_user_update(self, student_user):
+        """
+        Given: 既存ユーザー
+        When: ユーザーを更新
+        Then: 新しいUserProfileは作成されない（既存のまま）
+        """
+        # Arrange
+        original_profile_id = student_user.profile.id
+
+        # Act
+        student_user.first_name = "更新"
+        student_user.save()
+
+        # Assert
+        student_user.refresh_from_db()
+        assert student_user.profile.id == original_profile_id  # 同じprofile

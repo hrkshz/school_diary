@@ -1,7 +1,11 @@
 """
-Unit Tests for Forms Validation Logic
+Forms Validation Unit Tests
 
-このモジュールは以下のバリデーションをテストします:
+このモジュールは内部ロジックの正確性をテストします（Unit Tests）。
+統合テスト（Integration Tests）とは粒度が異なりますが、
+両方を features/ ディレクトリで管理することで、保守性を向上させています。
+
+テスト対象バリデーション:
 - DiaryEntryForm.clean_entry_date(): 前登校日検証
 - UserProfileAdminForm.clean(): 学年主任のmanaged_grade必須検証
 - CustomUserCreationForm.save(): username自動生成、is_staff自動設定
@@ -12,7 +16,6 @@ Priority: P0（クリティカル）
 """
 
 import pytest
-from django.core.exceptions import ValidationError as DjangoValidationError
 
 from school_diary.diary.forms import CustomUserCreationForm
 from school_diary.diary.forms import DiaryEntryForm

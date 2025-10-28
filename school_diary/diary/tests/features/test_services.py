@@ -1,7 +1,11 @@
 """
-Unit Tests for Services Logic
+Services Unit Tests
 
-このモジュールは以下のサービスロジックをテストします:
+このモジュールは内部ロジックの正確性をテストします（Unit Tests）。
+統合テスト（Integration Tests）とは粒度が異なりますが、
+両方を features/ ディレクトリで管理することで、保守性を向上させています。
+
+テスト対象サービスロジック:
 - DiaryEntryService.create_entry(): classroom自動設定、action_status初期化
 - DiaryEntryService.update_entry(): action_statusリセットロジック
 - TeacherDashboardService.get_absence_data(): 欠席データ集計
@@ -20,9 +24,7 @@ from school_diary.diary.models import ClassRoom
 from school_diary.diary.models import DailyAttendance
 from school_diary.diary.models import TeacherNote
 from school_diary.diary.services.diary_entry_service import DiaryEntryService
-from school_diary.diary.services.teacher_dashboard_service import (
-    TeacherDashboardService,
-)
+from school_diary.diary.services.teacher_dashboard_service import TeacherDashboardService
 
 
 @pytest.mark.django_db
