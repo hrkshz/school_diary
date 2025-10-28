@@ -97,6 +97,15 @@ resource "aws_iam_role_policy_attachment" "ecr_read" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
 }
 
+# SSM権限をEC2に付与（テストデータ生成機能用）
+resource "aws_iam_role_policy_attachment" "ssm_managed" {
+  # どのIAM roleに権限を付与するか
+  role = aws_iam_role.ec2_role.name
+
+  # どの権限を付与するか（AWS管理ポリシー）
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
 # EC2 Instance Profile
 resource "aws_iam_instance_profile" "ec2_profile" {
   name = "${var.project_name}-${var.environment}-ec2-profile"
