@@ -58,7 +58,7 @@ class Command(BaseCommand):
             user = User.objects.create_user(
                 username=email,
                 email=email,
-                password="test123",
+                password="password123",
                 first_name=f"{grade}年",
                 last_name="主任",
             )
@@ -110,7 +110,7 @@ class Command(BaseCommand):
                 user = User.objects.create_user(
                     username=email,
                     email=email,
-                    password="test123",
+                    password="password123",
                     first_name=f"{grade}年{class_name}組",
                     last_name="担任",
                 )
@@ -134,7 +134,7 @@ class Command(BaseCommand):
             user = User.objects.create_user(
                 username=email,
                 email=email,
-                password="test123",
+                password="password123",
                 first_name="予備",
                 last_name="担任",
             )
@@ -189,7 +189,7 @@ class Command(BaseCommand):
                     student = User.objects.create_user(
                         username=email,
                         email=email,
-                        password="test123",
+                        password="password123",
                         first_name=first_name,
                         last_name=last_name,
                     )
@@ -293,5 +293,5 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(f"クラス: {classroom_count}クラス"))
         self.stdout.write(self.style.SUCCESS(f"日記: {diary_count}件"))
 
-        self.stdout.write(self.style.SUCCESS("\n全ユーザーのパスワード: test123"))
+        self.stdout.write(self.style.SUCCESS("\n全ユーザーのパスワード: password123"))
         self.stdout.write(self.style.SUCCESS("=" * 50))

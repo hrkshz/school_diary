@@ -9,6 +9,12 @@ app_name = "diary"
 urlpatterns = [
     # Health Check (ALB用、認証不要)
     path("health/", views.health_check, name="health_check"),
+    # 管理者用 - テストデータ生成
+    path(
+        "admin/generate-test-data/",
+        views.trigger_test_data_generation,
+        name="generate_test_data",
+    ),
     # 生徒用
     path(
         "student/dashboard/",

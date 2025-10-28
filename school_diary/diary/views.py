@@ -1614,3 +1614,60 @@ def health_check(request):
     This endpoint does not require authentication.
     """
     return JsonResponse({"status": "healthy"})
+
+
+@login_required
+def trigger_test_data_generation(request):
+    """テストデータ生成を手動でトリガーする（管理者専用）
+
+    SSM Run Commandを使用してEC2インスタンス上のDjangoコマンドを実行します。
+    Superuserのみがアクセス可能です。
+    """
+    # Superuserチェック
+    if not request.user.is_superuser:
+        raise PermissionDenied("管理者のみがアクセス可能です")
+
+    # GETリクエスト: 確認画面を表示
+    if request.method == "GET":
+        return render(request, "diary/admin/generate_test_data_confirm.html")
+
+    # POSTリクエスト: SSM Run Commandを実行
+    if request.method == "POST":
+        import boto3
+        from django.conf import settings
+
+        try:
+            # SSM Clientを作成
+            ssm_client = boto3.client("ssm", region_name=settings.AWS_REGION)
+
+            # EC2インスタンスID
+            instance_id = settings.EC2_INSTANCE_ID
+
+            # 実行するコマンド
+            command = (
+                "cd /home/ubuntu/school_diary && "
+                "docker compose -f docker-compose.production.yml exec -T django "
+                "python manage.py create_production_test_data"
+            )
+
+            # SSM Run Commandを実行
+            response = ssm_client.send_command(
+                InstanceIds=[instance_id],
+                DocumentName="AWS-RunShellScript",
+                Parameters={"commands": [command]},
+                Comment="Manual test data generation triggered from Django admin",
+            )
+
+            command_id = response["Command"]["CommandId"]
+
+            messages.success(
+                request,
+                f"テストデータ生成を開始しました。コマンドID: {command_id}",
+            )
+            return redirect("admin:index")
+
+        except Exception as e:
+            messages.error(request, f"エラーが発生しました: {e!s}")
+            return redirect("admin:index")
+
+    return HttpResponseNotAllowed(["GET", "POST"])
