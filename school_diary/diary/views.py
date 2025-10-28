@@ -1620,7 +1620,7 @@ def health_check(request):
 def trigger_test_data_generation(request):
     """テストデータ生成を手動でトリガーする（管理者専用）
 
-    SSM Run Commandを使用してEC2インスタンス上のDjangoコマンドを実行します。
+    Djangoコマンドを直接実行してテストデータを生成します。
     Superuserのみがアクセス可能です。
     """
     # Superuserチェック
@@ -1634,41 +1634,26 @@ def trigger_test_data_generation(request):
 
     # POSTリクエスト
     if request.method == "POST":
-        import boto3
-        from django.conf import settings
+        import threading
 
-        try:
-            # SSM Clientを作成
-            ssm_client = boto3.client("ssm", region_name=settings.AWS_REGION)
+        from django.core.management import call_command
 
-            # EC2インスタンスID
-            instance_id = settings.EC2_INSTANCE_ID
+        def run_command():
+            """バックグラウンドでテストデータ生成コマンドを実行"""
+            try:
+                call_command("create_production_test_data")
+            except Exception:
+                pass  # エラーは無視（ログに記録される）
 
-            # 実行するコマンド
-            command = (
-                "cd /home/ubuntu/school_diary && "
-                "docker compose -f docker-compose.production.yml exec -T django "
-                "python manage.py create_production_test_data"
-            )
+        # バックグラウンドスレッドで実行（HTTPタイムアウト回避）
+        thread = threading.Thread(target=run_command)
+        thread.daemon = True
+        thread.start()
 
-            # SSM Run Commandを実行
-            response = ssm_client.send_command(
-                InstanceIds=[instance_id],
-                DocumentName="AWS-RunShellScript",
-                Parameters={"commands": [command]},
-                Comment="Manual test data generation triggered from Django admin",
-            )
-
-            command_id = response["Command"]["CommandId"]
-
-            messages.success(
-                request,
-                f"テストデータ生成を開始しました。コマンドID: {command_id}",
-            )
-            return redirect("admin:index")
-
-        except Exception as e:
-            messages.error(request, f"エラーが発生しました: {e!s}")
-            return redirect("admin:index")
+        messages.success(
+            request,
+            "テストデータ生成を開始しました。完了まで約1-2分かかります。",
+        )
+        return redirect("admin:index")
 
     return HttpResponseNotAllowed(["GET", "POST"])

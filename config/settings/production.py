@@ -184,8 +184,3 @@ LOGGING = {
 
 # Your stuff...
 # ------------------------------------------------------------------------------
-
-# AWS Configuration for Test Data Generation
-# ------------------------------------------------------------------------------
-AWS_REGION = env("AWS_REGION", default="ap-northeast-1")
-EC2_INSTANCE_ID = env("EC2_INSTANCE_ID", default="")
