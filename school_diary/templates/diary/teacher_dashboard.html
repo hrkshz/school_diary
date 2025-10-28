@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load diary_extras %}
 
 {% block title %}担任ダッシュボード{% endblock %}
 
@@ -111,7 +112,7 @@
                                         {{ classroom }}
                                     {% endif %}
                                 {% endfor %}
-                                {{ note.student.get_full_name }}（{{ note.teacher.get_full_name }}先生より）
+                                {{ note.student|full_name_ja }}（{{ note.teacher|full_name_ja }}先生より）
                             </h6>
                             <p class="mb-1 small">{{ note.note }}</p>
                             <small class="text-muted">{{ note.created_at|date:"Y-m-d H:i" }} 投稿</small>
@@ -149,7 +150,7 @@
                     <div class="col-12 col-md-6 col-lg-4 mb-3">
                         <div class="card border-danger shadow-sm hover-lift">
                             <div class="card-body">
-                                <h6 class="card-title text-danger fw-bold">{{ student.get_full_name }}</h6>
+                                <h6 class="card-title text-danger fw-bold">{{ student|full_name_ja }}</h6>
                                 {% if student.inline_history %}
                                 <p class="card-text small mb-1">
                                     <span class="badge bg-secondary">📊 {{ student.inline_history }}</span>
@@ -162,14 +163,14 @@
                                 <!-- ボタンセット -->
                                 <div class="card-actions">
                                     <button class="btn btn-sm btn-success"
-                                            onclick="markAsReadQuick({{ student.latest_entry_id }}, '{{ student.get_full_name }}', this)">
+                                            onclick="markAsReadQuick({{ student.latest_entry_id }}, '{{ student|full_name_ja }}', this)">
                                         ✓ 既読
                                     </button>
                                     <button class="btn btn-sm btn-warning"
                                             data-bs-toggle="modal"
                                             data-bs-target="#taskModal"
                                             data-entry-id="{{ student.latest_entry_id }}"
-                                            data-student-name="{{ student.get_full_name }}">
+                                            data-student-name="{{ student|full_name_ja }}">
                                         📋 タスク
                                     </button>
                                     <a href="{% url 'diary:teacher_student_detail' student_id=student.id %}"
@@ -203,7 +204,7 @@
                     <div class="col-12 col-md-6 col-lg-4 mb-3">
                         <div class="card border-warning shadow-sm hover-lift">
                             <div class="card-body">
-                                <h6 class="card-title text-warning fw-bold">{{ student.get_full_name }}</h6>
+                                <h6 class="card-title text-warning fw-bold">{{ student|full_name_ja }}</h6>
                                 {% if student.inline_history %}
                                 <p class="card-text small mb-1">
                                     <span class="badge bg-secondary">📊 {{ student.inline_history }}</span>
@@ -216,14 +217,14 @@
                                 <!-- ボタンセット -->
                                 <div class="card-actions">
                                     <button class="btn btn-sm btn-success"
-                                            onclick="markAsReadQuick({{ student.latest_entry_id }}, '{{ student.get_full_name }}', this)">
+                                            onclick="markAsReadQuick({{ student.latest_entry_id }}, '{{ student|full_name_ja }}', this)">
                                         ✓ 既読
                                     </button>
                                     <button class="btn btn-sm btn-warning"
                                             data-bs-toggle="modal"
                                             data-bs-target="#taskModal"
                                             data-entry-id="{{ student.latest_entry_id }}"
-                                            data-student-name="{{ student.get_full_name }}">
+                                            data-student-name="{{ student|full_name_ja }}">
                                         📋 タスク
                                     </button>
                                     <a href="{% url 'diary:teacher_student_detail' student_id=student.id %}"
@@ -258,7 +259,7 @@
                         <div class="d-flex w-100 justify-content-between align-items-start">
                             <div class="flex-grow-1">
                                 <h6 class="mb-1">
-                                    <span class="fw-bold">{{ student.get_full_name }}</span>
+                                    <span class="fw-bold">{{ student|full_name_ja }}</span>
                                     <span class="badge" style="background-color: #fd7e14;">{{ student.internal_action_label }}</span>
                                     {% if student.action_status == 'in_progress' %}
                                     <span class="badge bg-info">対応中</span>
@@ -317,7 +318,7 @@
                         <div class="col-12 col-md-6 col-lg-4 mb-3">
                             <div class="card border-primary shadow-sm hover-lift">
                                 <div class="card-body">
-                                    <h6 class="card-title">{{ student.get_full_name }}</h6>
+                                    <h6 class="card-title">{{ student|full_name_ja }}</h6>
                                     <p class="card-text small text-muted">昨日の連絡帳が未提出です</p>
 
                                     <!-- ボタンセット -->
@@ -357,14 +358,14 @@
                                 <!-- ボタンセット -->
                                 <div class="card-actions">
                                     <button class="btn btn-sm btn-success"
-                                            onclick="markAsReadQuick({{ student.latest_entry_id }}, '{{ student.get_full_name }}', this)">
+                                            onclick="markAsReadQuick({{ student.latest_entry_id }}, '{{ student|full_name_ja }}', this)">
                                         ✓ 既読
                                     </button>
                                     <button class="btn btn-sm btn-warning"
                                             data-bs-toggle="modal"
                                             data-bs-target="#taskModal"
                                             data-entry-id="{{ student.latest_entry_id }}"
-                                            data-student-name="{{ student.get_full_name }}">
+                                            data-student-name="{{ student|full_name_ja }}">
                                         📋 タスク
                                     </button>
                                     <a href="{% url 'diary:teacher_student_detail' student_id=student.id %}"
@@ -412,7 +413,7 @@
                         <div class="col-12 col-md-6 col-lg-4 mb-3">
                             <div class="card border-success shadow-sm hover-lift">
                                 <div class="card-body">
-                                    <h6 class="card-title text-success">{{ student.get_full_name }}</h6>
+                                    <h6 class="card-title text-success">{{ student|full_name_ja }}</h6>
                                     {% if student.inline_history %}
                                     <p class="card-text small mb-1">
                                         <span class="badge bg-secondary">📊 {{ student.inline_history }}</span>
@@ -429,7 +430,7 @@
                                                 data-bs-toggle="modal"
                                                 data-bs-target="#taskModal"
                                                 data-entry-id="{{ student.latest_entry_id }}"
-                                                data-student-name="{{ student.get_full_name }}">
+                                                data-student-name="{{ student|full_name_ja }}">
                                             📋 タスク
                                         </button>
                                         <a href="{% url 'diary:teacher_student_detail' student_id=student.id %}"
@@ -481,7 +482,7 @@
                                     <!-- Table View標準レイアウト（5列構成） -->
                                     <td>
                                         <a href="{% url 'diary:teacher_student_detail' student_id=data.student.id %}" class="text-decoration-none">
-                                            <strong>{{ data.student.get_full_name }}</strong>
+                                            <strong>{{ data.student|full_name_ja }}</strong>
                                         </a>
                                         {% if data.unread_count > 0 %}
                                         <br><span class="badge bg-info">🔵 NEW</span>
@@ -605,7 +606,7 @@
                             <tbody>
                                 {% for student in all_students %}
                                 <tr>
-                                    <td>{{ student.get_full_name }}</td>
+                                    <td>{{ student|full_name_ja }}</td>
                                     <td>
                                         <select name="student_{{ student.id }}_status" class="form-select form-select-sm attendance-status" data-student-id="{{ student.id }}">
                                             <option value="present" {% if student.attendance_status == 'present' %}selected{% endif %}>出席</option>

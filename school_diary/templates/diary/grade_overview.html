@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load diary_extras %}
 
 {% block title %}学年ダッシュボード{% endblock %}
 
@@ -87,10 +88,10 @@
                 <div class="flex-grow-1 ms-3">
                     <h5 class="alert-heading mb-2">【緊急】{{ alert.message }}</h5>
                     <div class="mb-2">
-                        <strong>対象生徒:</strong> {{ alert.student.get_full_name }}さん（{{ alert.classroom }}組）
+                        <strong>対象生徒:</strong> {{ alert.student|full_name_ja }}さん（{{ alert.classroom }}組）
                     </div>
                     <div class="mb-2">
-                        <strong>担任:</strong> {{ alert.teacher.get_full_name }}先生
+                        <strong>担任:</strong> {{ alert.teacher|full_name_ja }}先生
                     </div>
                     <div class="mb-2">
                         <strong>期間:</strong>

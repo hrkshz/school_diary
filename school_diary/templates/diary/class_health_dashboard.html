@@ -283,12 +283,12 @@
                             <tr>
                                 <td class="student-name-cell">
                                     <a href="{% url 'diary:teacher_student_detail' student_id=row.student.id %}" class="text-decoration-none">
-                                        <strong>{{ row.student.get_full_name }}</strong>
+                                        <strong>{{ row.student|full_name_ja }}</strong>
                                     </a>
                                 </td>
                                 {% for date in date_list %}
                                 <td class="heatmap-cell text-center align-middle"
-                                    title="{% if date in row.entries %}{{ row.student.get_full_name }} - {{ date|date:'m/d' }}: 体調{{ row.entries|get_item:date|attr:'health_condition' }}, メンタル{{ row.entries|get_item:date|attr:'mental_condition' }}{% else %}{{ row.student.get_full_name }} - {{ date|date:'m/d' }}: 未提出{% endif %}"
+                                    title="{% if date in row.entries %}{{ row.student|full_name_ja }} - {{ date|date:'m/d' }}: 体調{{ row.entries|get_item:date|attr:'health_condition' }}, メンタル{{ row.entries|get_item:date|attr:'mental_condition' }}{% else %}{{ row.student|full_name_ja }} - {{ date|date:'m/d' }}: 未提出{% endif %}"
                                     onclick="window.location.href='{% url 'diary:teacher_student_detail' student_id=row.student.id %}'">{% if date in row.entries %}{% with entry=row.entries|get_item:date %}{% if entry.health_condition <= 2 %}🔴{% elif entry.health_condition == 3 %}🟡{% else %}🟢{% endif %}｜{% if entry.mental_condition <= 2 %}🔴{% elif entry.mental_condition == 3 %}🟡{% else %}🟢{% endif %}{% endwith %}{% else %}⚪｜⚪{% endif %}</td>
                                 {% endfor %}
                             </tr>

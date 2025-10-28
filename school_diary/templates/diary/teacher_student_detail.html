@@ -1,12 +1,13 @@
 {% extends 'base.html' %}
+{% load diary_extras %}
 
-{% block title %}{{ student.get_full_name }} - 連絡帳履歴{% endblock %}
+{% block title %}{{ student|full_name_ja }} - 連絡帳履歴{% endblock %}
 
 {% block content %}
 <!-- ヘッダー -->
 <div class="row mb-4">
     <div class="col-12">
-        <h2>📖 {{ student.get_full_name }}さんの連絡帳</h2>
+        <h2>📖 {{ student|full_name_ja }}さんの連絡帳</h2>
         <p class="lead">
             {{ student.classes.first }} -
             未読: <span class="badge bg-danger">{{ unread_count }}</span>件 /
@@ -34,7 +35,7 @@
                             <div class="d-flex justify-content-between align-items-start mb-2">
                                 <div>
                                     <small class="text-muted">
-                                        <strong>{{ note.teacher.get_full_name }}</strong>
+                                        <strong>{{ note.teacher|full_name_ja }}</strong>
                                         {% if note.is_shared %}
                                         <span class="badge bg-primary">👥 学年共有</span>
                                         {% else %}
@@ -117,7 +118,7 @@
                 <div class="modal-body">
                     <div class="alert alert-info">
                         <small>
-                            <strong>対象生徒:</strong> {{ student.get_full_name }}<br>
+                            <strong>対象生徒:</strong> {{ student|full_name_ja }}<br>
                             <strong>用途:</strong> 長期的な観察記録、引継ぎ情報<br>
                             <strong>短期記録との違い:</strong> 日々の対応は連絡帳の「対応内容メモ」、長期的な情報はこちらに記録
                         </small>
@@ -353,7 +354,7 @@
                                                 <!-- 生徒情報表示 -->
                                                 <div class="alert alert-info mb-3">
                                                     <small>
-                                                        <strong>生徒:</strong> {{ entry.student.get_full_name }}<br>
+                                                        <strong>生徒:</strong> {{ entry.student|full_name_ja }}<br>
                                                         <strong>日付:</strong> {{ entry.entry_date|date:"Y年m月d日" }}<br>
                                                         <strong>内容:</strong>
                                                         {% if entry.reflection|length > 50 %}
@@ -472,7 +473,7 @@
 
 {% else %}
 <div class="alert alert-info">
-    {{ student.get_full_name }}さんの連絡帳はまだありません。
+    {{ student|full_name_ja }}さんの連絡帳はまだありません。
 </div>
 {% endif %}
 {% endblock %}
