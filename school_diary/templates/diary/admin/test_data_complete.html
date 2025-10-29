@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}テストデータ作成完了{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-check-circle-fill me-2"></i>
+                        テストデータ作成完了
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-success" role="alert">
+                        <h5 class="alert-heading">✅ 作成が完了しました</h5>
+                        <p class="mb-0">テストデータの作成が正常に完了しました。</p>
+                    </div>
+
+                    <h5 class="mt-4 mb-3">作成されたデータ</h5>
+                    <ul class="list-group">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            管理者
+                            <span class="badge bg-success rounded-pill">{{ stats.admin_count }}名</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            校長・教頭
+                            <span class="badge bg-success rounded-pill">{{ stats.school_leader_count }}名</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            学年主任
+                            <span class="badge bg-success rounded-pill">{{ stats.grade_leader_count }}名</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            担任
+                            <span class="badge bg-success rounded-pill">{{ stats.teacher_count }}名</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            生徒
+                            <span class="badge bg-success rounded-pill">{{ stats.student_count }}名</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            クラス
+                            <span class="badge bg-success rounded-pill">{{ stats.classroom_count }}クラス</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            日記エントリ
+                            <span class="badge bg-success rounded-pill">{{ stats.diary_count }}件</span>
+                        </li>
+                    </ul>
+
+                    <h5 class="mt-4 mb-3">テストアカウント</h5>
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>役割</th>
+                                    <th>メールアドレス</th>
+                                    <th>パスワード</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>管理者</td>
+                                    <td><code>admin@example.com</code></td>
+                                    <td><code>password123</code></td>
+                                </tr>
+                                <tr>
+                                    <td>校長</td>
+                                    <td><code>principal@example.com</code></td>
+                                    <td><code>password123</code></td>
+                                </tr>
+                                <tr>
+                                    <td>学年主任</td>
+                                    <td><code>grade_leader_1@example.com</code></td>
+                                    <td><code>password123</code></td>
+                                </tr>
+                                <tr>
+                                    <td>担任</td>
+                                    <td><code>teacher_1_a@example.com</code></td>
+                                    <td><code>password123</code></td>
+                                </tr>
+                                <tr>
+                                    <td>生徒</td>
+                                    <td><code>student_1_a_01@example.com</code></td>
+                                    <td><code>password123</code></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="alert alert-info mt-4">
+                        <i class="bi bi-info-circle-fill me-2"></i>
+                        <strong>注意:</strong> 全ユーザーのパスワードは <code>password123</code> です。
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{% url 'admin:index' %}" class="btn btn-primary">
+                            <i class="bi bi-house-fill me-2"></i>管理画面に戻る
+                        </a>
+                        <a href="{% url 'admin:auth_user_changelist' %}" class="btn btn-outline-primary">
+                            <i class="bi bi-people-fill me-2"></i>ユーザー一覧を見る
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}テストデータ作成 - 確認{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header {% if config.clean_existing %}bg-danger{% else %}bg-warning{% endif %} text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        テストデータ作成 - 最終確認
+                    </h4>
+                </div>
+                <div class="card-body">
+                    {% if config.clean_existing %}
+                    <div class="alert alert-danger" role="alert">
+                        <h5 class="alert-heading">⚠️ 重要な警告</h5>
+                        <p><strong>既存のテストデータが削除されます</strong></p>
+                        <p>この操作は取り消すことができません。本当に実行してもよろしいですか？</p>
+                        <p class="mb-0 text-dark">
+                            <i class="bi bi-shield-check me-1"></i>
+                            <small><strong>保護されるデータ:</strong> スーパーユーザー（管理者）アカウントは削除されません</small>
+                        </p>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info" role="alert">
+                        <p class="mb-0"><strong>既存データは保持されます</strong>。新しいデータが追加されます。</p>
+                    </div>
+                    {% endif %}
+
+                    <h5 class="mt-4 mb-3">設定内容</h5>
+                    <table class="table table-bordered">
+                        <tbody>
+                            <tr>
+                                <th scope="row" style="width: 40%;">既存データをクリア</th>
+                                <td>
+                                    {% if config.clean_existing %}
+                                    <span class="badge bg-danger">はい - テストデータ削除</span>
+                                    <small class="text-muted ms-2">(管理者は保護)</small>
+                                    {% else %}
+                                    <span class="badge bg-success">いいえ - データ保持</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row">日記作成日数</th>
+                                <td>{{ config.diary_days }}日分</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">生徒数/クラス</th>
+                                <td>{{ config.students_per_class }}名</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">特別パターン</th>
+                                <td>
+                                    {% if config.include_special_patterns %}
+                                    <span class="badge bg-primary">含める</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">含めない</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h5 class="mt-4 mb-3">作成されるデータ</h5>
+                    <ul class="list-group">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            管理者
+                            <span class="badge bg-primary rounded-pill">1名</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            校長
+                            <span class="badge bg-primary rounded-pill">1名</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            学年主任
+                            <span class="badge bg-primary rounded-pill">3名</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            担任
+                            <span class="badge bg-primary rounded-pill">9名</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            生徒
+                            <span class="badge bg-primary rounded-pill">{{ estimated_students }}名</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            クラス
+                            <span class="badge bg-primary rounded-pill">9クラス</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            日記エントリ
+                            <span class="badge bg-primary rounded-pill">約{{ estimated_diaries }}件</span>
+                        </li>
+                    </ul>
+
+                    <div class="alert alert-info mt-4">
+                        <i class="bi bi-clock-fill me-2"></i>
+                        <strong>所要時間:</strong> 約1〜2分
+                    </div>
+
+                    <form method="post" class="mt-4">
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'diary:test_data_config' %}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left me-2"></i>戻る
+                            </a>
+                            <button type="submit" class="btn {% if config.clean_existing %}btn-danger{% else %}btn-warning{% endif %}">
+                                <i class="bi bi-play-fill me-2"></i>実行する
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

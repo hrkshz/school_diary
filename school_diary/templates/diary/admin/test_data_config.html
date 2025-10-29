@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}テストデータ作成 - 設定{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-gear-fill me-2"></i>
+                        テストデータ作成 - 設定
+                    </h4>
+                </div>
+                <div class="card-body">
+                    {% crispy form %}
+
+                    <div class="mt-4">
+                        <h5 class="mb-3">作成されるデータ（推定）</h5>
+                        <ul class="list-group">
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                管理者
+                                <span class="badge bg-primary rounded-pill">1名</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                校長
+                                <span class="badge bg-primary rounded-pill">1名</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                学年主任
+                                <span class="badge bg-primary rounded-pill">3名</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                担任
+                                <span class="badge bg-primary rounded-pill">9名</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                生徒
+                                <span class="badge bg-primary rounded-pill" id="student-count">270名</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                クラス
+                                <span class="badge bg-primary rounded-pill">9クラス</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                日記エントリ
+                                <span class="badge bg-primary rounded-pill" id="diary-count">約6,500件</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                出席記録
+                                <span class="badge bg-primary rounded-pill">3クラス分</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="alert alert-info mt-4">
+                        <i class="bi bi-info-circle-fill me-2"></i>
+                        <strong>全ユーザーのパスワード:</strong> <code>password123</code>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 動的に作成データ数を計算
+document.addEventListener('DOMContentLoaded', function() {
+    const studentsPerClassInput = document.querySelector('input[name="students_per_class"]');
+    const diaryDaysInput = document.querySelector('input[name="diary_days"]');
+
+    function updateCounts() {
+        const studentsPerClass = parseInt(studentsPerClassInput.value) || 30;
+        const diaryDays = parseInt(diaryDaysInput.value) || 30;
+
+        const totalStudents = studentsPerClass * 9; // 9クラス
+        const estimatedDiaries = Math.round(totalStudents * diaryDays * 0.8); // 提出率80%
+
+        document.getElementById('student-count').textContent = totalStudents + '名';
+        document.getElementById('diary-count').textContent = '約' + estimatedDiaries.toLocaleString() + '件';
+    }
+
+    studentsPerClassInput.addEventListener('input', updateCounts);
+    diaryDaysInput.addEventListener('input', updateCounts);
+
+    updateCounts();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}テストデータ作成中...{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-hourglass-split me-2"></i>
+                        テストデータ作成中...
+                    </h4>
+                </div>
+                <div class="card-body text-center py-5">
+                    <div class="spinner-border text-primary" role="status" style="width: 4rem; height: 4rem;">
+                        <span class="visually-hidden">実行中...</span>
+                    </div>
+
+                    <h5 class="mt-4 mb-3">データを作成しています</h5>
+                    <p class="text-muted">完了まで約1〜2分かかります。</p>
+                    <p class="text-muted">このページを閉じないでください。</p>
+
+                    <div class="alert alert-info mt-4">
+                        <i class="bi bi-info-circle-fill me-2"></i>
+                        バックグラウンドで処理が実行されています。<br>
+                        完了すると自動的に完了画面に移動します。
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 5秒後に完了画面にリダイレクト
+setTimeout(function() {
+    window.location.href = "{% url 'diary:test_data_complete' %}";
+}, 5000);
+</script>
+{% endblock %}

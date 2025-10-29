@@ -337,3 +337,65 @@ class PasswordChangeForm(forms.Form):
         if commit:
             self.user.save()
         return self.user
+
+
+class TestDataConfigForm(forms.Form):
+    """テストデータ作成設定フォーム"""
+
+    clean_existing = forms.BooleanField(
+        label="既存データをクリア",
+        required=False,
+        help_text="⚠️ 全ての既存テストデータが削除されます。この操作は取り消せません。",
+    )
+
+    diary_days = forms.IntegerField(
+        label="日記作成日数",
+        initial=30,
+        min_value=1,
+        max_value=30,
+        help_text="過去何日分の日記を作成するか（1〜30日）",
+    )
+
+    students_per_class = forms.IntegerField(
+        label="生徒数/クラス",
+        initial=30,
+        min_value=1,
+        max_value=30,
+        help_text="各クラスに作成する生徒数（1〜30名）",
+    )
+
+    include_special_patterns = forms.BooleanField(
+        label="特別パターンを含める",
+        initial=True,
+        required=False,
+        help_text="P0/P1/P1.5等の特別なテストパターンを作成",
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_method = "post"
+        self.helper.layout = Layout(
+            Div(
+                HTML('<div class="alert alert-warning"><h5>⚠️ 注意事項</h5><p>テストデータを作成します。設定を確認してください。</p></div>'),
+                css_class="mb-4",
+            ),
+            Div(
+                "clean_existing",
+                css_class="mb-3",
+            ),
+            Row(
+                Column("diary_days", css_class="col-md-6"),
+                Column("students_per_class", css_class="col-md-6"),
+                css_class="mb-3",
+            ),
+            Div(
+                "include_special_patterns",
+                css_class="mb-4",
+            ),
+            Div(
+                HTML('<a href="{% url \'admin:index\' %}" class="btn btn-secondary me-2"><i class="bi bi-arrow-left me-2"></i>キャンセル</a>'),
+                Submit("submit", "次へ", css_class="btn btn-primary"),
+                css_class="d-flex justify-content-between",
+            ),
+        )
