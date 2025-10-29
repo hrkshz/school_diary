@@ -1,3 +1,8 @@
+# CloudFront Managed Prefix List (ap-northeast-1)
+data "aws_ec2_managed_prefix_list" "cloudfront" {
+  name = "com.amazonaws.global.cloudfront.origin-facing"
+}
+
 # EC2 Security Group
 resource "aws_security_group" "ec2" {
   name_prefix = "${var.project_name}-${var.environment}-ec2-"
@@ -21,15 +26,15 @@ resource "aws_security_group_rule" "ec2_ssh" {
   description       = "Allow SSH from admin IP only"
 }
 
-# Allow HTTP on port 8000 from anywhere (ALB forwards traffic here)
+# Allow HTTP on port 8000 from ALB only
 resource "aws_security_group_rule" "ec2_http" {
-  type              = "ingress"
-  from_port         = 8000
-  to_port           = 8000
-  protocol          = "tcp"
-  cidr_blocks       = ["0.0.0.0/0"]
-  security_group_id = aws_security_group.ec2.id
-  description       = "Allow HTTP on port 8000 from anywhere"
+  type                     = "ingress"
+  from_port                = 8000
+  to_port                  = 8000
+  protocol                 = "tcp"
+  source_security_group_id = aws_security_group.alb.id
+  security_group_id        = aws_security_group.ec2.id
+  description              = "Allow HTTP from ALB only"
 }
 
 # Allow all outbound traffic
@@ -55,26 +60,26 @@ resource "aws_security_group" "alb" {
   }
 }
 
-# Allow HTTP from anywhere (CloudFront)
+# Allow HTTP from CloudFront only
 resource "aws_security_group_rule" "alb_http" {
   type              = "ingress"
   from_port         = 80
   to_port           = 80
   protocol          = "tcp"
-  cidr_blocks       = ["0.0.0.0/0"]
+  prefix_list_ids   = [data.aws_ec2_managed_prefix_list.cloudfront.id]
   security_group_id = aws_security_group.alb.id
-  description       = "Allow HTTP from anywhere"
+  description       = "Allow HTTP from CloudFront only"
 }
 
-# Allow HTTPS from anywhere (CloudFront)
+# Allow HTTPS from CloudFront only
 resource "aws_security_group_rule" "alb_https" {
   type              = "ingress"
   from_port         = 443
   to_port           = 443
   protocol          = "tcp"
-  cidr_blocks       = ["0.0.0.0/0"]
+  prefix_list_ids   = [data.aws_ec2_managed_prefix_list.cloudfront.id]
   security_group_id = aws_security_group.alb.id
-  description       = "Allow HTTPS from anywhere"
+  description       = "Allow HTTPS from CloudFront only"
 }
 
 # Allow all outbound traffic
