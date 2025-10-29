@@ -345,7 +345,7 @@
                     <div class="col-12 col-md-6 col-lg-4 mb-3">
                         <div class="card border-primary shadow-sm hover-lift">
                             <div class="card-body">
-                                <h6 class="card-title">{{ student.get_full_name }}</h6>
+                                <h6 class="card-title">{{ student|full_name_ja }}</h6>
                                 {% if student.inline_history %}
                                 <p class="card-text small mb-1">
                                     <span class="badge bg-secondary">📊 {{ student.inline_history }}</span>
