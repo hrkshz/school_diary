@@ -8,7 +8,6 @@ services:
       context: .
       dockerfile: ./compose/local/django/Dockerfile
     image: school_diary_local_django
-    container_name: school_diary_local_django
     depends_on:
       postgres:
         condition: service_healthy
@@ -30,7 +29,6 @@ services:
       context: .
       dockerfile: ./compose/production/postgres/Dockerfile
     image: school_diary_production_postgres
-    container_name: school_diary_local_postgres
     volumes:
       - school_diary_local_postgres_data:/var/lib/postgresql/data
       - school_diary_local_postgres_data_backups:/backups
@@ -44,6 +42,5 @@ services:
 
   mailpit:
     image: docker.io/axllent/mailpit:latest
-    container_name: school_diary_local_mailpit
     ports:
       - "${MAILPIT_PORT:-8025}:8025"
