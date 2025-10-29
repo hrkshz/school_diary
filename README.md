@@ -24,7 +24,20 @@
 
 ## ドキュメント
 
-- [DEPLOYMENT.md](doc/DEPLOYMENT.md) - 環境構築、デプロイ方法
+### デプロイガイド
+
+- **[LOCAL_DEPLOYMENT.md](doc/LOCAL_DEPLOYMENT.md)** - ローカル環境構築（10分で動作確認）
+  - 評価者、開発者向け
+  - Docker Composeで簡単セットアップ
+  - テストデータ自動生成
+- **[PRODUCTION_DEPLOYMENT.md](doc/PRODUCTION_DEPLOYMENT.md)** - 本番環境デプロイ
+  - インフラエンジニア、評価者向け
+  - Terraformによるインフラ構築（AWS）
+  - GitLab CI/CDによる自動デプロイ
+  - 運用管理、監視設定
+
+### その他ドキュメント
+
 - [MANUAL_FOR_CLIENT.md](doc/MANUAL_FOR_CLIENT.md) - 操作マニュアル
 - [FEATURES.md](doc/FEATURES.md) - 機能一覧、セキュリティポリシー
 - [データモデル設計書](docs/04-data-model.md) - ER 図含む

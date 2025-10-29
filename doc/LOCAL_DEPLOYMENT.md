@@ -1,30 +1,52 @@
-# デプロイ手順
+# ローカル環境構築ガイド
 
-本書は連絡帳管理システムをUbuntu 24.04環境で動作させる手順を記載しています。
+本書は連絡帳管理システムをローカル環境で動作させる手順を記載しています。
+評価者が10分でシステムを動作確認できるように設計されています。
+
+**本番環境のデプロイ手順**: `PRODUCTION_DEPLOYMENT.md` を参照してください。
 
 ---
 
 ## 目次
 
-1. [ローカル環境構築（10分）](#ローカル環境構築10分)
-2. [動作確認](#動作確認)
-3. [トラブルシューティング](#トラブルシューティング)
-4. [本番環境デプロイ（AWS）](#本番環境デプロイaws)
+1. [概要](#概要)
+2. [前提条件](#前提条件)
+3. [クイックスタート（10分）](#クイックスタート10分)
+4. [動作確認](#動作確認)
+5. [トラブルシューティング](#トラブルシューティング)
 
 ---
 
-## ローカル環境構築（10分）
+## 概要
 
-評価者がすぐにシステムを動かせる手順を記載します。
+### 本書の目的
 
-### 前提条件
+- 評価者がローカル環境でシステムを10分で動作確認できる
+- 開発者がローカル環境を構築して開発を開始できる
+
+### 対象読者
+
+- システムの評価者
+- 開発者
+- ローカル環境での動作確認を行いたい方
+
+### システム構成
+
+- **Django 5.x**: Webアプリケーションフレームワーク
+- **PostgreSQL 16**: データベース
+- **Docker Compose**: コンテナオーケストレーション
+- **Mailpit**: 開発用メールサーバー
+
+---
+
+## 前提条件
 
 以下がインストール済みであることを確認してください：
 
 ```bash
 # OS確認
 cat /etc/os-release | grep -E "PRETTY_NAME|VERSION_ID"
-# 期待: Ubuntu 24.04 LTS
+# 期待: Ubuntu 24.04 LTS（またはDocker対応OS）
 
 # RAM確認（4GB以上必要）
 free -h | grep Mem
@@ -45,9 +67,14 @@ git --version
 # 期待: git version 2.30以降
 ```
 
-**未インストールの場合**:
-- Docker: https://docs.docker.com/get-docker/
-- Git: `sudo apt install -y git`
+### 未インストールの場合
+
+- **Docker**: https://docs.docker.com/get-docker/
+- **Git**: `sudo apt install -y git`（Ubuntu/Debian系）
+
+---
+
+## クイックスタート（10分）
 
 ### Step 1: 作業ディレクトリの作成
 
@@ -93,19 +120,31 @@ chmod +x setup.sh verify.sh
 ./setup.sh
 ```
 
-**setup.shが実行する内容**:
-1. Dockerコンテナのビルド（Django, PostgreSQL）
-2. データベースマイグレーション実行
-3. テストデータ作成（管理者、担任9名、生徒270名）
-4. 静的ファイルの収集
-5. 動作確認
+#### setup.sh が実行する内容
 
-**期待される出力**:
+1. ✅ **前提条件チェック**: Docker, Docker Composeのインストール確認
+2. ✅ **ポート競合チェック**: 8000, 8025番ポートが使用可能か確認
+3. ✅ **環境変数ファイル生成**: データベース接続情報等の設定ファイルを作成（`.envs/.local/`）
+4. ✅ **Dockerコンテナ構築**: Django, PostgreSQL, Mailpitの3つのコンテナをビルド・起動
+5. ✅ **データベース初期化**: テーブル作成（マイグレーション実行）
+6. ✅ **テストデータ投入**: 管理者1名、担任9名、生徒270名、日記約6,500件を自動生成
+
+**安全性**: このスクリプトは独立した環境を構築するため、既存のシステムには影響しません。
+
+#### 期待される出力
+
 ```
-✅ セットアップが完了しました！
+================================================
+セットアップ完了
+================================================
 
-🌐 アクセスURL: http://localhost:8000
-👤 管理者アカウント: admin@example.com / password123
+アクセスURL:
+  開発サーバー: http://localhost:8000
+  管理画面: http://localhost:8000/admin
+  メール確認: http://localhost:8025
+
+テストアカウント:
+  管理者: admin@example.com / password123
 ```
 
 ### Step 4: 動作確認
@@ -117,12 +156,25 @@ chmod +x setup.sh verify.sh
 ./verify.sh
 ```
 
-**期待される出力**:
+#### verify.sh が実行する内容
+
+1. ✅ **Dockerコンテナ起動確認**: 3つのコンテナ（Django, PostgreSQL, Mailpit）が起動しているか
+2. ✅ **データベース接続確認**: PostgreSQLに正常に接続できるか
+3. ✅ **Webサーバー応答確認**: Djangoアプリケーションが正常に応答するか
+4. ✅ **テストユーザー確認**: テストデータが正しく作成されたか（284名）
+5. ✅ **管理画面アクセス確認**: 管理画面にアクセスできるか
+
+#### 期待される出力
+
 ```
-✅ Djangoサーバーが起動しています
-✅ PostgreSQLに接続できます
-✅ 管理画面にアクセスできます
-✅ テストアカウントでログインできます
+================================================
+検証OK: すべての項目をクリアしました (5/5)
+================================================
+
+次のステップ:
+  1. ブラウザで http://localhost:8000 にアクセス
+  2. 管理者アカウントでログイン: admin@example.com / password123
+  3. 機能を試してみてください
 ```
 
 ### Step 5: ブラウザでアクセス
@@ -133,11 +185,13 @@ chmod +x setup.sh verify.sh
 - **管理画面**: http://localhost:8000/admin
 - **Mailpit（メール確認）**: http://localhost:8025
 
-**ポート番号を変更した場合**:
+#### ポート番号を変更した場合
+
 - `DJANGO_PORT=8100` を設定した場合: http://localhost:8100
 - `MAILPIT_PORT=8125` を設定した場合: http://localhost:8125
 
-**ログイン**:
+#### ログイン
+
 - メールアドレス: `admin@example.com`
 - パスワード: `password123`
 
@@ -200,7 +254,8 @@ Error starting userland proxy: listen tcp4 0.0.0.0:8000: bind: address already i
 エラー: ポート 8000 (Django) は既に使用中です
 ```
 
-**解決方法1**: 使用中のプロセスを停止
+#### 解決方法1: 使用中のプロセスを停止
+
 ```bash
 # ポート8000を使用しているプロセスを確認
 lsof -i :8000
@@ -209,7 +264,8 @@ lsof -i :8000
 kill -9 <PID>
 ```
 
-**解決方法2**: 別のポートを使用（推奨）
+#### 解決方法2: 別のポートを使用（推奨）
+
 ```bash
 # 環境変数でポート番号を変更
 export DJANGO_PORT=8100
@@ -221,7 +277,19 @@ export MAILPIT_PORT=8125
 # アクセスURL: http://localhost:8100
 ```
 
-**恒久的な設定（オプション）**:
+#### 環境変数の影響範囲について
+
+`export DJANGO_PORT=8100` を実行した場合：
+
+- ✅ **影響あり**: 現在のターミナルセッションのみ
+- ❌ **影響なし**: 他のターミナルウィンドウ、他のユーザー、システム全体、他のプロジェクト
+
+**つまり**: このターミナルウィンドウを閉じるまで有効で、他には一切影響しません。
+
+#### 恒久的な設定（オプション）
+
+ターミナルを閉じても設定を保持したい場合は、`.env` ファイルを作成します：
+
 ```bash
 # .env ファイルを作成
 echo "DJANGO_PORT=8100" > .env
@@ -311,153 +379,19 @@ docker compose -f docker-compose.local.yml down -v
 
 ---
 
-## 本番環境デプロイ（AWS）
+## まとめ
 
-本プロジェクトは本番グレードのAWSインフラ構築をTerraformで実現しています。
+本ガイドではローカル環境での動作確認手順を説明しました。
 
-### アーキテクチャ概要
+- ✅ `./setup.sh` で10分で環境構築
+- ✅ `./verify.sh` で動作確認
+- ✅ 284名のテストユーザー（管理者、校長、学年主任、担任、生徒）
+- ✅ 約6,500件のテストデータ（30日分の日記）
 
-```
-インターネット
-    ↓
-CloudFront（CDN）
-    ↓
-Network Load Balancer
-    ↓
-EC2（Django + Gunicorn）
-    ↓
-RDS（PostgreSQL）
-```
-
-### 主要コンポーネント
-
-| コンポーネント | 役割 | 冗長化 |
-|-------------|------|-------|
-| **CloudFront** | CDN、静的ファイル配信 | グローバル |
-| **NLB** | ロードバランサー、SSL終端 | Multi-AZ対応可能 |
-| **EC2** | Djangoアプリケーション | Auto Scaling対応可能 |
-| **RDS** | PostgreSQLデータベース | Multi-AZ対応可能 |
-| **CloudWatch** | 監視・ログ | - |
-
-### Terraformによるインフラ構築
-
-本プロジェクトは14モジュールに分割されたTerraform構成を採用しています。
-
-```bash
-# Terraformディレクトリ構造
-terraform/
-├── modules/
-│   ├── vpc/                  # VPC、サブネット、ルートテーブル
-│   ├── security_groups/      # セキュリティグループ
-│   ├── ec2/                  # EC2インスタンス
-│   ├── rds/                  # RDS（PostgreSQL）
-│   ├── nlb/                  # Network Load Balancer
-│   ├── cloudfront/           # CloudFront CDN
-│   ├── cloudwatch/           # CloudWatch監視
-│   └── ...                   # その他12モジュール
-├── main.tf                   # メイン設定
-├── variables.tf              # 変数定義
-├── outputs.tf                # 出力定義
-└── terraform.tfvars          # 変数値（Git管理外）
-```
-
-### デプロイ手順（Terraform）
-
-```bash
-# 1. Terraformのインストール（Ubuntu）
-wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
-echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
-sudo apt update && sudo apt install terraform
-
-# 2. AWSクレデンシャルの設定
-export AWS_ACCESS_KEY_ID="<your-access-key>"
-export AWS_SECRET_ACCESS_KEY="<your-secret-key>"
-export AWS_DEFAULT_REGION="ap-northeast-1"
-
-# 3. Terraformの初期化
-cd terraform
-terraform init
-
-# 4. Terraformの計画確認
-terraform plan
-
-# 5. インフラの構築（約10分）
-terraform apply
-
-# 6. 出力情報の確認
-terraform output
-```
-
-**期待される出力**:
-```
-cloudfront_domain = "d2wk3j2pacp33b.cloudfront.net"
-ec2_public_ip = "54.xxx.xxx.xxx"
-rds_endpoint = "school-diary.xxx.ap-northeast-1.rds.amazonaws.com"
-```
-
-### アプリケーションのデプロイ
-
-Terraform実行後、EC2インスタンスにSSHで接続してアプリケーションをデプロイします。
-
-```bash
-# 1. EC2にSSH接続
-ssh -i <秘密鍵> ubuntu@<EC2のパブリックIP>
-
-# 2. Dockerのインストール（EC2上）
-curl -fsSL https://get.docker.com -o get-docker.sh
-sudo sh get-docker.sh
-sudo usermod -aG docker ubuntu
-
-# 3. プロジェクトのクローン（EC2上）
-git clone <リポジトリURL> school_diary
-cd school_diary
-
-# 4. 環境変数の設定（EC2上）
-cp .envs/.production/.django.example .envs/.production/.django
-cp .envs/.production/.postgres.example .envs/.production/.postgres
-
-# 環境変数の編集（RDSエンドポイント、SECRET_KEYなど）
-nano .envs/.production/.django
-
-# 5. 本番環境の起動（EC2上）
-docker compose -f docker-compose.production.yml up -d
-
-# 6. マイグレーション実行（EC2上）
-docker compose -f docker-compose.production.yml run --rm django python manage.py migrate
-
-# 7. スーパーユーザー作成（EC2上）
-docker compose -f docker-compose.production.yml run --rm django python manage.py createsuperuser
-```
-
-### セキュリティ設定
-
-- **セキュリティグループ**: 必要最小限のポート開放（80, 443のみ）
-- **RDS**: プライベートサブネットに配置、EC2からのみアクセス可能
-- **CloudWatch**: アプリケーションログ、エラーログを記録
-- **SSL/TLS**: ACM証明書によるHTTPS通信
-
-### 監視・運用
-
-- **CloudWatch Alarms**: CPU使用率、メモリ使用率、RDS接続数
-- **CloudWatch Logs**: アプリケーションログ、エラーログ
-- **RDS自動バックアップ**: 日次バックアップ、保持期間7日
-
-### コスト試算
-
-| リソース | インスタンスタイプ | 月額コスト（概算） |
-|---------|-----------------|-----------------|
-| EC2 | t3.small | $15 |
-| RDS | db.t3.micro | $15 |
-| CloudFront | データ転送量依存 | $5-10 |
-| NLB | 時間課金 | $20 |
-| **合計** | - | **$55-60** |
+**本番環境へのデプロイ**: `PRODUCTION_DEPLOYMENT.md` を参照してください。
 
 ---
 
-## まとめ
-
-本プロジェクトは以下の2つのデプロイ方法を提供します。
-
-1. **ローカル環境**（評価用）: `./setup.sh` で10分で動作
-2. **本番環境（AWS）**: Terraformで完全なIaC化、`terraform apply` で同一環境を構築可能
-
+**作成日**: 2025-10-30
+**最終更新**: 2025-10-30
+**バージョン**: 1.0
