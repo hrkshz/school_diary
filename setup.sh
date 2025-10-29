@@ -47,6 +47,40 @@ fi
 log_ok "Docker Compose インストール済み"
 echo ""
 
+# ポート番号の設定（環境変数 or デフォルト値）
+DJANGO_PORT=${DJANGO_PORT:-8000}
+MAILPIT_PORT=${MAILPIT_PORT:-8025}
+
+# ポート競合チェック関数
+check_port() {
+    local port=$1
+    local service=$2
+    if lsof -Pi :$port -sTCP:LISTEN -t >/dev/null 2>&1; then
+        log_error "ポート ${port} (${service}) は既に使用中です"
+        echo ""
+        echo "【解決方法】"
+        echo "  方法1: 使用中のプロセスを停止"
+        echo "    lsof -ti:${port} | xargs kill -9"
+        echo ""
+        echo "  方法2: 別のポートを使用（推奨）"
+        echo "    export DJANGO_PORT=8100"
+        echo "    export MAILPIT_PORT=8125"
+        echo "    ./setup.sh"
+        echo ""
+        echo "詳細: doc/DEPLOYMENT.md の「トラブルシューティング」を参照"
+        return 1
+    fi
+    return 0
+}
+
+# ポート使用状況チェック
+if ! check_port $DJANGO_PORT "Django"; then
+    exit 1
+fi
+if ! check_port $MAILPIT_PORT "Mailpit"; then
+    exit 1
+fi
+
 # ステップ2: 環境変数ファイル生成
 echo "[2/6] 環境変数ファイル生成"
 if [ -d ".envs/.local" ]; then
@@ -102,9 +136,9 @@ echo "セットアップ完了"
 echo "================================================"
 echo ""
 echo "アクセスURL:"
-echo "  開発サーバー: http://localhost:8000"
-echo "  管理画面: http://localhost:8000/admin"
-echo "  メール確認: http://localhost:8025"
+echo "  開発サーバー: http://localhost:${DJANGO_PORT}"
+echo "  管理画面: http://localhost:${DJANGO_PORT}/admin"
+echo "  メール確認: http://localhost:${MAILPIT_PORT}"
 echo ""
 echo "テストアカウント:"
 echo "  管理者: admin@example.com / password123"
@@ -112,7 +146,7 @@ echo "  担任: teacher_1_a@example.com / password123"
 echo "  生徒: student_1_a_01@example.com / password123"
 echo ""
 echo "次のステップ:"
-echo "  1. ブラウザで http://localhost:8000 にアクセス"
+echo "  1. ブラウザで http://localhost:${DJANGO_PORT} にアクセス"
 echo "  2. 検証スクリプト実行: ./verify.sh"
 echo "  3. 詳しい使い方: SETUP.md を参照"
 echo ""

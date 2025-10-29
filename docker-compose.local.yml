@@ -21,7 +21,7 @@ services:
       - ./.envs/.local/.django
       - ./.envs/.local/.postgres
     ports:
-      - '8000:8000'
+      - '${DJANGO_PORT:-8000}:8000'
         #command: /start
     command: /start
 
@@ -46,4 +46,4 @@ services:
     image: docker.io/axllent/mailpit:latest
     container_name: school_diary_local_mailpit
     ports:
-      - "8025:8025"
+      - "${MAILPIT_PORT:-8025}:8025"

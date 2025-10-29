@@ -68,7 +68,6 @@ mock_*.html
 .dockerignore
 .envs.example
 .python-version
-compose/local/
 docker-compose.*.yml
 gitlab-ci-ecr-policy.json
 mypy.ini

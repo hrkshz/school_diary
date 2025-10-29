@@ -3,6 +3,10 @@
 # 連絡帳管理システム - 環境検証スクリプト
 # セットアップが正しく完了したかを検証します
 
+# ポート番号の設定（環境変数 or デフォルト値）
+DJANGO_PORT=${DJANGO_PORT:-8000}
+MAILPIT_PORT=${MAILPIT_PORT:-8025}
+
 # 色の定義
 GREEN='\033[0;32m'
 RED='\033[0;31m'
@@ -57,8 +61,8 @@ echo ""
 # 検証3: Webサーバー応答確認
 echo "[3/5] Webサーバー応答確認"
 sleep 2  # Djangoの起動を待つ
-if curl -s -o /dev/null -w "%{http_code}" http://localhost:8000 | grep -q "200\|302"; then
-    log_ok "Webサーバー: 応答OK (http://localhost:8000)"
+if curl -s -o /dev/null -w "%{http_code}" http://localhost:${DJANGO_PORT} | grep -q "200\|302"; then
+    log_ok "Webサーバー: 応答OK (http://localhost:${DJANGO_PORT})"
 else
     log_ng "Webサーバー: 応答なし"
     log_info "対処: docker compose -f docker-compose.local.yml logs django"
@@ -78,8 +82,8 @@ echo ""
 
 # 検証5: 管理画面アクセス確認
 echo "[5/5] 管理画面アクセス確認"
-if curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/admin/ | grep -q "200\|302"; then
-    log_ok "管理画面: アクセスOK (http://localhost:8000/admin/)"
+if curl -s -o /dev/null -w "%{http_code}" http://localhost:${DJANGO_PORT}/admin/ | grep -q "200\|302"; then
+    log_ok "管理画面: アクセスOK (http://localhost:${DJANGO_PORT}/admin/)"
 else
     log_ng "管理画面: アクセス失敗"
     log_info "対処: docker compose -f docker-compose.local.yml logs django"
@@ -93,7 +97,7 @@ if [ $ng_count -eq 0 ]; then
     echo "================================================"
     echo ""
     echo "次のステップ:"
-    echo "  1. ブラウザで http://localhost:8000 にアクセス"
+    echo "  1. ブラウザで http://localhost:${DJANGO_PORT} にアクセス"
     echo "  2. 管理者アカウントでログイン: admin@example.com / password123"
     echo "  3. 機能を試してみてください"
 else

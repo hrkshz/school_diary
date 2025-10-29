@@ -19,63 +19,67 @@
 
 ### 前提条件
 
-- OS: Ubuntu 24.04 LTS
-- RAM: 4GB以上
-- ディスク容量: 10GB以上
-- インターネット接続
-
-### Step 1: Dockerのインストール
+以下がインストール済みであることを確認してください：
 
 ```bash
-# システムパッケージの更新
-sudo apt update && sudo apt upgrade -y
+# OS確認
+cat /etc/os-release | grep -E "PRETTY_NAME|VERSION_ID"
+# 期待: Ubuntu 24.04 LTS
 
-# 必要なパッケージのインストール
-sudo apt install -y ca-certificates curl gnupg lsb-release
+# RAM確認（4GB以上必要）
+free -h | grep Mem
 
-# Docker公式GPGキーの追加
-sudo mkdir -p /etc/apt/keyrings
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+# ディスク容量確認（10GB以上必要）
+df -h .
 
-# Dockerリポジトリの追加
-echo \
-  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
-  $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-
-# Dockerのインストール
-sudo apt update
-sudo apt install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
-
-# 現在のユーザーをdockerグループに追加（sudo不要にする）
-sudo usermod -aG docker $USER
-
-# ログアウト→ログインして設定を反映（または以下のコマンド実行）
-newgrp docker
-
-# Dockerの動作確認
+# Docker確認
 docker --version
+# 期待: Docker version 20.10以降
+
+# Docker Compose確認
 docker compose version
+# 期待: Docker Compose version v2.0以降
+
+# Git確認
+git --version
+# 期待: git version 2.30以降
 ```
 
-**期待される出力例**:
+**未インストールの場合**:
+- Docker: https://docs.docker.com/get-docker/
+- Git: `sudo apt install -y git`
+
+### Step 1: 作業ディレクトリの作成
+
+任意の場所にプロジェクト用ディレクトリを作成します。
+
+```bash
+# 例: ホームディレクトリ配下に作成
+mkdir -p ~/projects/school-diary-eval
+cd ~/projects/school-diary-eval
+
+# 現在のディレクトリを確認
+pwd
 ```
-Docker version 24.0.7, build afdd53b
-Docker Compose version v2.23.0
-```
+
+**ポイント**: ディレクトリ名は任意です。評価しやすい場所を選択してください。
 
 ### Step 2: プロジェクトのクローン
 
+作成したディレクトリ内にプロジェクトをクローンします。
+
 ```bash
-# Gitのインストール（未インストールの場合）
-sudo apt install -y git
+# カレントディレクトリにクローン
+git clone <リポジトリURL> .
 
-# プロジェクトのクローン
-git clone <リポジトリURL> school_diary
-cd school_diary
+# ファイル確認
+ls -la
 
-# ブランチの確認（mainブランチであることを確認）
+# ブランチ確認（mainブランチであることを確認）
 git branch
 ```
+
+**注意**: `git clone <URL> .` の最後の `.` は重要です（カレントディレクトリに展開）。
 
 ### Step 3: 自動セットアップ
 
@@ -129,6 +133,10 @@ chmod +x setup.sh verify.sh
 - **管理画面**: http://localhost:8000/admin
 - **Mailpit（メール確認）**: http://localhost:8025
 
+**ポート番号を変更した場合**:
+- `DJANGO_PORT=8100` を設定した場合: http://localhost:8100
+- `MAILPIT_PORT=8125` を設定した場合: http://localhost:8125
+
 **ログイン**:
 - メールアドレス: `admin@example.com`
 - パスワード: `password123`
@@ -136,6 +144,8 @@ chmod +x setup.sh verify.sh
 ---
 
 ## 動作確認
+
+**注意**: 以下のURL例はデフォルトポート（8000）を使用しています。ポート番号を変更した場合は、適宜読み替えてください（例: 8100に変更した場合は `http://localhost:8100`）。
 
 ### 1. 管理画面にログイン
 
@@ -178,18 +188,72 @@ sudo systemctl start docker
 sudo systemctl enable docker
 ```
 
-### ポート8000が既に使用されている
+### ポート競合エラー
 
+**症状**:
+```
+Error starting userland proxy: listen tcp4 0.0.0.0:8000: bind: address already in use
+```
+
+または setup.sh 実行時：
+```
+エラー: ポート 8000 (Django) は既に使用中です
+```
+
+**解決方法1**: 使用中のプロセスを停止
 ```bash
 # ポート8000を使用しているプロセスを確認
-sudo lsof -i :8000
+lsof -i :8000
 
 # プロセスを停止（PIDは上記コマンドで確認）
-sudo kill -9 <PID>
+kill -9 <PID>
+```
 
-# または、docker-compose.local.ymlのポートを変更
-# ports:
-#   - "8001:8000"  # 8001に変更
+**解決方法2**: 別のポートを使用（推奨）
+```bash
+# 環境変数でポート番号を変更
+export DJANGO_PORT=8100
+export MAILPIT_PORT=8125
+
+# セットアップ実行
+./setup.sh
+
+# アクセスURL: http://localhost:8100
+```
+
+**恒久的な設定（オプション）**:
+```bash
+# .env ファイルを作成
+echo "DJANGO_PORT=8100" > .env
+echo "MAILPIT_PORT=8125" >> .env
+
+# 以降は自動的に8100, 8125を使用
+./setup.sh
+```
+
+### Dockerビルドエラー
+
+**症状**:
+```
+failed to compute cache key: "/compose/local/django/start": not found
+```
+
+**原因**: .dockerignore の設定により、ローカル開発に必要なファイルが除外されている
+
+**解決方法**:
+```bash
+# .dockerignore の該当行をコメントアウト
+sed -i '71s/^compose\/local\//# compose\/local\//' .dockerignore
+
+# 再度セットアップ実行
+./setup.sh
+```
+
+**確認**:
+```bash
+# 修正されたことを確認
+grep "compose/local" .dockerignore
+# 期待: # compose/local/  (コメントアウト済み)
 ```
 
 ### データベースに接続できない
