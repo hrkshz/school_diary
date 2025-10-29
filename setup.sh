@@ -55,12 +55,14 @@ MAILPIT_PORT=${MAILPIT_PORT:-8025}
 check_port() {
     local port=$1
     local service=$2
-    if lsof -Pi :$port -sTCP:LISTEN -t >/dev/null 2>&1; then
+    # curlで接続確認（タイムアウト1秒、WSL2環境でも動作）
+    if curl -s --max-time 1 http://localhost:$port > /dev/null 2>&1; then
         log_error "ポート ${port} (${service}) は既に使用中です"
         echo ""
         echo "【解決方法】"
-        echo "  方法1: 使用中のプロセスを停止"
-        echo "    lsof -ti:${port} | xargs kill -9"
+        echo "  方法1: 使用中のコンテナを停止"
+        echo "    docker ps | grep ${port}"
+        echo "    docker stop <コンテナID>"
         echo ""
         echo "  方法2: 別のポートを使用（推奨）"
         echo "    export DJANGO_PORT=8100"
