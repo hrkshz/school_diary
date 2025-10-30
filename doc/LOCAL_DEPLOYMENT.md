@@ -88,7 +88,12 @@ pwd
 
 ```bash
 # カレントディレクトリにクローン
-git clone <リポジトリURL> .
+git clone https://intern.jpt.jgc.com/hiroki.shinzato/quest_1 .
+
+  現在表示されている認証プロンプトに以下を入力してください：
+
+  Username for 'https://intern.jpt.jgc.com': hiroki.shinzato
+  Password for 'https://hiroki.shinzato@intern.jpt.jgc.com': 7ujm'UJM
 
 # ファイル確認
 ls -la
