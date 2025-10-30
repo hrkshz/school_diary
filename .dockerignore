@@ -15,6 +15,7 @@ venv
 
 # Test files (プロダクションビルドから除外)
 tests/
+test-results/
 **/test_*.py
 **/*_test.py
 .pytest_cache/
@@ -63,6 +64,7 @@ mock_*.html
 # Cursor AI settings
 .cursorignore
 .cursorrules
+.claude_project_config.json
 
 # Build-time only files (本番イメージに不要)
 .dockerignore

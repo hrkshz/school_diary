@@ -1,43 +1,80 @@
 # 連絡帳管理システム
 
-中学校向け生徒・担任間連絡管理システム。生徒が日々の振り返りを記録し、担任が確認・フィードバックを行う Web アプリケーション。
+生徒の体調・メンタル・振り返りを記録し、担任が確認・フィードバックを行う中学校向けWebアプリケーション。
 
-**技術スタック**: Python 3.12 / Django 5.1 / PostgreSQL 16 / Docker
+---
 
-## インフラ構成
+## ✨ デモを試す
 
-![インフラ構成図](doc/infrastructure-architecture.png)
+**本番環境**: https://d2wk3j2pacp33b.cloudfront.net
 
-## 本番環境
+**テストアカウント**（全て password123）:
 
-**URL**: https://d2wk3j2pacp33b.cloudfront.net
-
-**テストアカウント**（パスワード: `password123`）:
-
-- 生徒: `student_001@example.com`（1 年 A 組 山田太郎）
-- 担任: `teacher_1_b@example.com`（1 年 B 組担任）
-- 学年主任: `teacher_1_a@example.com`（1 年 A 組担任 兼 1 年学年主任）
+- 生徒: `student_001@example.com`（1年A組 山田太郎）
+- 担任: `teacher_1_b@example.com`（1年B組担任）
+- 学年主任: `teacher_1_a@example.com`（1年A組担任 兼 1年学年主任）
 - 校長: `principal@example.com`
 - 管理者: `admin@example.com`
 
-全アカウント一覧: [MANUAL_FOR_CLIENT.md](doc/MANUAL_FOR_CLIENT.md)
+[全アカウント一覧](doc/MANUAL_FOR_CLIENT.md)
+
+---
+
+## 主要機能
+
+- ✅ **連絡帳の記録・管理** - 体調・メンタル・振り返りを★1-5で記録
+- ✅ **Inbox Pattern** - 優先度別分類（P0-P3）で効率的に確認
+- ✅ **早期警告システム** - 3日連続メンタル低下を自動検知し学年主任に通知
+- ✅ **担任メモの学年共有** - 気づいた情報をタイムリーに共有
+- ✅ **統計ダッシュボード** - 学年主任・校長向けの全体把握機能
+- ✅ **5ロール対応** - 生徒・担任・学年主任・校長・管理者
+
+詳細: [機能仕様](doc/FEATURES.md)
+
+---
+
+## 技術スタック
+
+**Backend**: Python 3.12 / Django 5.1 / PostgreSQL 16 / Gunicorn
+
+**Frontend**: Bootstrap 5.3 / Django Templates / AJAX
+
+**Infrastructure**: Docker / Terraform / AWS (CloudFront, NLB, EC2, RDS)
+
+**Development**: pytest / Ruff / mypy
+
+---
+
+## アーキテクチャ
+
+![インフラ構成図](doc/infrastructure-architecture.png)
+
+詳細: [アーキテクチャ設計](terraform/ARCHITECTURE.md) / [データモデル](doc/ER_DIAGRAM.md)
+
+---
 
 ## ドキュメント
 
-### デプロイガイド
+### 利用者向け
 
-- **[LOCAL_DEPLOYMENT.md](doc/LOCAL_DEPLOYMENT.md)** - ローカル環境構築（10分で動作確認）
-  - 評価者、開発者向け
-  - Docker Composeで簡単セットアップ
-  - テストデータ自動生成
-- **[PRODUCTION_DEPLOYMENT.md](doc/PRODUCTION_DEPLOYMENT.md)** - 本番環境デプロイ
-  - インフラエンジニア、評価者向け
-  - Terraformによるインフラ構築（AWS）
-  - GitLab CI/CDによる自動デプロイ
-  - 運用管理、監視設定
+- [操作マニュアル](doc/MANUAL_FOR_CLIENT.md) - 各ロールの使い方、全アカウント一覧
 
-### その他ドキュメント
+### 開発者向け
 
-- [MANUAL_FOR_CLIENT.md](doc/MANUAL_FOR_CLIENT.md) - 操作マニュアル
-- [FEATURES.md](doc/FEATURES.md) - 機能一覧、セキュリティポリシー
-- [データモデル設計書](docs/04-data-model.md) - ER 図含む
+- [ローカル環境構築](doc/LOCAL_DEPLOYMENT.md) - Docker Composeで10分セットアップ
+- [機能仕様](doc/FEATURES.md) - 機能一覧、画面一覧、セキュリティポリシー
+- [データモデル](doc/ER_DIAGRAM.md) - ER図、テーブル設計、リレーション
+
+### 運用者向け
+
+- [本番環境デプロイ記録](doc/PRODUCTION_DEPLOYMENT.md) - Terraform、AWS構築実績
+- [技術仕様](doc/TECHNICAL_SPECIFICATION.md) - アーキテクチャ、監視、セキュリティ
+
+### 提出資料
+
+- [プレゼンテーション](doc/PRESENTATION.md) - 課題の工夫点、感想
+
+---
+
+**作成日**: 2025-10-06
+**最終更新**: 2025-10-30

@@ -1,9 +1,6 @@
 # ローカル環境構築ガイド
 
 本書は連絡帳管理システムをローカル環境で動作させる手順を記載しています。
-評価者が10分でシステムを動作確認できるように設計されています。
-
-**本番環境のデプロイ手順**: `PRODUCTION_DEPLOYMENT.md` を参照してください。
 
 ---
 
@@ -11,7 +8,7 @@
 
 1. [概要](#概要)
 2. [前提条件](#前提条件)
-3. [クイックスタート（10分）](#クイックスタート10分)
+3. [クイックスタート（10 分）](#クイックスタート10分)
 4. [動作確認](#動作確認)
 5. [トラブルシューティング](#トラブルシューティング)
 
@@ -21,7 +18,7 @@
 
 ### 本書の目的
 
-- 評価者がローカル環境でシステムを10分で動作確認できる
+- 評価者がローカル環境でシステムを 10 分で動作確認できる
 - 開発者がローカル環境を構築して開発を開始できる
 
 ### 対象読者
@@ -32,7 +29,7 @@
 
 ### システム構成
 
-- **Django 5.x**: Webアプリケーションフレームワーク
+- **Django 5.x**: Web アプリケーションフレームワーク
 - **PostgreSQL 16**: データベース
 - **Docker Compose**: コンテナオーケストレーション
 - **Mailpit**: 開発用メールサーバー
@@ -47,12 +44,6 @@
 # OS確認
 cat /etc/os-release | grep -E "PRETTY_NAME|VERSION_ID"
 # 期待: Ubuntu 24.04 LTS（またはDocker対応OS）
-
-# RAM確認（4GB以上必要）
-free -h | grep Mem
-
-# ディスク容量確認（10GB以上必要）
-df -h .
 
 # Docker確認
 docker --version
@@ -70,11 +61,11 @@ git --version
 ### 未インストールの場合
 
 - **Docker**: https://docs.docker.com/get-docker/
-- **Git**: `sudo apt install -y git`（Ubuntu/Debian系）
+- **Git**: `sudo apt install -y git`（Ubuntu/Debian 系）
 
 ---
 
-## クイックスタート（10分）
+## クイックスタート（10 分）
 
 ### Step 1: 作業ディレクトリの作成
 
@@ -122,12 +113,12 @@ chmod +x setup.sh verify.sh
 
 #### setup.sh が実行する内容
 
-1. ✅ **前提条件チェック**: Docker, Docker Composeのインストール確認
-2. ✅ **ポート競合チェック**: 8000, 8025番ポートが使用可能か確認
+1. ✅ **前提条件チェック**: Docker, Docker Compose のインストール確認
+2. ✅ **ポート競合チェック**: 8000, 8025 番ポートが使用可能か確認
 3. ✅ **環境変数ファイル生成**: データベース接続情報等の設定ファイルを作成（`.envs/.local/`）
-4. ✅ **Dockerコンテナ構築**: Django, PostgreSQL, Mailpitの3つのコンテナをビルド・起動
+4. ✅ **Docker コンテナ構築**: Django, PostgreSQL, Mailpit の 3 つのコンテナをビルド・起動
 5. ✅ **データベース初期化**: テーブル作成（マイグレーション実行）
-6. ✅ **テストデータ投入**: 管理者1名、担任9名、生徒270名、日記約6,500件を自動生成
+6. ✅ **テストデータ投入**: 管理者 1 名、担任 9 名、生徒 270 名、日記約 6,500 件を自動生成
 
 **安全性**: このスクリプトは独立した環境を構築するため、既存のシステムには影響しません。
 
@@ -158,10 +149,10 @@ chmod +x setup.sh verify.sh
 
 #### verify.sh が実行する内容
 
-1. ✅ **Dockerコンテナ起動確認**: 3つのコンテナ（Django, PostgreSQL, Mailpit）が起動しているか
-2. ✅ **データベース接続確認**: PostgreSQLに正常に接続できるか
-3. ✅ **Webサーバー応答確認**: Djangoアプリケーションが正常に応答するか
-4. ✅ **テストユーザー確認**: テストデータが正しく作成されたか（284名）
+1. ✅ **Docker コンテナ起動確認**: 3 つのコンテナ（Django, PostgreSQL, Mailpit）が起動しているか
+2. ✅ **データベース接続確認**: PostgreSQL に正常に接続できるか
+3. ✅ **Web サーバー応答確認**: Django アプリケーションが正常に応答するか
+4. ✅ **テストユーザー確認**: テストデータが正しく作成されたか（284 名）
 5. ✅ **管理画面アクセス確認**: 管理画面にアクセスできるか
 
 #### 期待される出力
@@ -179,7 +170,7 @@ chmod +x setup.sh verify.sh
 
 ### Step 5: ブラウザでアクセス
 
-ブラウザを開き、以下のURLにアクセスします。
+ブラウザを開き、以下の URL にアクセスします。
 
 - **アプリケーション**: http://localhost:8000
 - **管理画面**: http://localhost:8000/admin
@@ -199,7 +190,7 @@ chmod +x setup.sh verify.sh
 
 ## 動作確認
 
-**注意**: 以下のURL例はデフォルトポート（8000）を使用しています。ポート番号を変更した場合は、適宜読み替えてください（例: 8100に変更した場合は `http://localhost:8100`）。
+**注意**: 以下の URL 例はデフォルトポート（8000）を使用しています。ポート番号を変更した場合は、適宜読み替えてください（例: 8100 に変更した場合は `http://localhost:8100`）。
 
 ### 1. 管理画面にログイン
 
@@ -229,7 +220,7 @@ chmod +x setup.sh verify.sh
 
 ## トラブルシューティング
 
-### Dockerが起動しない
+### Docker が起動しない
 
 ```bash
 # Dockerサービスの状態確認
@@ -245,16 +236,18 @@ sudo systemctl enable docker
 ### ポート競合エラー
 
 **症状**:
+
 ```
 Error starting userland proxy: listen tcp4 0.0.0.0:8000: bind: address already in use
 ```
 
 または setup.sh 実行時：
+
 ```
 エラー: ポート 8000 (Django) は既に使用中です
 ```
 
-#### 解決方法1: 使用中のプロセスを停止
+#### 解決方法 1: 使用中のプロセスを停止
 
 ```bash
 # ポート8000を使用しているプロセスを確認
@@ -264,7 +257,7 @@ lsof -i :8000
 kill -9 <PID>
 ```
 
-#### 解決方法2: 別のポートを使用（推奨）
+#### 解決方法 2: 別のポートを使用（推奨）
 
 ```bash
 # 環境変数でポート番号を変更
@@ -299,9 +292,10 @@ echo "MAILPIT_PORT=8125" >> .env
 ./setup.sh
 ```
 
-### Dockerビルドエラー
+### Docker ビルドエラー
 
 **症状**:
+
 ```
 failed to compute cache key: "/compose/local/django/start": not found
 ```
@@ -309,6 +303,7 @@ failed to compute cache key: "/compose/local/django/start": not found
 **原因**: .dockerignore の設定により、ローカル開発に必要なファイルが除外されている
 
 **解決方法**:
+
 ```bash
 # .dockerignore の該当行をコメントアウト
 sed -i '71s/^compose\/local\//# compose\/local\//' .dockerignore
@@ -318,6 +313,7 @@ sed -i '71s/^compose\/local\//# compose\/local\//' .dockerignore
 ```
 
 **確認**:
+
 ```bash
 # 修正されたことを確認
 grep "compose/local" .dockerignore
@@ -383,15 +379,7 @@ docker compose -f docker-compose.local.yml down -v
 
 本ガイドではローカル環境での動作確認手順を説明しました。
 
-- ✅ `./setup.sh` で10分で環境構築
+- ✅ `./setup.sh` で 10 分で環境構築
 - ✅ `./verify.sh` で動作確認
-- ✅ 284名のテストユーザー（管理者、校長、学年主任、担任、生徒）
-- ✅ 約6,500件のテストデータ（30日分の日記）
-
-**本番環境へのデプロイ**: `PRODUCTION_DEPLOYMENT.md` を参照してください。
-
----
-
-**作成日**: 2025-10-30
-**最終更新**: 2025-10-30
-**バージョン**: 1.0
+- ✅ 284 名のテストユーザー（管理者、校長、学年主任、担任、生徒）
+- ✅ 約 6,500 件のテストデータ（30 日分の日記）

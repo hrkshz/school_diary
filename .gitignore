@@ -281,6 +281,7 @@ school_diary/media/
 
 # 開発管理ドキュメント（プライベート・Git管理外）
 /docs-private/
+/docs/
 
 # 個人のClaude Code設定（Git管理外）
 CLAUDE.md
@@ -335,5 +336,9 @@ scripts/
 # Playwright実行結果（一時ファイル）
 playwright-report/
 test-results/
+/test-results/
 test-results.json
 test-output*.txt
+
+# ユーザーテスト用マニュアル（一時ファイル）
+USER_TESTING_MANUAL.md
