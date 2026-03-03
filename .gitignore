@@ -356,6 +356,15 @@ doc/FILE_REFERENCE.md
 doc/SYSTEM_ARCHITECTURE.md
 doc/TERRAFORM_ARCHITECTURE.md
 
+# ポートフォリオ対象外ドキュメント
+doc/LOCAL_DEPLOYMENT.md
+doc/PRESENTATION.md
+doc/PRODUCTION_DEPLOYMENT.md
+SETUP.md
+
+# GitLab関連（GitHub管理のため不要）
+gitlab-ci-ecr-policy.json
+
 # E2Eテスト関連（一時ファイル、Git管理外）
 /tests/
 playwright.config.js
