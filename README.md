@@ -6,11 +6,11 @@
 
 ## ✨ デモを試す
 
-**本番環境**: https://d2wk3j2pacp33b.cloudfront.net
+**本番環境**: https://d11e79eaa3tdud.cloudfront.net
 
 **テストアカウント**（全て password123）:
 
-- 生徒: `student_001@example.com`（1 年 A 組 山田太郎）
+- 生徒: `student_1_a_01@example.com`（1 年 A 組）
 - 担任: `teacher_1_b@example.com`（1 年 B 組担任）
 - 学年主任: `teacher_1_a@example.com`（1 年 A 組担任 兼 1 年学年主任）
 - 校長: `principal@example.com`
@@ -61,20 +61,11 @@
 
 ### 開発者向け
 
-- [ローカル環境構築](doc/LOCAL_DEPLOYMENT.md) - Docker Compose で 10 分セットアップ
 - [機能仕様](doc/FEATURES.md) - 機能一覧、画面一覧、セキュリティポリシー
 - [データモデル](doc/ER_DIAGRAM.md) - ER 図、テーブル設計、リレーション
-
-### 運用者向け
-
-- [本番環境デプロイ記録](doc/PRODUCTION_DEPLOYMENT.md) - Terraform、AWS 構築実績
 - [技術仕様](doc/TECHNICAL_SPECIFICATION.md) - アーキテクチャ、監視、セキュリティ
-
-### 提出資料
-
-- [プレゼンテーション](doc/PRESENTATION.md) - 課題の工夫点、感想
 
 ---
 
 **作成日**: 2025-10-06
-**最終更新**: 2025-10-30
+**最終更新**: 2026-03-03
