@@ -60,15 +60,15 @@ resource "aws_security_group" "alb" {
   }
 }
 
-# Allow HTTP from CloudFront only
+# Allow HTTP from anywhere (CloudFront prefix list exceeds SG rule limit)
 resource "aws_security_group_rule" "alb_http" {
   type              = "ingress"
   from_port         = 80
   to_port           = 80
   protocol          = "tcp"
-  prefix_list_ids   = [data.aws_ec2_managed_prefix_list.cloudfront.id]
+  cidr_blocks       = ["0.0.0.0/0"]
   security_group_id = aws_security_group.alb.id
-  description       = "Allow HTTP from CloudFront only"
+  description       = "Allow HTTP from anywhere"
 }
 
 # Allow HTTPS from CloudFront only

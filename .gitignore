@@ -327,6 +327,28 @@ docs/07-testing/traceability-matrix-*.md
 # Terraform plan files (一時ファイル、機密情報含む)
 terraform/**/*.tfplan*
 terraform/**/tfplan-*
+terraform/**/tfplan
+
+# Terraform 機密情報（DBパスワード・インフラ状態）
+terraform/**/*.tfvars
+terraform/**/*.tfstate
+terraform/**/*.tfstate.*
+
+# GitLab CI/CD（GitHub管理のため不要）
+.gitlab-ci.yml
+
+# アーカイブ（会社提供資料・Git管理外）
+アーカイブ/
+
+# 会社課題ドキュメント（ポートフォリオ公開対象外）
+doc/2026年04月採用_Web課題.md
+
+# 個人用メモ・汎用ガイド（プロジェクト固有でない）
+doc/INTERVIEW_QA.md
+doc/DJANGO_COMPLETE_GUIDE.md
+doc/DOCKER_GUIDE.md
+doc/FRAMEWORK_BIBLE.md
+doc/WEB_DEV_BASICS.md
 
 # E2Eテスト関連（一時ファイル、Git管理外）
 /tests/
