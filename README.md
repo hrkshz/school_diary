@@ -11,8 +11,8 @@
 **テストアカウント**（全て password123）:
 
 - 生徒: `student_1_a_01@example.com`（1 年 A 組）
-- 担任: `teacher_1_b@example.com`（1 年 B 組担任）
-- 学年主任: `teacher_1_a@example.com`（1 年 A 組担任 兼 1 年学年主任）
+- 担任: `teacher_1_a@example.com`（1 年 A 組担任）
+- 学年主任: `grade_leader_1@example.com`（1 年学年主任）
 - 校長: `principal@example.com`
 - 管理者: `admin@example.com`
 
@@ -35,13 +35,15 @@
 
 ## 技術スタック
 
-**Backend**: Python 3.12 / Django 5.1 / PostgreSQL 16 / Gunicorn
+**Backend**: Python 3.12 / Django 5.1 / Gunicorn
 
 **Frontend**: Bootstrap 5.3 / Django Templates / AJAX
 
-**Infrastructure**: Docker / Terraform / AWS (CloudFront, ALB, EC2, RDS)
+**Database**: PostgreSQL 16（AWS RDS）
 
-**Development**: pytest / Ruff / mypy
+**Infrastructure**: AWS CloudFront / ALB / EC2 / RDS / S3 / ECR / Terraform
+
+**CI**: pytest / Ruff / mypy
 
 ---
 
@@ -55,12 +57,7 @@
 
 ## ドキュメント
 
-### 利用者向け
-
 - [操作マニュアル](doc/MANUAL_FOR_CLIENT.md) - 各ロールの使い方、全アカウント一覧
-
-### 開発者向け
-
 - [機能仕様](doc/FEATURES.md) - 機能一覧、画面一覧、セキュリティポリシー
 - [データモデル](doc/ER_DIAGRAM.md) - ER 図、テーブル設計、リレーション
 - [技術仕様](doc/TECHNICAL_SPECIFICATION.md) - アーキテクチャ、監視、セキュリティ
