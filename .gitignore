@@ -337,6 +337,12 @@ terraform/**/*.tfstate.*
 # GitLab CI/CD（GitHub管理のため不要）
 .gitlab-ci.yml
 
+# VS Code devcontainer（開発環境固有設定）
+.devcontainer/
+
+# 環境変数サンプル（隠しフォルダのため除外）
+.envs.example/
+
 # アーカイブ（会社提供資料・Git管理外）
 アーカイブ/
 
