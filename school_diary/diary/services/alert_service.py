@@ -23,8 +23,8 @@ from datetime import timedelta
 
 from django.utils import timezone
 
-from .models import DiaryEntry
-from .utils import get_previous_school_day
+from ..models import DiaryEntry
+from ..utils import get_previous_school_day
 
 
 def classify_students(classroom):

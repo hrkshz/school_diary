@@ -281,7 +281,6 @@ school_diary/media/
 
 # 開発管理ドキュメント（プライベート・Git管理外）
 /docs-private/
-/docs/
 
 # 個人のClaude Code設定（Git管理外）
 CLAUDE.md
@@ -347,25 +346,25 @@ terraform/**/*.tfstate.*
 アーカイブ/
 
 # 会社課題ドキュメント（ポートフォリオ公開対象外）
-doc/2026年04月採用_Web課題.md
+docs/2026年04月採用_Web課題.md
 
 # 個人用メモ・汎用ガイド（プロジェクト固有でない）
-doc/INTERVIEW_QA.md
-doc/DJANGO_COMPLETE_GUIDE.md
-doc/DOCKER_GUIDE.md
-doc/FRAMEWORK_BIBLE.md
-doc/WEB_DEV_BASICS.md
-doc/5D_DESIGN_THINKING.md
-doc/DEVELOPMENT_PROCESS.md
-doc/DJANGO_DIARY_ARCHITECTURE.md
-doc/FILE_REFERENCE.md
-doc/SYSTEM_ARCHITECTURE.md
-doc/TERRAFORM_ARCHITECTURE.md
+docs/INTERVIEW_QA.md
+docs/DJANGO_COMPLETE_GUIDE.md
+docs/DOCKER_GUIDE.md
+docs/FRAMEWORK_BIBLE.md
+docs/WEB_DEV_BASICS.md
+docs/5D_DESIGN_THINKING.md
+docs/DEVELOPMENT_PROCESS.md
+docs/DJANGO_DIARY_ARCHITECTURE.md
+docs/FILE_REFERENCE.md
+docs/SYSTEM_ARCHITECTURE.md
+docs/TERRAFORM_ARCHITECTURE.md
 
 # ポートフォリオ対象外ドキュメント
-doc/LOCAL_DEPLOYMENT.md
-doc/PRESENTATION.md
-doc/PRODUCTION_DEPLOYMENT.md
+docs/LOCAL_DEPLOYMENT.md
+docs/PRESENTATION.md
+docs/PRODUCTION_DEPLOYMENT.md
 SETUP.md
 
 # GitLab関連（GitHub管理のため不要）
@@ -385,3 +384,14 @@ test-output*.txt
 
 # ユーザーテスト用マニュアル（一時ファイル）
 USER_TESTING_MANUAL.md
+
+# 開発用スクリプト（ローカルのみ）
+setup.sh
+verify.sh
+
+# Playwright E2E設定（tests/が除外済み）
+package.json
+package-lock.json
+
+# IDE設定
+pyrightconfig.json
