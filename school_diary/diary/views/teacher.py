@@ -17,7 +17,6 @@ from django.utils import timezone
 from django.views.generic import ListView
 from django.views.generic import TemplateView
 
-from ..services import alert_service
 from ..constants import HealthThresholds
 from ..constants import NoteSettings
 from ..models import ActionStatus
@@ -27,6 +26,7 @@ from ..models import DiaryEntry
 from ..models import PublicReaction
 from ..models import TeacherNote
 from ..models import TeacherNoteReadStatus
+from ..services import alert_service
 from ..services.teacher_dashboard_service import TeacherDashboardService
 from ..utils import check_consecutive_decline
 from ..utils import check_critical_mental_state
@@ -37,14 +37,14 @@ User = get_user_model()
 __all__ = [
     "TeacherDashboardView",
     "TeacherStudentDetailView",
+    "mark_shared_note_read",
+    "teacher_add_note",
+    "teacher_create_task_from_card",
+    "teacher_delete_note",
+    "teacher_edit_note",
+    "teacher_mark_action_completed",
     "teacher_mark_as_read",
     "teacher_mark_as_read_quick",
-    "teacher_mark_action_completed",
-    "teacher_create_task_from_card",
-    "teacher_add_note",
-    "teacher_edit_note",
-    "teacher_delete_note",
-    "mark_shared_note_read",
     "teacher_save_attendance",
 ]
 

@@ -107,10 +107,10 @@ class TestSTU002DiaryCreation:
         Then: バリデーションエラーが表示される
         """
         # Arrange
-        from datetime import date
+        from django.utils import timezone
 
         data = {
-            "entry_date": date.today().strftime("%Y-%m-%d"),
+            "entry_date": timezone.now().date().strftime("%Y-%m-%d"),
             "health_condition": 4,
             "mental_condition": 4,
             # reflection なし

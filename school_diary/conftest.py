@@ -1,9 +1,9 @@
-from datetime import date
 from datetime import timedelta
 
 import pytest  # type: ignore[import-untyped]
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AbstractUser
+from django.utils import timezone
 
 User = get_user_model()
 
@@ -36,7 +36,7 @@ def yesterday():
                 ...
             )
     """
-    return date.today() - timedelta(days=1)
+    return timezone.now().date() - timedelta(days=1)
 
 
 @pytest.fixture

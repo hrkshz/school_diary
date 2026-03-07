@@ -246,20 +246,16 @@ class DiaryEntry(models.Model):
         super().save(*args, **kwargs)
 
     def mark_as_read(self, teacher):
-        """既読処理(イイネスタンプ)"""
-        self.is_read = True
-        self.read_by = teacher
-        self.read_at = timezone.now()
-        self.save()
+        """既読処理(イイネスタンプ) - DiaryEntryServiceに委譲"""
+        from .services.diary_entry_service import DiaryEntryService
+
+        DiaryEntryService.mark_as_read(self, teacher)
 
     def mark_action_completed(self, teacher, note=""):
-        """対応完了処理"""
-        self.action_status = ActionStatus.COMPLETED
-        self.action_completed_at = timezone.now()
-        self.action_completed_by = teacher
-        if note:
-            self.action_note = note
-        self.save()
+        """対応完了処理 - DiaryEntryServiceに委譲"""
+        from .services.diary_entry_service import DiaryEntryService
+
+        DiaryEntryService.mark_action_completed(self, teacher, note=note)
 
     @property
     def is_editable(self):

@@ -172,7 +172,6 @@ def check_consecutive_decline(student, field_name="health_condition", days=3):
         - 横ばい後の低下（4→4→3）
         - 欠席日は除外
     """
-    from datetime import date as date_class
 
     from .models import AttendanceStatus
     from .models import DailyAttendance
@@ -181,7 +180,7 @@ def check_consecutive_decline(student, field_name="health_condition", days=3):
     # Prefetchで最適化: N+1問題回避
     entries = (
         student.diary_entries.filter(
-            entry_date__lt=date_class.today(),
+            entry_date__lt=timezone.now().date(),
         )
         .exclude(
             entry_date__in=DailyAttendance.objects.filter(
@@ -229,10 +228,9 @@ def check_critical_mental_state(student):
         DSM-5臨床基準: ★1のみが臨床的に有意（★2は除外）
         教育現場での実用性: アラート疲労防止（週0-2件/クラス）
     """
-    from datetime import date as date_class
 
     # 最新のエントリーを取得
-    latest_entry = student.diary_entries.filter(entry_date__lt=date_class.today()).order_by("-entry_date").first()
+    latest_entry = student.diary_entries.filter(entry_date__lt=timezone.now().date()).order_by("-entry_date").first()
 
     if not latest_entry:
         return {"has_alert": False, "current_value": None, "date": None}

@@ -21,8 +21,7 @@ class EmailAuthenticationBackend(AllauthAuthenticationBackend):
         # loginフィールドがある場合、emailフィールドに変換
         login = credentials.get("login")
         if login and "email" not in credentials:
-            # デバッグログ
-            logger.info(f"EmailAuthenticationBackend: Converting login='{login}' to email and username")
+            logger.info("EmailAuthenticationBackend: Converting login='%s' to email and username", login)
 
             # loginフィールドをemailとusernameの両方にコピー
             # これにより、どちらの形式でも認証が可能になる
@@ -33,14 +32,10 @@ class EmailAuthenticationBackend(AllauthAuthenticationBackend):
         # 親クラスのauthenticateメソッドを呼び出す
         result = super().authenticate(request, **credentials)
 
-        # デバッグログ
+        identifier = credentials.get("email") or credentials.get("username")
         if result:
-            logger.info(
-                f"EmailAuthenticationBackend: Authentication successful for {credentials.get('email') or credentials.get('username')}",
-            )
+            logger.info("EmailAuthenticationBackend: Authentication successful for %s", identifier)
         else:
-            logger.warning(
-                f"EmailAuthenticationBackend: Authentication failed for {credentials.get('email') or credentials.get('username')}",
-            )
+            logger.warning("EmailAuthenticationBackend: Authentication failed for %s", identifier)
 
         return result

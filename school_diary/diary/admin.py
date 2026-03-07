@@ -154,7 +154,7 @@ class DiaryEntryAdmin(admin.ModelAdmin):
             # その生徒の全ての連絡帳（過去も含む）
             return qs.filter(student__in=students)
 
-        # 生徒: 自分のデータのみアクセス可能
+        # 生徒は自分のデータのみアクセス可能
         return qs.filter(student=request.user)
 
     def has_delete_permission(self, request, obj=None):
@@ -545,8 +545,6 @@ class CustomUserAdmin(BaseUserAdmin):
         # 新規作成時のみ、roleとmanaged_gradeを明示的に設定
         if not change and isinstance(form, CustomUserCreationForm):
             import secrets
-            # from django.core.mail import send_mail  # メール送信無効化中
-            # from django.conf import settings  # メール送信無効化中
 
             role = form.cleaned_data.get("role")
             managed_grade = form.cleaned_data.get("managed_grade")
@@ -570,47 +568,6 @@ class CustomUserAdmin(BaseUserAdmin):
                 obj.is_superuser = True
                 obj.is_staff = True
                 obj.save()
-
-            # Welcome emailを送信（一時的に無効化：AWS SESサンドボックス制限のため）
-            # email_sent = False
-            # try:
-            #     send_mail(
-            #         subject="【連絡帳システム】アカウント登録完了",
-            #         message=f"""
-# {obj.get_full_name() or obj.username} 様
-#
-# 連絡帳システムのアカウントが作成されました。
-# 以下の情報でログインしてください。
-#
-# ログインURL: {settings.SITE_URL}/accounts/login/
-# メールアドレス: {obj.email}
-# 仮パスワード: {temp_password}
-#
-# 初回ログイン後、パスワード変更が必要です。
-# 新しいパスワードを設定してください。
-#
-# ※このメールは自動送信されています。
-# """,
-#         from_email=settings.DEFAULT_FROM_EMAIL,
-#         recipient_list=[obj.email],
-#         fail_silently=False,
-#     )
-#     email_sent = True
-# except Exception as e:
-#     # メール送信失敗時は警告メッセージ
-#     self.message_user(
-#         request,
-#         f"⚠️ メール送信失敗: {e}\n仮パスワード「{temp_password}」をユーザーに別途連絡してください。",
-#         messages.WARNING,
-#     )
-#
-# # メール送信成功時は成功メッセージ
-# if email_sent:
-#     self.message_user(
-#         request,
-#         f"✅ ユーザー作成完了。仮パスワード「{temp_password}」をメール送信しました。",
-#         messages.SUCCESS,
-#     )
 
             # 管理画面に仮パスワードを表示（手動通知用）
             self.message_user(

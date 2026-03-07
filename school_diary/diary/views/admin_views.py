@@ -12,10 +12,10 @@ from ..models import DiaryEntry
 User = get_user_model()
 
 __all__ = [
+    "test_data_complete",
     "test_data_config",
     "test_data_confirm",
     "test_data_loading",
-    "test_data_complete",
 ]
 
 

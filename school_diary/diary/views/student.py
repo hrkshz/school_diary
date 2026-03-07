@@ -17,10 +17,10 @@ from ..services.diary_entry_service import DiaryEntryService
 from ..utils import get_previous_school_day
 
 __all__ = [
-    "StudentDashboardView",
     "DiaryCreateView",
-    "DiaryUpdateView",
     "DiaryHistoryView",
+    "DiaryUpdateView",
+    "StudentDashboardView",
 ]
 
 

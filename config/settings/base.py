@@ -27,13 +27,6 @@ SITE_URL = env.str("DJANGO_SITE_URL", default="http://localhost:8000")
 TIME_ZONE = "Asia/Tokyo"
 # https://docs.djangoproject.com/en/dev/ref/settings/#language-code
 LANGUAGE_CODE = "ja"
-# https://docs.djangoproject.com/en/dev/ref/settings/#languages
-# from django.utils.translation import gettext_lazy as _
-# LANGUAGES = [
-#     ('en', _('English')),
-#     ('fr-fr', _('French')),
-#     ('pt-br', _('Portuguese')),
-# ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#site-id
 SITE_ID = 1
 # https://docs.djangoproject.com/en/dev/ref/settings/#use-i18n
@@ -102,8 +95,6 @@ AUTHENTICATION_BACKENDS = [
     "school_diary.diary.auth_backends.EmailAuthenticationBackend",
     "django.contrib.auth.backends.ModelBackend",
 ]
-# https://docs.djangoproject.com/en/dev/ref/settings/#auth-user-model
-# AUTH_USER_MODEL = "users.User"  # Using default auth.User for now
 # https://docs.djangoproject.com/en/dev/ref/settings/#login-redirect-url
 LOGIN_REDIRECT_URL = "/"
 # https://docs.djangoproject.com/en/dev/ref/settings/#login-url
@@ -318,7 +309,7 @@ REPORTS_CONFIG = {
     "PDF_BACKEND": "weasyprint",  # weasyprint または reportlab
 }
 
-# WeasyPrint設定(オプション)
+# WeasyPrint設定
 WEASYPRINT_BASEURL = "file://" + str(BASE_DIR)
 
 # IO
@@ -376,7 +367,6 @@ JAZZMIN_SETTINGS = {
         "diary.ClassRoom": "fas fa-school",
         "diary.TeacherNote": "fas fa-sticky-note",
         "reports": "fas fa-chart-bar",
-        # "approvals": "fas fa-check-circle",  # 未使用のため削除
         "notifications": "fas fa-bell",
         "io": "fas fa-file-import",
         "audit": "fas fa-history",

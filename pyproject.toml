@@ -190,12 +190,9 @@ ignore = [
     "E501",    # 行の長さはline-length=120で制御
 
     # 技術的負債（AWS Phase完了後に対応予定）
-    "ERA001",   # コメントアウトコード（55件、保守性改善）
     "PLC0415",  # トップレベル外import（99件、保守性改善）
     "PLR2004",  # マジックナンバー（63件、可読性改善）
-    "G004",     # logging f-string（24件、スタイル改善）
     "SLF001",   # private member access（23件、django-simple-history標準パターン）
-    "DTZ011",   # date.today() timezone（13件、将来対応）
     "DTZ001",   # datetime without timezone（3件、将来対応）
     "E402",     # module import位置（5件、スタイル改善）
     "DJ012",    # django unordered body（6件、スタイル改善）
@@ -222,6 +219,7 @@ ignore = [
     "PTH123",   # builtin open（2件、Path対応は将来）
     "RUF005",   # collection literal concatenation（1件、スタイル改善）
     "PGH003",   # blanket type ignore（1件、必要な無視）
+    "TID252",   # 親モジュール相対import（Djangoサブパッケージ構造で標準的）
     "PLC0206",  # dict index missing items（1件、スタイル改善）
     "TRY401",   # verbose log message（1件、スタイル改善）
 ]
@@ -230,8 +228,8 @@ ignore = [
 
 # ファイルごとの無視設定（テストコード用の緩和、業界標準）
 [tool.ruff.lint.per-file-ignores]
-"**/test_*.py" = ["S106", "PT009"]  # テストコード：ハードコードパスワード、unittest assertion許可
-"**/tests.py" = ["S106", "PT009"]
+"**/test_*.py" = ["S106", "PT009", "ERA001"]  # テストコード：ハードコードパスワード、unittest assertion、AAAコメント許可
+"**/tests.py" = ["S106", "PT009", "ERA001"]
 "**/conftest.py" = ["S106"]
 "**/commands/*.py" = ["S106"]  # management commands：テスト用パスワード許可
 

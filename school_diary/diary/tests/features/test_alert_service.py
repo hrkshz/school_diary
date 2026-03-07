@@ -21,14 +21,14 @@ from datetime import timedelta
 import pytest
 from django.utils import timezone
 
+from school_diary.diary.models import ActionStatus
+from school_diary.diary.models import DiaryEntry
 from school_diary.diary.services.alert_service import _check_consecutive_decline
 from school_diary.diary.services.alert_service import _is_critical
 from school_diary.diary.services.alert_service import _needs_action
 from school_diary.diary.services.alert_service import classify_students
 from school_diary.diary.services.alert_service import format_inline_history
 from school_diary.diary.services.alert_service import get_snippet
-from school_diary.diary.models import ActionStatus
-from school_diary.diary.models import DiaryEntry
 
 
 @pytest.mark.django_db

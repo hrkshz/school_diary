@@ -1,6 +1,7 @@
 """DiaryEntryのビジネスロジック管理"""
 
 from django.db import transaction
+from django.utils import timezone
 
 from school_diary.diary.models import ActionStatus
 from school_diary.diary.models import DiaryEntry
@@ -77,3 +78,21 @@ class DiaryEntryService:
 
         entry.save()
         return entry
+
+    @staticmethod
+    def mark_as_read(entry, teacher):
+        """既読処理"""
+        entry.is_read = True
+        entry.read_by = teacher
+        entry.read_at = timezone.now()
+        entry.save()
+
+    @staticmethod
+    def mark_action_completed(entry, teacher, note=""):
+        """対応完了処理"""
+        entry.action_status = ActionStatus.COMPLETED
+        entry.action_completed_at = timezone.now()
+        entry.action_completed_by = teacher
+        if note:
+            entry.action_note = note
+        entry.save()

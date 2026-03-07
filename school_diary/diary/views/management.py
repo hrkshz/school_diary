@@ -16,6 +16,7 @@ from ..models import AttendanceStatus
 from ..models import ClassRoom
 from ..models import DailyAttendance
 from ..models import DiaryEntry
+
 __all__ = [
     "ClassHealthDashboardView",
     "GradeOverviewView",

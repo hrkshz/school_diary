@@ -10,9 +10,9 @@ from ..adapters import RoleBasedRedirectAdapter
 from ..forms import PasswordChangeForm
 
 __all__ = [
+    "health_check",
     "home_redirect_view",
     "password_change_view",
-    "health_check",
 ]
 
 
