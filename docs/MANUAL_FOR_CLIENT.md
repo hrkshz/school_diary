@@ -94,7 +94,7 @@
 
 ### ログイン URL
 
-- **本番環境**: [DEPLOYMENT_REFERENCE.md](./DEPLOYMENT_REFERENCE.md) の `Login URL` を参照してください
+- **公開デモ**: `https://mysite-git-main-hiroki0107-7181s-projects.vercel.app/accounts/login/`
 - **開発環境**: `http://localhost:8000/accounts/login/`
 
 ### 推奨ブラウザ

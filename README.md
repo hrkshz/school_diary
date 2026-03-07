@@ -8,7 +8,7 @@
 
 ## ✨ デモを試す
 
-公開 URL は [デプロイ参照情報](docs/DEPLOYMENT_REFERENCE.md) を参照してください。
+[デモを見る](https://mysite-git-main-hiroki0107-7181s-projects.vercel.app/)
 
 **テストアカウント**（全て password123）:
 
@@ -156,7 +156,6 @@ flowchart LR
 ### 制作物確認用
 
 - [制作物概要](docs/PRESENTATION.md) - 背景、設計意図、主要機能をまとめた概要資料
-- [デプロイ参照情報](docs/DEPLOYMENT_REFERENCE.md) - 公開 URL の正本。停止・再作成で URL が変わる運用に対応
 
 ### 利用・操作用
 

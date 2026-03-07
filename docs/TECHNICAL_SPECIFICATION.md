@@ -1,7 +1,7 @@
 # 連絡帳管理システム - 技術仕様書
 
 本書は、現在の実装と AWS/Terraform 構成に基づく技術仕様をまとめた文書です。  
-URL の正本は [DEPLOYMENT_REFERENCE.md](./DEPLOYMENT_REFERENCE.md) を参照してください。
+公開デモの入口は [README.md](../README.md) を参照してください。
 
 ---
 
@@ -82,7 +82,7 @@ RDS PostgreSQL 16
 | `DJANGO_SETTINGS_MODULE` | 設定モジュール | `config.settings.production` |
 | `AWS_STORAGE_BUCKET_NAME` | S3 バケット名 | Terraform output 参照 |
 
-URL・ホスト名の正本は [DEPLOYMENT_REFERENCE.md](./DEPLOYMENT_REFERENCE.md) を参照してください。
+公開デモ URL は [README.md](../README.md) を参照してください。
 
 ---
 
@@ -104,7 +104,7 @@ terraform output
 - `s3_bucket_name`
 - `ecr_repository_url`
 
-CloudFront ドメインを公開 URL に反映する場合は [DEPLOYMENT_REFERENCE.md](./DEPLOYMENT_REFERENCE.md) の `Application Base URL` だけ更新します。
+CloudFront ドメインや現在の公開先の更新は、ポートフォリオ公開方針に合わせて [README.md](../README.md) のデモ導線を更新します。
 
 ---
 
@@ -153,14 +153,13 @@ docker compose -f docker-compose.local.yml exec django python manage.py create_t
 
 補足:
 
-- 再構築時に URL が変わる可能性があります。
-- そのため、運用上の URL 更新は [DEPLOYMENT_REFERENCE.md](./DEPLOYMENT_REFERENCE.md) で一元管理します。
+- 再構築や公開先の切り替えにより URL が変わる可能性があります。
+- ポートフォリオとして見せる公開デモの導線は [README.md](../README.md) に集約しています。
 
 ---
 
 ## 8. 参考ドキュメント
 
-- [DEPLOYMENT_REFERENCE.md](./DEPLOYMENT_REFERENCE.md)
 - [SYSTEM_ARCHITECTURE.md](./SYSTEM_ARCHITECTURE.md)
 - [TERRAFORM_ARCHITECTURE.md](./TERRAFORM_ARCHITECTURE.md)
 - [LOCAL_DEPLOYMENT.md](./LOCAL_DEPLOYMENT.md)

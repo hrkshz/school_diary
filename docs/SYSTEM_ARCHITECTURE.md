@@ -2,8 +2,7 @@
 
 > **対象読者**: システム理解、面談説明、保守引き継ぎ
 
-本書は、現在の Django アプリケーション構成を理解するためのドキュメントです。  
-古い `views.py` 一枚構成ではなく、現在は `views/` と `services/` に分割されています。
+本書は、現在の Django アプリケーション構成と責務分担を理解するためのドキュメントです。
 
 ---
 
@@ -34,30 +33,32 @@ Database
 
 ```text
 school_diary/diary/
-├── academic_year.py
-├── authorization.py
-├── constants.py
-├── models.py
-├── forms.py
-├── admin.py
-├── adapters.py
-├── middleware.py
-├── signals.py
-├── utils.py
-├── urls.py
+├── academic_year.py                  # 学校年度の算出
+├── authorization.py                 # ロールとアクセス判定
+├── constants.py                     # 共通定数
+├── models.py                        # DB モデル定義
+├── forms.py                         # 入力フォーム定義
+├── admin.py                         # Django Admin 設定
+├── adapters.py                      # 外部ライブラリ連携の調整
+├── middleware.py                    # リクエスト共通処理
+├── signals.py                       # モデル保存時の補助処理
+├── utils.py                         # 共通ユーティリティ
+├── urls.py                          # diary アプリの URL 定義
 ├── views/
-│   ├── auth.py
-│   ├── student.py
-│   ├── teacher.py
-│   ├── management.py
-│   └── admin_views.py
+│   ├── auth.py                      # ホーム遷移、パスワード変更、health check
+│   ├── student.py                   # 生徒向け画面
+│   ├── teacher.py                   # 担任向け画面と担任操作
+│   ├── management.py                # 学年主任・校長向け統計画面
+│   └── admin_views.py               # テストデータ作成画面
 └── services/
-    ├── alert_service.py
-    ├── diary_entry_service.py
-    ├── teacher_note_service.py
-    ├── teacher_dashboard_service.py
-    └── management_dashboard_service.py
+    ├── alert_service.py             # Inbox Pattern の分類
+    ├── diary_entry_service.py       # 既読・対応・出席の状態更新
+    ├── teacher_note_service.py      # 担任メモの作成・更新・既読
+    ├── teacher_dashboard_service.py # 担任ダッシュボード集計
+    └── management_dashboard_service.py # 学年/学校ダッシュボード集計
 ```
+
+以下では主要な責務を先に一覧し、詳細は次章で補足します。
 
 ---
 

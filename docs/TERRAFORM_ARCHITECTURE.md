@@ -89,7 +89,7 @@ EC2
 
 - HTTPS の公開エンドポイント
 - オリジンは ALB
-- URL は再構築時に変わる可能性があるため、固定値は [DEPLOYMENT_REFERENCE.md](./DEPLOYMENT_REFERENCE.md) で管理
+- URL は再構築時に変わる可能性があるため、ポートフォリオで見せる公開デモの導線は [README.md](../README.md) で管理
 
 ### ALB
 
@@ -153,14 +153,14 @@ cd terraform/environments/production
 terraform output
 ```
 
-公開 URL を更新する場合は、[DEPLOYMENT_REFERENCE.md](./DEPLOYMENT_REFERENCE.md) の `Application Base URL` だけ更新します。
+公開デモ URL を更新する場合は、[README.md](../README.md) のデモ導線を更新します。
 
 ---
 
 ## 7. ドキュメントの読み分け
 
 - 技術仕様全体を見たい: [TECHNICAL_SPECIFICATION.md](./TECHNICAL_SPECIFICATION.md)
-- URL の正本を確認したい: [DEPLOYMENT_REFERENCE.md](./DEPLOYMENT_REFERENCE.md)
+- 公開デモの入口を確認したい: [README.md](../README.md)
 - 実際の構築記録を見たい: [PRODUCTION_DEPLOYMENT.md](./PRODUCTION_DEPLOYMENT.md)
 
 ---
