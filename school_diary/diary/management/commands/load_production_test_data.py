@@ -29,6 +29,7 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
 
+from school_diary.diary.academic_year import get_current_academic_year
 from school_diary.diary.constants import GradeLevel
 from school_diary.diary.models import ActionStatus
 from school_diary.diary.models import ClassRoom
@@ -283,7 +284,7 @@ class Command(BaseCommand):
                 classroom = ClassRoom.objects.create(
                     grade=grade,
                     class_name=class_name.upper(),
-                    academic_year=2025,
+                    academic_year=get_current_academic_year(),
                     homeroom_teacher=self.teachers[f"{grade}_{class_name}"],
                 )
 

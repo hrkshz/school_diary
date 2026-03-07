@@ -6,6 +6,7 @@ from django.core.management import call_command
 
 from school_diary.diary.models import ClassRoom
 from school_diary.diary.models import DiaryEntry
+from school_diary.diary.models import UserProfile
 
 User = get_user_model()
 
@@ -56,11 +57,11 @@ class TestCreateTestDataCommand:
 
         # 基本データが作成されていることを確認
         assert User.objects.filter(is_superuser=True).count() == 1  # 管理者
-        assert User.objects.filter(profile__role="school_leader").count() == 1  # 校長
-        assert User.objects.filter(profile__role="grade_leader").count() == 3  # 学年主任
-        assert User.objects.filter(profile__role="teacher").count() == 9  # 担任
+        assert User.objects.filter(profile__role=UserProfile.ROLE_SCHOOL_LEADER).count() == 1  # 校長
+        assert User.objects.filter(profile__role=UserProfile.ROLE_GRADE_LEADER).count() == 3  # 学年主任
+        assert User.objects.filter(profile__role=UserProfile.ROLE_TEACHER).count() == 9  # 担任
         # 生徒は90名（10名×9クラス）作成されるが、admin@example.comがprofile.roleを持たないため91名になる可能性を許容
-        student_count = User.objects.filter(profile__role="student").count()
+        student_count = User.objects.filter(profile__role=UserProfile.ROLE_STUDENT).count()
         assert 90 <= student_count <= 91  # 柔軟なアサーション
         assert ClassRoom.objects.count() == 9  # クラス
         assert DiaryEntry.objects.count() > 0  # 日記
@@ -75,7 +76,7 @@ class TestCreateTestDataCommand:
             first_name="既存",
             last_name="生徒",
         )
-        existing_student.profile.role = "student"
+        existing_student.profile.role = UserProfile.ROLE_STUDENT
         existing_student.profile.save()
 
         # テストデータ作成コマンドを--cleanオプションなしで実行

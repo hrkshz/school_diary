@@ -19,11 +19,17 @@ from datetime import timedelta
 import pytest
 from django.utils import timezone
 
+from school_diary.diary.academic_year import get_current_academic_year
+from school_diary.diary.authorization import can_access_student
 from school_diary.diary.models import ActionStatus
 from school_diary.diary.models import ClassRoom
 from school_diary.diary.models import DailyAttendance
+from school_diary.diary.models import InternalAction
+from school_diary.diary.models import PublicReaction
 from school_diary.diary.models import TeacherNote
+from school_diary.diary.models import UserProfile
 from school_diary.diary.services.diary_entry_service import DiaryEntryService
+from school_diary.diary.services.management_dashboard_service import ManagementDashboardService
 from school_diary.diary.services.teacher_dashboard_service import TeacherDashboardService
 
 
@@ -68,7 +74,7 @@ class TestDiaryEntryServiceCreateEntry:
         other_classroom = ClassRoom.objects.create(
             class_name="B",
             grade=2,
-            academic_year=2025,
+            academic_year=get_current_academic_year(),
         )
 
         # Act
@@ -201,6 +207,66 @@ class TestDiaryEntryServiceUpdateEntry:
 
 
 @pytest.mark.django_db
+class TestDiaryEntryServiceStateTransitions:
+    """DiaryEntryServiceの状態遷移テスト"""
+
+    def test_mark_read_updates_reaction_and_clears_action(self, student_user, teacher_user, yesterday):
+        entry = DiaryEntryService.create_entry(
+            student=student_user,
+            entry_date=yesterday,
+            health_condition=4,
+            mental_condition=4,
+            reflection="テスト",
+            internal_action=InternalAction.NEEDS_FOLLOW_UP,
+        )
+
+        DiaryEntryService.mark_read(
+            entry,
+            teacher_user,
+            reaction=PublicReaction.CHECKED,
+            action="",
+        )
+
+        assert entry.is_read is True
+        assert entry.read_by == teacher_user
+        assert entry.public_reaction == PublicReaction.CHECKED
+        assert entry.internal_action is None
+        assert entry.action_status == ActionStatus.NOT_REQUIRED
+
+    def test_create_action_task_sets_in_progress(self, student_user, teacher_user, yesterday):
+        entry = DiaryEntryService.create_entry(
+            student=student_user,
+            entry_date=yesterday,
+            health_condition=4,
+            mental_condition=4,
+            reflection="テスト",
+        )
+
+        DiaryEntryService.create_action_task(entry, teacher_user, InternalAction.INDIVIDUAL_TALK)
+
+        assert entry.is_read is True
+        assert entry.public_reaction == PublicReaction.CHECKED
+        assert entry.internal_action == InternalAction.INDIVIDUAL_TALK
+        assert entry.action_status == ActionStatus.IN_PROGRESS
+
+    def test_complete_action_sets_completion_metadata(self, student_user, teacher_user, yesterday):
+        entry = DiaryEntryService.create_entry(
+            student=student_user,
+            entry_date=yesterday,
+            health_condition=4,
+            mental_condition=4,
+            reflection="テスト",
+            internal_action=InternalAction.MONITORING,
+        )
+
+        DiaryEntryService.complete_action(entry, teacher_user, note="対応済み")
+
+        assert entry.action_status == ActionStatus.COMPLETED
+        assert entry.action_completed_by == teacher_user
+        assert entry.action_note == "対応済み"
+
+
+@pytest.mark.django_db
 class TestTeacherDashboardServiceGetAbsenceData:
     """TeacherDashboardService.get_absence_data()のテスト"""
 
@@ -300,7 +366,7 @@ class TestTeacherDashboardServiceGetSharedNotes:
             email="other_teacher@test.com",
             password="testpass123",
         )
-        other_teacher.profile.role = "teacher"
+        other_teacher.profile.role = UserProfile.ROLE_TEACHER
         other_teacher.profile.save()
 
         # 共有メモ作成
@@ -362,7 +428,7 @@ class TestTeacherDashboardServiceGetSharedNotes:
             email="other_teacher2@test.com",
             password="testpass123",
         )
-        other_teacher.profile.role = "teacher"
+        other_teacher.profile.role = UserProfile.ROLE_TEACHER
         other_teacher.profile.save()
 
         private_note = TeacherNote.objects.create(
@@ -400,7 +466,7 @@ class TestTeacherDashboardServiceGetSharedNotes:
             email="other_teacher3@test.com",
             password="testpass123",
         )
-        other_teacher.profile.role = "teacher"
+        other_teacher.profile.role = UserProfile.ROLE_TEACHER
         other_teacher.profile.save()
 
         old_note = TeacherNote.objects.create(
@@ -418,3 +484,50 @@ class TestTeacherDashboardServiceGetSharedNotes:
 
         # Assert
         assert old_note not in result
+
+
+@pytest.mark.django_db
+class TestManagementDashboardServiceAcademicYear:
+    """管理ダッシュボードの年度選択テスト"""
+
+    def test_grade_overview_uses_latest_academic_year(self):
+        current_year = get_current_academic_year()
+        old_classroom = ClassRoom.objects.create(class_name="A", grade=1, academic_year=current_year)
+        latest_classroom = ClassRoom.objects.create(class_name="B", grade=1, academic_year=current_year + 1)
+
+        result = ManagementDashboardService.get_grade_overview_data(managed_grade=1)
+
+        classrooms = [item["classroom"] for item in result["classroom_stats"]]
+        assert latest_classroom in classrooms
+        assert old_classroom not in classrooms
+
+    def test_school_overview_uses_latest_academic_year(self):
+        current_year = get_current_academic_year()
+        ClassRoom.objects.create(class_name="A", grade=1, academic_year=current_year)
+        latest_classroom = ClassRoom.objects.create(class_name="B", grade=2, academic_year=current_year + 1)
+
+        result = ManagementDashboardService.get_school_overview_data()
+
+        grade_two = next(item for item in result["grade_stats"] if item["grade"] == 2)
+        assert grade_two["class_count"] == 1
+        assert latest_classroom.academic_year == current_year + 1
+
+
+@pytest.mark.django_db
+class TestAuthorizationHelpers:
+    """認可ヘルパのテスト"""
+
+    def test_assistant_teacher_can_access_student(self, classroom, student_user):
+        from django.contrib.auth import get_user_model
+
+        User = get_user_model()
+        assistant = User.objects.create_user(
+            username="assistant_teacher@test.com",
+            email="assistant_teacher@test.com",
+            password="testpass123",
+        )
+        assistant.profile.role = UserProfile.ROLE_TEACHER
+        assistant.profile.save()
+        classroom.assistant_teachers.add(assistant)
+
+        assert can_access_student(assistant, student_user) is True

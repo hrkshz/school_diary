@@ -21,6 +21,7 @@ import pytest
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 
+from school_diary.diary.academic_year import get_current_academic_year
 from school_diary.diary.models import ActionStatus
 from school_diary.diary.models import ClassRoom
 from school_diary.diary.models import DiaryEntry
@@ -256,7 +257,7 @@ class TestClassRoomStudentCount:
         classroom = ClassRoom.objects.create(
             class_name="B",
             grade=2,
-            academic_year=2025,
+            academic_year=get_current_academic_year(),
         )
 
         # Act

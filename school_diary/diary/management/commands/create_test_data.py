@@ -12,6 +12,7 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
 
+from school_diary.diary.academic_year import get_current_academic_year
 from school_diary.diary.models import (
     AbsenceReason,
     ActionStatus,
@@ -23,6 +24,7 @@ from school_diary.diary.models import (
     InternalAction,
     PublicReaction,
     TeacherNote,
+    UserProfile,
 )
 
 User = get_user_model()
@@ -168,7 +170,7 @@ class Command(BaseCommand):
             email=email,
             defaults={"verified": True, "primary": True},
         )
-        principal.profile.role = "school_leader"
+        principal.profile.role = UserProfile.ROLE_SCHOOL_LEADER
         principal.profile.save()
         self.stdout.write(self.style.SUCCESS(f"✅ {email}を作成"))
 
@@ -194,7 +196,7 @@ class Command(BaseCommand):
                 email=email,
                 defaults={"verified": True, "primary": True},
             )
-            user.profile.role = "grade_leader"
+            user.profile.role = UserProfile.ROLE_GRADE_LEADER
             user.profile.managed_grade = grade
             user.profile.save()
             self.stdout.write(self.style.SUCCESS(f"✅ {email}を作成（{grade}年主任）"))
@@ -209,7 +211,7 @@ class Command(BaseCommand):
                 classroom, created = ClassRoom.objects.get_or_create(
                     grade=grade,
                     class_name=class_name,
-                    academic_year=2025,
+                    academic_year=get_current_academic_year(),
                     defaults={"homeroom_teacher": None},
                 )
                 classrooms.append(classroom)
@@ -245,7 +247,7 @@ class Command(BaseCommand):
                     email=email,
                     defaults={"verified": True, "primary": True},
                 )
-                user.profile.role = "teacher"
+                user.profile.role = UserProfile.ROLE_TEACHER
                 user.profile.save()
                 self.stdout.write(self.style.SUCCESS(f"✅ {email}を作成"))
 
@@ -300,7 +302,7 @@ class Command(BaseCommand):
                         email=email,
                         defaults={"verified": True, "primary": True},
                     )
-                    student.profile.role = "student"
+                    student.profile.role = UserProfile.ROLE_STUDENT
                     student.profile.save()
 
                 if not classroom.students.filter(id=student.id).exists():
@@ -575,10 +577,10 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS("=" * 50))
 
         admin_count = User.objects.filter(is_superuser=True).count()
-        school_leader_count = User.objects.filter(profile__role="school_leader").count()
-        grade_leader_count = User.objects.filter(profile__role="grade_leader").count()
-        teacher_count = User.objects.filter(profile__role="teacher").count()
-        student_count = User.objects.filter(profile__role="student").count()
+        school_leader_count = User.objects.filter(profile__role=UserProfile.ROLE_SCHOOL_LEADER).count()
+        grade_leader_count = User.objects.filter(profile__role=UserProfile.ROLE_GRADE_LEADER).count()
+        teacher_count = User.objects.filter(profile__role=UserProfile.ROLE_TEACHER).count()
+        student_count = User.objects.filter(profile__role=UserProfile.ROLE_STUDENT).count()
         classroom_count = ClassRoom.objects.count()
         diary_count = DiaryEntry.objects.count()
 

@@ -3,6 +3,10 @@
 from allauth.account.adapter import DefaultAccountAdapter
 from django.urls import reverse
 
+from .authorization import get_primary_classroom
+from .authorization import get_user_role
+from .models import UserProfile
+
 
 class RoleBasedRedirectAdapter(DefaultAccountAdapter):
     """ロール別リダイレクトとメール正規化
@@ -84,23 +88,13 @@ class RoleBasedRedirectAdapter(DefaultAccountAdapter):
             return "/admin/"
 
         # プロファイルを安全に取得（存在しない場合はNone）
-        profile = getattr(user, "profile", None)
+        role = get_user_role(user)
 
-        if profile:
-            # 校長/教頭
-            if profile.role == "school_leader":
-                return reverse("diary:school_overview")
-
-            # 学年主任（担任と兼任の場合もこちら優先）
-            if profile.role == "grade_leader":
-                return reverse("diary:grade_overview")
-
-            # 担任（roleが'teacher'またはhomeroom_teacherとして登録）
-            if profile.role == "teacher" or user.homeroom_classes.exists():
-                return reverse("diary:teacher_dashboard")
-        # プロファイルが存在しない場合でも担任チェック
-        # （既存ユーザー互換性のため）
-        elif user.homeroom_classes.exists():
+        if role == UserProfile.ROLE_SCHOOL_LEADER:
+            return reverse("diary:school_overview")
+        if role == UserProfile.ROLE_GRADE_LEADER:
+            return reverse("diary:grade_overview")
+        if role == UserProfile.ROLE_TEACHER or get_primary_classroom(user):
             return reverse("diary:teacher_dashboard")
 
         # 生徒（デフォルト）

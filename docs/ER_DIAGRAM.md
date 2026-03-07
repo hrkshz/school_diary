@@ -23,7 +23,7 @@
 1. **正規化**: 第 3 正規形まで正規化、冗長性を排除
 2. **パフォーマンス**: 頻繁なクエリには INDEX、N+1 問題対策
 3. **保守性**: 明示的な命名、related_name で逆参照を明確化
-4. **データ整合性**: unique_together、外部キー制約
+4. **データ整合性**: 一意制約、外部キー制約
 
 ---
 
@@ -83,7 +83,7 @@ erDiagram
         int id PK
         int grade "NOT NULL, choices: 1-3"
         string class_name "NOT NULL, max_length=10, choices: A/B/C"
-        int academic_year "NOT NULL, default=2025"
+        int academic_year "NOT NULL, dynamic default from academic_year.py"
         int homeroom_teacher_id FK "NULL"
     }
 
@@ -98,7 +98,7 @@ erDiagram
         boolean is_read "NOT NULL, default=False"
         int read_by_id FK "NULL"
         datetime read_at "NULL"
-        string teacher_reaction "NULL, max_length=20, deprecated"
+        string teacher_reaction "NULL, max_length=20, legacy field"
         string public_reaction "NULL, max_length=20"
         string internal_action "NULL, max_length=20"
         string action_status "NOT NULL, max_length=20, default=pending"
@@ -202,7 +202,7 @@ Django 標準の認証ユーザーモデル（AbstractUser）。
 | id                  | Integer    | NOT NULL | 主キー                         |
 | grade               | Integer    | NOT NULL | 学年（1-3）                    |
 | class_name          | String(10) | NOT NULL | クラス名（A/B/C）              |
-| academic_year       | Integer    | NOT NULL | 年度（例: 2025, default=2025） |
+| academic_year       | Integer    | NOT NULL | 年度（現在の運用年度。既定値は academic_year.py で決定） |
 | homeroom_teacher_id | Integer    | NULL     | 主担任（FK, SET_NULL）         |
 
 **カスタム Manager**: ClassRoomManager - N+1 問題対策（with_related）
@@ -240,7 +240,7 @@ Django 標準の認証ユーザーモデル（AbstractUser）。
 | is_read                | Boolean     | NOT NULL | 既読（default=False）        |
 | read_by_id             | Integer     | NULL     | 既読者（FK, SET_NULL）       |
 | read_at                | DateTime    | NULL     | 既読日時                     |
-| teacher_reaction       | String(20)  | NULL     | 担任の対応（非推奨、旧仕様） |
+| teacher_reaction       | String(20)  | NULL     | 担任の対応（旧仕様の互換用フィールド） |
 | public_reaction        | String(20)  | NULL     | 生徒への反応（👍 など）      |
 | internal_action        | String(20)  | NULL     | 対応記録（保護者連絡など）   |
 | action_status          | String(20)  | NOT NULL | 対応状況（default=pending）  |
@@ -472,7 +472,7 @@ Django 標準の認証ユーザーモデル（AbstractUser）。
 
 ### 3. データ整合性
 
-- unique_together 制約（1 人 1 日 1 件の連絡帳、1 人 1 日 1 件の出席記録）
+- 一意制約（1 人 1 日 1 件の連絡帳、1 人 1 日 1 件の出席記録）
 - 外部キー制約（CASCADE/SET_NULL/PROTECT）
 - カスタムバリデーション（clean()メソッド）
 

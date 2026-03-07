@@ -14,8 +14,10 @@ from django.contrib.auth import get_user_model
 from django.test import Client
 from django.utils import timezone
 
+from school_diary.diary.academic_year import get_current_academic_year
 from school_diary.diary.models import ClassRoom
 from school_diary.diary.models import DiaryEntry
+from school_diary.diary.models import UserProfile
 
 User = get_user_model()
 
@@ -27,11 +29,11 @@ User = get_user_model()
 
 @pytest.fixture
 def classroom(db):
-    """テスト用クラスルーム（1年A組、2025年度）"""
+    """テスト用クラスルーム（1年A組、現在年度）"""
     return ClassRoom.objects.create(
         class_name="A",
         grade=1,
-        academic_year=2025,
+        academic_year=get_current_academic_year(),
     )
 
 
@@ -52,7 +54,7 @@ def student_user(db, classroom):
         first_name="太郎",
         last_name="生徒",
     )
-    user.profile.role = "student"
+    user.profile.role = UserProfile.ROLE_STUDENT
     user.profile.save()
     classroom.students.add(user)
     return user
@@ -75,7 +77,7 @@ def teacher_user(db, classroom):
         first_name="花子",
         last_name="先生",
     )
-    user.profile.role = "teacher"
+    user.profile.role = UserProfile.ROLE_TEACHER
     user.profile.save()
     classroom.homeroom_teacher = user
     classroom.save()
@@ -99,7 +101,7 @@ def grade_leader_user(db):
         first_name="次郎",
         last_name="学年主任",
     )
-    user.profile.role = "grade_leader"
+    user.profile.role = UserProfile.ROLE_GRADE_LEADER
     user.profile.managed_grade = 1
     user.profile.save()
     return user
@@ -121,7 +123,7 @@ def school_leader_user(db):
         first_name="三郎",
         last_name="校長",
     )
-    user.profile.role = "school_leader"
+    user.profile.role = UserProfile.ROLE_SCHOOL_LEADER
     user.profile.save()
     return user
 

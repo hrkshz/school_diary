@@ -22,7 +22,9 @@ Traceability Matrix:
 import pytest
 from django.urls import reverse
 
+from school_diary.diary.academic_year import get_current_academic_year
 from school_diary.diary.models import DiaryEntry
+from school_diary.diary.models import UserProfile
 
 
 @pytest.mark.django_db
@@ -65,7 +67,7 @@ class TestTEA001TeacherDashboard:
             email="critical@test.com",
             password="testpass123",
         )
-        critical_student.profile.role = "student"
+        critical_student.profile.role = UserProfile.ROLE_STUDENT
         critical_student.profile.save()
         classroom.students.add(critical_student)
 
@@ -142,14 +144,14 @@ class TestTEA001TeacherDashboard:
         other_classroom = ClassRoom.objects.create(
             class_name="B",
             grade=2,
-            academic_year=2025,
+            academic_year=get_current_academic_year(),
         )
         other_teacher = User.objects.create_user(
             username="other_teacher@test.com",
             email="other_teacher@test.com",
             password="testpass123",
         )
-        other_teacher.profile.role = "teacher"
+        other_teacher.profile.role = UserProfile.ROLE_TEACHER
         other_teacher.profile.save()
         other_classroom.homeroom_teacher = other_teacher
         other_classroom.save()
@@ -233,14 +235,14 @@ class TestTEA003StudentDetail:
         other_classroom = ClassRoom.objects.create(
             class_name="B",
             grade=2,
-            academic_year=2025,
+            academic_year=get_current_academic_year(),
         )
         other_student = User.objects.create_user(
             username="other_student@test.com",
             email="other_student@test.com",
             password="testpass123",
         )
-        other_student.profile.role = "student"
+        other_student.profile.role = UserProfile.ROLE_STUDENT
         other_student.profile.save()
         other_classroom.students.add(other_student)
 

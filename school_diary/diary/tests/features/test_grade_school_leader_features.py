@@ -20,6 +20,8 @@ Traceability Matrix:
 import pytest
 from django.urls import reverse
 
+from school_diary.diary.models import UserProfile
+
 
 @pytest.mark.django_db
 class TestGRD001GradeOverview:
@@ -62,7 +64,7 @@ class TestGRD001GradeOverview:
             email="grade_leader_2nd@test.com",
             password="testpass123",
         )
-        grade_leader_2nd.profile.role = "grade_leader"
+        grade_leader_2nd.profile.role = UserProfile.ROLE_GRADE_LEADER
         grade_leader_2nd.profile.managed_grade = 2  # 2年主任
         grade_leader_2nd.profile.save()
         client.force_login(grade_leader_2nd)

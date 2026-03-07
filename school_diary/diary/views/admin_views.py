@@ -8,6 +8,7 @@ from django.shortcuts import render
 
 from ..models import ClassRoom
 from ..models import DiaryEntry
+from ..models import UserProfile
 
 User = get_user_model()
 
@@ -119,10 +120,10 @@ def test_data_complete(request):
 
     # 統計情報を取得
     admin_count = User.objects.filter(is_superuser=True).count()
-    school_leader_count = User.objects.filter(profile__role="school_leader").count()
-    grade_leader_count = User.objects.filter(profile__role="grade_leader").count()
-    teacher_count = User.objects.filter(profile__role="teacher").count()
-    student_count = User.objects.filter(profile__role="student").count()
+    school_leader_count = User.objects.filter(profile__role=UserProfile.ROLE_SCHOOL_LEADER).count()
+    grade_leader_count = User.objects.filter(profile__role=UserProfile.ROLE_GRADE_LEADER).count()
+    teacher_count = User.objects.filter(profile__role=UserProfile.ROLE_TEACHER).count()
+    student_count = User.objects.filter(profile__role=UserProfile.ROLE_STUDENT).count()
     classroom_count = ClassRoom.objects.count()
     diary_count = DiaryEntry.objects.count()
 

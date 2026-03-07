@@ -24,6 +24,7 @@ import pytest
 from django.urls import reverse
 
 from school_diary.diary.models import DiaryEntry
+from school_diary.diary.models import UserProfile
 
 
 @pytest.mark.django_db
@@ -186,7 +187,7 @@ class TestSTU003DiaryEditing:
             email="student_a@test.com",
             password="testpass123",
         )
-        student_a.profile.role = "student"
+        student_a.profile.role = UserProfile.ROLE_STUDENT
         student_a.profile.save()
         classroom.students.add(student_a)
 
@@ -205,7 +206,7 @@ class TestSTU003DiaryEditing:
             email="student_b@test.com",
             password="testpass123",
         )
-        student_b.profile.role = "student"
+        student_b.profile.role = UserProfile.ROLE_STUDENT
         student_b.profile.save()
         classroom.students.add(student_b)
 

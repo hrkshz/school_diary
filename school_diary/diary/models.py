@@ -5,6 +5,7 @@ from django.db import models
 from django.utils import timezone
 from simple_history.models import HistoricalRecords
 
+from .academic_year import get_current_academic_year
 from .constants import GRADE_CHOICES
 from .constants import ConditionLevel
 
@@ -304,7 +305,7 @@ class ClassRoom(models.Model):
     )
     academic_year = models.IntegerField(
         "年度",
-        default=2025,
+        default=get_current_academic_year,
     )
     homeroom_teacher = models.ForeignKey(
         settings.AUTH_USER_MODEL,

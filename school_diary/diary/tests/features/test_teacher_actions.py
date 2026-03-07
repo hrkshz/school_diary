@@ -35,7 +35,9 @@ import json
 import pytest
 from django.urls import reverse
 
+from school_diary.diary.academic_year import get_current_academic_year
 from school_diary.diary.models import ActionStatus
+from school_diary.diary.models import UserProfile
 
 
 @pytest.mark.django_db
@@ -90,14 +92,14 @@ class TestTEAACT001MarkAsRead:
         other_classroom = ClassRoom.objects.create(
             class_name="B",
             grade=2,
-            academic_year=2025,
+            academic_year=get_current_academic_year(),
         )
         other_student = User.objects.create_user(
             username="other_student@test.com",
             email="other_student@test.com",
             password="testpass123",
         )
-        other_student.profile.role = "student"
+        other_student.profile.role = UserProfile.ROLE_STUDENT
         other_student.profile.save()
         other_classroom.students.add(other_student)
 
@@ -340,7 +342,7 @@ class TestTEAACT003To005TeacherNotes:
             email="other_teacher@test.com",
             password="testpass123",
         )
-        other_teacher.profile.role = "teacher"
+        other_teacher.profile.role = UserProfile.ROLE_TEACHER
         other_teacher.profile.save()
         client.force_login(other_teacher)
 
@@ -402,7 +404,7 @@ class TestTEAACT003To005TeacherNotes:
             email="other_teacher2@test.com",
             password="testpass123",
         )
-        other_teacher.profile.role = "teacher"
+        other_teacher.profile.role = UserProfile.ROLE_TEACHER
         other_teacher.profile.save()
         client.force_login(other_teacher)
 
@@ -441,7 +443,7 @@ class TestTEAACT006MarkSharedNoteRead:
             email="grade_teacher@test.com",
             password="testpass123",
         )
-        other_teacher.profile.role = "teacher"
+        other_teacher.profile.role = UserProfile.ROLE_TEACHER
         other_teacher.profile.managed_grade = 1  # 同じ学年
         other_teacher.profile.save()
         client.force_login(other_teacher)

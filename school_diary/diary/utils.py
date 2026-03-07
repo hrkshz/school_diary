@@ -1,5 +1,6 @@
 """連絡帳アプリのユーティリティ関数"""
 
+from collections import defaultdict
 from datetime import timedelta
 
 from django.contrib.auth import get_user_model
@@ -59,12 +60,15 @@ def get_students_with_consecutive_decline(
     )
 
     # 生徒ごとにグループ化して連続性をチェック
+    entries_by_student_id = defaultdict(list)
+    for entry in entries:
+        entries_by_student_id[entry.student_id].append(entry)
+
     students_health_decline = []
     students_mental_decline = []
 
     for student in classroom.students.all():
-        # この生徒の連絡帳を抽出
-        student_entries = [e for e in entries if e.student_id == student.id]
+        student_entries = entries_by_student_id.get(student.id, [])
 
         # 最新3件が揃っている場合のみチェック（未提出日は除外）
         if len(student_entries) >= days:

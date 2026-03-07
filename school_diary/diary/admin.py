@@ -3,11 +3,10 @@ from django.contrib import admin
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from django.db.models import Max
-from django.db.models import Q
 from django.utils import timezone
 from django.utils.html import format_html
 
+from .authorization import get_accessible_students
 from .forms import CustomUserCreationForm
 from .forms import UserProfileAdminForm
 from .models import ClassRoom
@@ -119,43 +118,7 @@ class DiaryEntryAdmin(admin.ModelAdmin):
         if not hasattr(request.user, "profile"):
             return qs.none()
 
-        profile = request.user.profile
-
-        # 教頭/校長: 全校生徒のデータにアクセス可能
-        if profile.role == UserProfile.ROLE_SCHOOL_LEADER:
-            return qs
-
-        # 学年主任: 管理学年の生徒のデータにアクセス可能（過去の連絡帳も含む）
-        if profile.role == UserProfile.ROLE_GRADE_LEADER:
-            # 最新年度の管理学年のクラスを取得
-            latest_year = ClassRoom.objects.aggregate(Max("academic_year"))["academic_year__max"]
-
-            if not latest_year or not profile.managed_grade:
-                return qs.none()
-
-            # 最新年度の管理学年のクラスの生徒を取得
-            current_classrooms = ClassRoom.objects.filter(
-                grade=profile.managed_grade,
-                academic_year=latest_year,
-            )
-            students = User.objects.filter(classes__in=current_classrooms)
-
-            # その生徒の全ての連絡帳（過去も含む）
-            return qs.filter(student__in=students)
-
-        # 担任: 自分が担任（主or副）のクラスの生徒のデータにアクセス可能（過去の連絡帳も含む）
-        if profile.role == UserProfile.ROLE_TEACHER:
-            # 自分が主担任または副担任のクラスの生徒を取得
-            my_classrooms = ClassRoom.objects.filter(
-                Q(homeroom_teacher=request.user) | Q(assistant_teachers=request.user),
-            )
-            students = User.objects.filter(classes__in=my_classrooms)
-
-            # その生徒の全ての連絡帳（過去も含む）
-            return qs.filter(student__in=students)
-
-        # 生徒は自分のデータのみアクセス可能
-        return qs.filter(student=request.user)
+        return qs.filter(student__in=get_accessible_students(request.user))
 
     def has_delete_permission(self, request, obj=None):
         """削除はスーパーユーザーのみ可能"""

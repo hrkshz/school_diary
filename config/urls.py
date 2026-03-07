@@ -7,8 +7,8 @@ from django.urls import path
 from django.views import defaults as default_views
 from django.views.generic import TemplateView
 
-from school_diary.diary.views import home_redirect_view
-from school_diary.diary.views import password_change_view
+from school_diary.diary.views.auth import home_redirect_view
+from school_diary.diary.views.auth import password_change_view
 
 # Force Django admin to use allauth login
 # Source: https://django-allauth.readthedocs.io/en/latest/advanced.html#admin

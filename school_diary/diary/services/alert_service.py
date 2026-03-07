@@ -23,6 +23,7 @@ from datetime import timedelta
 
 from django.utils import timezone
 
+from ..models import ActionStatus
 from ..models import DiaryEntry
 from ..utils import get_previous_school_day
 
@@ -47,8 +48,6 @@ def classify_students(classroom):
         - N+1問題回避: 一括取得（2-3クエリ）
         - 35名クラスで数ミリ秒
     """
-    from .models import ActionStatus
-
     today = timezone.now().date()
     yesterday = get_previous_school_day(today)
 
@@ -80,7 +79,7 @@ def classify_students(classroom):
         latest_entry = recent_entries[0] if recent_entries else None
 
         # P0: 重要（メンタル★1、最優先）
-        if _is_critical(latest_entry, recent_entries, today, yesterday):
+        if _is_critical(latest_entry):
             important.append(student)
             continue
 
@@ -145,15 +144,13 @@ def _check_consecutive_decline(recent_entries):
     return bool(day1_mental >= day2_mental >= day3_mental and day3_mental < day1_mental)
 
 
-def _is_critical(latest_entry, recent_entries, today, yesterday):
+def _is_critical(latest_entry):
     """Criticalに分類されるかチェック
 
     条件:
     - メンタル★1（最優先）
     - action_status=PENDING（未トリアージのみ）
     """
-    from .models import ActionStatus
-
     if not latest_entry:
         return False
 
@@ -178,8 +175,6 @@ def _needs_action(latest_entry):
     Returns:
         bool: 要対応タスクに分類される場合True
     """
-    from .models import ActionStatus
-
     if not latest_entry:
         return False
 
