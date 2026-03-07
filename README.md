@@ -6,22 +6,6 @@
 
 ---
 
-## ✨ デモを試す
-
-[デモを見る](https://mysite-git-main-hiroki0107-7181s-projects.vercel.app/)
-
-**テストアカウント**（全て password123）:
-
-- 生徒: `student_1_a_01@example.com`（1 年 A 組）
-- 担任: `teacher_1_a@example.com`（1 年 A 組担任）
-- 学年主任: `grade_leader_1@example.com`（1 年学年主任）
-- 校長: `principal@example.com`
-- 管理者: `admin@example.com`
-
-[全アカウント一覧](docs/MANUAL_FOR_CLIENT.md)
-
----
-
 ## この制作物でできること
 
 - 生徒が日々の体調・メンタル・振り返りを 1 日 1 件で記録できる
@@ -159,7 +143,7 @@ flowchart LR
 
 ### 利用・操作用
 
-- [操作マニュアル](docs/MANUAL_FOR_CLIENT.md) - 各ロールの使い方、全アカウント一覧
+- [操作マニュアル](docs/MANUAL_FOR_CLIENT.md) - 各ロールの使い方、画面操作の確認用
 - [機能仕様](docs/FEATURES.md) - 機能一覧、画面一覧、役割ごとの提供機能
 
 ### 技術確認用
