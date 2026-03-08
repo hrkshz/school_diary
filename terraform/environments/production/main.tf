@@ -123,3 +123,11 @@ module "cloudwatch_logs" {
   environment  = var.environment
   aws_region   = var.aws_region
 }
+
+module "eventbridge" {
+  source = "../../modules/eventbridge"
+
+  project_name  = var.project_name
+  environment   = var.environment
+  sns_topic_arn = module.cloudwatch.sns_topic_arn
+}

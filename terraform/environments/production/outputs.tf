@@ -81,3 +81,9 @@ output "ses_verified_email" {
   description = "SES verified email address"
   value       = module.ses.email_address
 }
+
+# EventBridge outputs
+output "eventbridge_rule_arn" {
+  description = "EventBridge alarm state change rule ARN"
+  value       = module.eventbridge.event_rule_arn
+}

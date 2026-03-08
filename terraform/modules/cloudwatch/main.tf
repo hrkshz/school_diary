@@ -30,7 +30,7 @@ resource "aws_cloudwatch_metric_alarm" "alb_5xx" {
   period              = 60 # 1 minute
   statistic           = "Sum"
   threshold           = 10
-  alarm_description   = "Alert when ALB target returns more than 10 5xx errors in 1 minute"
+  alarm_description   = "[P2] Alert when ALB target returns more than 10 5xx errors in 1 minute"
   alarm_actions       = [aws_sns_topic.alarms.arn]
   treat_missing_data  = "notBreaching" # データ欠損時はアラーム発動しない
 
@@ -41,6 +41,7 @@ resource "aws_cloudwatch_metric_alarm" "alb_5xx" {
   tags = {
     Name        = "${var.project_name}-${var.environment}-alb-5xx"
     Environment = var.environment
+    Severity    = "P2"
   }
 }
 
@@ -54,7 +55,7 @@ resource "aws_cloudwatch_metric_alarm" "alb_unhealthy_host" {
   period              = 60
   statistic           = "Maximum"
   threshold           = 1
-  alarm_description   = "Alert when any target is unhealthy"
+  alarm_description   = "[P1] Alert when any target is unhealthy"
   alarm_actions       = [aws_sns_topic.alarms.arn]
   treat_missing_data  = "notBreaching"
 
@@ -66,6 +67,7 @@ resource "aws_cloudwatch_metric_alarm" "alb_unhealthy_host" {
   tags = {
     Name        = "${var.project_name}-${var.environment}-alb-unhealthy"
     Environment = var.environment
+    Severity    = "P1"
   }
 }
 
@@ -79,7 +81,7 @@ resource "aws_cloudwatch_metric_alarm" "alb_response_time" {
   period              = 300 # 5 minutes
   statistic           = "Average"
   threshold           = 3.0 # 3 seconds
-  alarm_description   = "Alert when average response time exceeds 3 seconds"
+  alarm_description   = "[P2] Alert when average response time exceeds 3 seconds"
   alarm_actions       = [aws_sns_topic.alarms.arn]
   treat_missing_data  = "notBreaching"
 
@@ -90,6 +92,7 @@ resource "aws_cloudwatch_metric_alarm" "alb_response_time" {
   tags = {
     Name        = "${var.project_name}-${var.environment}-alb-response-time"
     Environment = var.environment
+    Severity    = "P2"
   }
 }
 
@@ -107,7 +110,7 @@ resource "aws_cloudwatch_metric_alarm" "ec2_cpu" {
   period              = 300 # 5 minutes
   statistic           = "Average"
   threshold           = 80
-  alarm_description   = "Alert when EC2 CPU exceeds 80% for 5 minutes"
+  alarm_description   = "[P3] Alert when EC2 CPU exceeds 80% for 5 minutes"
   alarm_actions       = [aws_sns_topic.alarms.arn]
   treat_missing_data  = "notBreaching"
 
@@ -118,6 +121,7 @@ resource "aws_cloudwatch_metric_alarm" "ec2_cpu" {
   tags = {
     Name        = "${var.project_name}-${var.environment}-ec2-cpu"
     Environment = var.environment
+    Severity    = "P3"
   }
 }
 
@@ -131,7 +135,7 @@ resource "aws_cloudwatch_metric_alarm" "ec2_status_check" {
   period              = 60
   statistic           = "Maximum"
   threshold           = 1
-  alarm_description   = "Alert when EC2 status check fails"
+  alarm_description   = "[P1] Alert when EC2 status check fails"
   alarm_actions       = [aws_sns_topic.alarms.arn]
   treat_missing_data  = "notBreaching"
 
@@ -142,6 +146,7 @@ resource "aws_cloudwatch_metric_alarm" "ec2_status_check" {
   tags = {
     Name        = "${var.project_name}-${var.environment}-ec2-status-check"
     Environment = var.environment
+    Severity    = "P1"
   }
 }
 
@@ -159,7 +164,7 @@ resource "aws_cloudwatch_metric_alarm" "rds_cpu" {
   period              = 300 # 5 minutes
   statistic           = "Average"
   threshold           = 80
-  alarm_description   = "Alert when RDS CPU exceeds 80% for 5 minutes"
+  alarm_description   = "[P3] Alert when RDS CPU exceeds 80% for 5 minutes"
   alarm_actions       = [aws_sns_topic.alarms.arn]
   treat_missing_data  = "notBreaching"
 
@@ -170,6 +175,7 @@ resource "aws_cloudwatch_metric_alarm" "rds_cpu" {
   tags = {
     Name        = "${var.project_name}-${var.environment}-rds-cpu"
     Environment = var.environment
+    Severity    = "P3"
   }
 }
 
@@ -183,7 +189,7 @@ resource "aws_cloudwatch_metric_alarm" "rds_connections" {
   period              = 300
   statistic           = "Average"
   threshold           = 80
-  alarm_description   = "Alert when RDS connections exceed 80 (db.t3.micro: max_connections formula DBInstanceClassMemory/9531392)"
+  alarm_description   = "[P3] Alert when RDS connections exceed 80 (db.t3.micro: max_connections formula DBInstanceClassMemory/9531392)"
   alarm_actions       = [aws_sns_topic.alarms.arn]
   treat_missing_data  = "notBreaching"
 
@@ -194,6 +200,7 @@ resource "aws_cloudwatch_metric_alarm" "rds_connections" {
   tags = {
     Name        = "${var.project_name}-${var.environment}-rds-connections"
     Environment = var.environment
+    Severity    = "P3"
   }
 }
 
@@ -207,7 +214,7 @@ resource "aws_cloudwatch_metric_alarm" "rds_storage" {
   period              = 300
   statistic           = "Average"
   threshold           = 2147483648 # 2GB in bytes
-  alarm_description   = "Alert when RDS free storage space is less than 2GB"
+  alarm_description   = "[P3] Alert when RDS free storage space is less than 2GB"
   alarm_actions       = [aws_sns_topic.alarms.arn]
   treat_missing_data  = "notBreaching"
 
@@ -218,6 +225,7 @@ resource "aws_cloudwatch_metric_alarm" "rds_storage" {
   tags = {
     Name        = "${var.project_name}-${var.environment}-rds-storage"
     Environment = var.environment
+    Severity    = "P3"
   }
 }
 
@@ -231,7 +239,7 @@ resource "aws_cloudwatch_metric_alarm" "rds_read_latency" {
   period              = 300
   statistic           = "Average"
   threshold           = 0.1 # 100ms in seconds
-  alarm_description   = "Alert when RDS read latency exceeds 100ms"
+  alarm_description   = "[P2] Alert when RDS read latency exceeds 100ms"
   alarm_actions       = [aws_sns_topic.alarms.arn]
   treat_missing_data  = "notBreaching"
 
@@ -242,5 +250,94 @@ resource "aws_cloudwatch_metric_alarm" "rds_read_latency" {
   tags = {
     Name        = "${var.project_name}-${var.environment}-rds-read-latency"
     Environment = var.environment
+    Severity    = "P2"
   }
+}
+
+# ============================================================================
+# ALB Alarms (追加)
+# ============================================================================
+
+# ALB: ELB-level 5xx Errors (ALB自体のエラー)
+resource "aws_cloudwatch_metric_alarm" "alb_elb_5xx" {
+  alarm_name          = "${var.project_name}-${var.environment}-alb-elb-5xx-errors"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "HTTPCode_ELB_5XX_Count"
+  namespace           = "AWS/ApplicationELB"
+  period              = 60
+  statistic           = "Sum"
+  threshold           = 5
+  alarm_description   = "[P2] Alert when ALB itself returns more than 5 5xx errors in 1 minute"
+  alarm_actions       = [aws_sns_topic.alarms.arn]
+  treat_missing_data  = "notBreaching"
+
+  dimensions = {
+    LoadBalancer = var.alb_arn_suffix
+  }
+
+  tags = {
+    Name        = "${var.project_name}-${var.environment}-alb-elb-5xx"
+    Environment = var.environment
+    Severity    = "P2"
+  }
+}
+
+# ============================================================================
+# RDS Alarms (追加)
+# ============================================================================
+
+# RDS: Low Freeable Memory
+resource "aws_cloudwatch_metric_alarm" "rds_freeable_memory" {
+  alarm_name          = "${var.project_name}-${var.environment}-rds-freeable-memory-low"
+  comparison_operator = "LessThanThreshold"
+  evaluation_periods  = 2
+  metric_name         = "FreeableMemory"
+  namespace           = "AWS/RDS"
+  period              = 300
+  statistic           = "Average"
+  threshold           = 128000000 # 128MB in bytes (t3.micro has ~1GB)
+  alarm_description   = "[P3] Alert when RDS freeable memory falls below 128MB"
+  alarm_actions       = [aws_sns_topic.alarms.arn]
+  treat_missing_data  = "notBreaching"
+
+  dimensions = {
+    DBInstanceIdentifier = var.rds_instance_id
+  }
+
+  tags = {
+    Name        = "${var.project_name}-${var.environment}-rds-freeable-memory"
+    Environment = var.environment
+    Severity    = "P3"
+  }
+}
+
+# ============================================================================
+# SNS Topic Policy
+# ============================================================================
+
+# CloudWatch Alarms と EventBridge からの Publish を許可
+resource "aws_sns_topic_policy" "alarms" {
+  arn = aws_sns_topic.alarms.arn
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Id      = "AllowAlarmAndEventBridgePublish"
+    Statement = [
+      {
+        Sid       = "AllowCloudWatchAlarms"
+        Effect    = "Allow"
+        Principal = { Service = "cloudwatch.amazonaws.com" }
+        Action    = "sns:Publish"
+        Resource  = aws_sns_topic.alarms.arn
+      },
+      {
+        Sid       = "AllowEventBridge"
+        Effect    = "Allow"
+        Principal = { Service = "events.amazonaws.com" }
+        Action    = "sns:Publish"
+        Resource  = aws_sns_topic.alarms.arn
+      }
+    ]
+  })
 }
