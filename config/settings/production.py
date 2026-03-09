@@ -1,6 +1,7 @@
 from .base import *  # noqa: F403
 from .base import DATABASES
 from .base import env
+from django.core.exceptions import ImproperlyConfigured
 
 # GENERAL
 # ------------------------------------------------------------------------------
@@ -20,6 +21,10 @@ CSRF_TRUSTED_ORIGINS = [
 
 # DATABASES
 # ------------------------------------------------------------------------------
+if DATABASES["default"]["ENGINE"] == "django.db.backends.sqlite3":
+    msg = "Production requires DATABASE_URL or POSTGRES_* environment variables."
+    raise ImproperlyConfigured(msg)
+
 DATABASES["default"]["CONN_MAX_AGE"] = env.int("CONN_MAX_AGE", default=60)  # type: ignore[arg-type]
 
 # CACHES

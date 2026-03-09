@@ -40,16 +40,28 @@ LOCALE_PATHS = [str(BASE_DIR / "locale")]
 # ------------------------------------------------------------------------------
 # https://docs.djangoproject.com/en/dev/ref/settings/#databases
 database_url = env.str("DATABASE_URL", default="")
+postgres_name = env.str("POSTGRES_DB", default="")
+postgres_user = env.str("POSTGRES_USER", default="")
+postgres_password = env.str("POSTGRES_PASSWORD", default="")
+postgres_host = env.str("POSTGRES_HOST", default="")
+postgres_port = env.str("POSTGRES_PORT", default="5432")
+
 if database_url:
     default_database = env.db("DATABASE_URL")
-else:
+elif all([postgres_name, postgres_user, postgres_password, postgres_host]):
     default_database = {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": env.str("POSTGRES_DB"),
-        "USER": env.str("POSTGRES_USER"),
-        "PASSWORD": env.str("POSTGRES_PASSWORD"),
-        "HOST": env.str("POSTGRES_HOST"),
-        "PORT": env.str("POSTGRES_PORT", default="5432"),
+        "NAME": postgres_name,
+        "USER": postgres_user,
+        "PASSWORD": postgres_password,
+        "HOST": postgres_host,
+        "PORT": postgres_port,
+    }
+else:
+    # Build and test settings can import base.py without production DB env vars.
+    default_database = {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": str(BASE_DIR / "db.sqlite3"),
     }
 
 DATABASES = {"default": default_database}
