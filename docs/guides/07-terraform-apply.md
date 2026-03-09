@@ -10,7 +10,6 @@
 terraform apply（production-config: 永続設定 / secret 登録）
   → terraform apply（production: インフラ構築 + 動的 SSM 更新）
   → user_data bootstrap（EC2 初期化 + env 生成 + 初回 deploy 試行）
-  → setup-ec2.sh（bootstrap 検証）
   → GitHub Secrets 設定
   → git push（GitHub Actions でデプロイ）
 ```
@@ -91,10 +90,6 @@ terraform apply -target=module.security_groups
 
 ### 手順 5: EC2 bootstrap の完了を待つ
 
-```bash
-bash scripts/setup-ec2.sh
-```
-
 EC2 は `user_data` で次を自動実行する。
 
 - Docker / compose / AWS CLI / SSM Agent のセットアップ
@@ -103,22 +98,13 @@ EC2 は `user_data` で次を自動実行する。
 - SSM Parameter Store から `.envs/.production/*` を生成
 - `latest` タグで初回 deploy を試行
 
-### 手順 6: bootstrap 検証
-
-`setup-ec2.sh` は、手動セットアップではなく bootstrap の結果確認用。
-
-実行内容:
-- `/opt/app` 配下の bootstrap 生成物を確認
-- SSM Agent の起動確認
-- `/var/log/user-data.log` の確認
-
-### 手順 7: GitHub Secrets の設定
+### 手順 6: GitHub Secrets の設定
 
 GitHub リポジトリ → Settings → Secrets → Actions:
 - `AWS_ROLE_ARN`: terraform output の `github_actions_role_arn`
 - `EC2_INSTANCE_ID`: EC2 インスタンス ID
 
-### 手順 8: デプロイ
+### 手順 7: デプロイ
 
 ```bash
 # まずは手動実行で 1 回成功ログを確認

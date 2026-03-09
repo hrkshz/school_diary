@@ -39,6 +39,7 @@
 | 18 | ブランチ保護 + PR レビューフロー | 予定 | 中 | [branch-protection.md](./branch-protection.md) |
 | 19 | Docker イメージのセキュリティスキャン | 予定 | 中 | [container-security.md](./container-security.md) |
 | 20 | Terraform CI（plan の自動実行 + PR コメント） | 予定 | 中 | [terraform-ci.md](./terraform-ci.md) |
+| 26 | CD 動線の一本化（Terraform / SSM / EC2 / GitHub Actions の責務固定） | 予定 | 中 | [cd-responsibility-separation.md](./cd-responsibility-separation.md) |
 
 ## SRE / 可観測性
 
@@ -77,7 +78,7 @@
   ↓
 #4 ServiceNow 連携 + #9 EC2 夜間停止 + #11 コスト異常検知
   ↓
-#18 ブランチ保護 + #19 コンテナセキュリティ + #20 Terraform CI
+#18 ブランチ保護 + #19 コンテナセキュリティ + #20 Terraform CI + #26 CD 動線の一本化
   ↓
 #21 構造化ログ + #22 SLI/SLO
   ↓

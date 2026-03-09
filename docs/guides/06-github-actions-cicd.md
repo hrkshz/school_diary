@@ -19,9 +19,17 @@ git push (main)
   → GitHub Actions 起動
   → OIDC で AWS に認証（静的クレデンシャル不要）
   → Docker build → ECR に push
-  → SSM Run Command で EC2 にデプロイ（SSH 不要）
+  → SSM Run Command で EC2 にデプロイ開始を指示
+  → EC2 上の固定 deploy script が本番反映を実行
   → ヘルスチェックで確認
 ```
+
+責務分担:
+
+- Terraform: インフラと設定の正本
+- SSM: 本番設定の保管庫
+- EC2: 実行主体
+- GitHub Actions: オーケストレーター
 
 ### なぜ OIDC 認証か（vs Access Key）
 
@@ -109,15 +117,9 @@ resource "aws_iam_role_policy_attachment" "ssm_core" {
 3. ECR にログイン
 4. Docker イメージをビルド（コミット SHA + latest でタグ付け）
 5. ECR に push
-6. SSM Run Command で EC2 にデプロイ（pull → up -d）
-7. ヘルスチェックで確認
-
-### 手順 4: EC2 セットアップスクリプトの作成
-
-`scripts/setup-ec2.sh`:
-- docker-compose.production.yml と .envs を EC2 に転送
-- SSM Agent の起動確認
-- swap の設定（メモリ対策）
+6. SSM Run Command で EC2 に deploy 開始を指示
+7. EC2 上の `scripts/ssm-deploy.sh` が本番反映を実行
+8. ヘルスチェックで確認
 
 ### 手順 5: GitHub Secrets の設定
 

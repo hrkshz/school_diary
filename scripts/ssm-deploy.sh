@@ -10,9 +10,13 @@ HEALTH_SLEEP_SECONDS="${HEALTH_SLEEP_SECONDS:-10}"
 RELEASE_DIR="${APP_DIR}/.release"
 CURRENT_RELEASE_FILE="${RELEASE_DIR}/current"
 PREVIOUS_RELEASE_FILE="${RELEASE_DIR}/previous"
+LAST_RUN_ID_FILE="${RELEASE_DIR}/last-run-id"
+LAST_DEPLOY_SHA_FILE="${RELEASE_DIR}/last-deploy-sha"
+DEPLOY_RUN_ID="${DEPLOY_RUN_ID:-unknown}"
+DEPLOY_SHA="${DEPLOY_SHA:-${IMAGE_TAG:-unknown}}"
 
 log() {
-  printf '[deploy] %s\n' "$1"
+  printf '[deploy run=%s sha=%s] %s\n' "${DEPLOY_RUN_ID}" "${DEPLOY_SHA}" "$1"
 }
 
 dump_service_state() {
@@ -76,6 +80,8 @@ record_successful_release() {
     cp "${CURRENT_RELEASE_FILE}" "${PREVIOUS_RELEASE_FILE}"
   fi
 
+  printf '%s\n' "${DEPLOY_RUN_ID}" > "${LAST_RUN_ID_FILE}"
+  printf '%s\n' "${DEPLOY_SHA}" > "${LAST_DEPLOY_SHA_FILE}"
   printf '%s\n' "${IMAGE_TAG}" > "${CURRENT_RELEASE_FILE}"
   log "recorded successful release: ${IMAGE_TAG}"
 }

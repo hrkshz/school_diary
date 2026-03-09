@@ -31,6 +31,8 @@
 | 8 | [現状の GitHub Actions CD フロー](./08-current-cd-flow.md) | 現在の本番デプロイが GitHub Actions から AWS までどう流れるかを時系列で整理 |
 | 9 | [SSM Parameter Store の全体像](./09-ssm-overview.md) | SSM に何があり、誰がいつ取得して Django 起動までどうつながるかを初心者向けに整理 |
 | 10 | [このアプリの設定値マップ](./10-configuration-map.md) | 設定値がどこにあり、何のためにあり、誰が読むかを本番中心に俯瞰する入口ガイド |
+| 11 | [CD 正規フローの入口](./11-cd-canonical-flow.md) | 正規の deploy 経路、正本ファイル、責務分担を最短で把握するための入口 |
+| 12 | [CD 切り分け表](./12-cd-troubleshooting.md) | 処理段階ごとに、どのファイルとログを見ればよいかを最短で辿る表 |
 
 ---
 

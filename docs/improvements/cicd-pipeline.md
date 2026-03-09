@@ -16,13 +16,13 @@
 - Docker build → ECR push → SSM Run Command による EC2 デプロイ
 - Terraform で OIDC プロバイダ + IAM ロール + SSM 権限を構築
 - EC2 `user_data` bootstrap と SSM Parameter Store 前提で `.env` を再生成する構成へ整理
+- GitHub Actions はオーケストレーター、EC2 は実行主体という責務分担へ整理
 
 ## 変更ファイル
 
 - `.github/workflows/deploy.yml`
 - `terraform/modules/github_actions/`（新規モジュール）
 - `terraform/modules/iam/main.tf`（SSM 権限追加）
-- `scripts/setup-ec2.sh`（EC2 初期セットアップ）
 
 ## 詳細手順
 
@@ -33,3 +33,4 @@
 - 実運用の apply 順序は `production-config` → `production`
 - `DJANGO_SECRET_KEY` と `POSTGRES_PASSWORD` は `production-config` 側で SSM に入れる
 - deploy 前チェックは [docs/guides/07-terraform-apply.md](../guides/07-terraform-apply.md) と [docs/guides/08-current-cd-flow.md](../guides/08-current-cd-flow.md) を正本とする
+- direct SSM deploy や secret 回収は移行・切り分け専用であり、通常運用の正規経路には含めない
