@@ -28,6 +28,7 @@
 | 5 | [環境変数の自動生成](./05-generate-env.md) | Terraform output → .env ファイル生成を1コマンドで行う |
 | 6 | [GitHub Actions CI/CD の構築](./06-github-actions-cicd.md) | OIDC 認証 + ECR + SSM によるモダンなデプロイパイプライン |
 | 7 | [Terraform による全環境構築](./07-terraform-apply.md) | terraform apply で AWS 環境を一括構築する手順と注意点 |
+| 8 | [現状の GitHub Actions CD フロー](./08-current-cd-flow.md) | 現在の本番デプロイが GitHub Actions から AWS までどう流れるかを時系列で整理 |
 
 ---
 
