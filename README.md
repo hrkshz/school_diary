@@ -169,7 +169,7 @@ flowchart LR
 - [技術仕様](docs/TECHNICAL_SPECIFICATION.md) - 技術スタック、AWS/Terraform 構成、運用の事実
 - [アプリ構成解説](docs/SYSTEM_ARCHITECTURE.md) - Django アプリの責務分割と構成理解の入口
 - [データモデル](docs/ER_DIAGRAM.md) - ER 図、テーブル設計、リレーション
-- [ITOM ロードマップ](docs/ITOM_ROADMAP.md) - ServiceNow / ITOM / ITIL を意識した運用強化方針
+- [Continuous Improvement](docs/improvements/OVERVIEW.md) - 運用品質・コスト最適化の継続的改善
 
 ---
 

@@ -169,3 +169,4 @@ terraform output
 
 - 現在の repo には GitLab CI/CD 定義は含まれていません。
 - そのため、本書では現行インフラ構成のみを扱い、過去の運用手段は正本に含めません。
+- 運用・監視・ServiceNow 連携に向けた将来拡張は [ITOM_ROADMAP.md](./ITOM_ROADMAP.md) を参照してください。

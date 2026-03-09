@@ -151,6 +151,21 @@ docker compose -f docker-compose.local.yml exec django python manage.py create_t
 - CloudWatch Logs
 - Django health check: `/diary/health/`
 
+現状:
+
+- CloudWatch アラームは Terraform 管理で一部導入済み
+- RDS automated backup は 7 日保持
+- 運用強化の今後方針は [ITOM_ROADMAP.md](./ITOM_ROADMAP.md) を参照
+
+将来拡張候補:
+
+- EventBridge によるイベント集約
+- Lambda によるイベント正規化
+- Systems Manager OpsCenter / Automation
+- AWS Backup restore testing
+- AWS Config
+- ServiceNow PDI 連携
+
 補足:
 
 - 再構築や公開先の切り替えにより URL が変わる可能性があります。
