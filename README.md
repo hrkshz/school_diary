@@ -93,6 +93,7 @@ Inbox Pattern による優先度分類と、既読・タスク化をまとめた
 - 担任/管理職ダッシュボードの集計を service に分離し、view を薄くしている
 - URL の正本を 1 か所に集約し、公開環境を再構築しても更新箇所を最小化している
 - AWS/Terraform で公開環境をコード管理し、手作業依存を減らしている
+- CloudWatch を起点にした運用監視や、ServiceNow / ITOM 連携を見据えた改善方針を docs 化している
 
 ---
 
@@ -135,6 +136,23 @@ flowchart LR
 
 ---
 
+## Continuous Improvement
+
+運用品質とコスト最適化の継続的な改善に取り組んでいます。
+
+| カテゴリ | 取り組み | ステータス |
+|---------|---------|----------|
+| 監視基盤 | アラーム重大度分類（P1/P2/P3） + CloudWatch ダッシュボード整備 | 完了 |
+| イベント管理 | EventBridge → Lambda によるイベント正規化 | 予定 |
+| ITSM 連携 | 正規化イベントを ServiceNow PDI へ自動起票 | 予定 |
+| コスト最適化 | タグベース EC2 夜間自動停止 | 予定 |
+| コスト最適化 | コスト異常検知 → ServiceNow 起票 | 予定 |
+| 可用性制御 | CloudFront オリジン切替によるメンテナンスページ | 予定 |
+
+詳細: [Continuous Improvement](docs/improvements/OVERVIEW.md)
+
+---
+
 ## ドキュメント
 
 ### 制作物確認用
@@ -151,8 +169,9 @@ flowchart LR
 - [技術仕様](docs/TECHNICAL_SPECIFICATION.md) - 技術スタック、AWS/Terraform 構成、運用の事実
 - [アプリ構成解説](docs/SYSTEM_ARCHITECTURE.md) - Django アプリの責務分割と構成理解の入口
 - [データモデル](docs/ER_DIAGRAM.md) - ER 図、テーブル設計、リレーション
+- [ITOM ロードマップ](docs/ITOM_ROADMAP.md) - ServiceNow / ITOM / ITIL を意識した運用強化方針
 
 ---
 
 **作成日**: 2025-10-06
-**最終更新**: 2026-03-03
+**最終更新**: 2026-03-09
