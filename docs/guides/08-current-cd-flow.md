@@ -13,7 +13,7 @@
 - このワークフローの役割は、以下を自動でつなぐことです。
   - GitHub Actions で Docker イメージを作る
   - AWS ECR に push する
-  - AWS Systems Manager で EC2 にデプロイ命令を送る
+  - AWS Systems Manager で EC2 上の固定 deploy script を実行する
   - 本番アプリのヘルスチェックを行う
 
 ---
@@ -21,17 +21,34 @@
 ## CD 全体像
 
 ```text
+production-config apply
+  -> SSM に永続設定 / secret を保存
+  -> production apply
+  -> AWS リソース作成 + 動的 SSM 値を更新
+  -> EC2 user_data bootstrap
+  -> EC2 が GitHub から bootstrap ファイルを取得
+  -> EC2 が SSM から .env を生成
+  -> GitHub Actions 手動実行または push
 main に push
   -> GitHub Actions 起動
   -> AWS に OIDC 認証
   -> Docker イメージを build
   -> ECR に push
-  -> SSM Run Command で EC2 にデプロイ
+  -> EC2 で GitHub から deploy 用ファイルを同期
+  -> EC2 で SSM Parameter Store から .env を再生成
+  -> SSM Run Command で EC2 の deploy script を実行
   -> migrate 実行
   -> django コンテナ再起動
   -> コンテナ health check
   -> ALB 経由で /diary/health/ を確認
 ```
+
+この workflow が成功する前提:
+
+- `production-config` が先に apply されている
+- `production` が apply され、動的 SSM 値が更新済みである
+- EC2 bootstrap が完了している
+- GitHub Secrets に `AWS_ROLE_ARN` と `EC2_INSTANCE_ID` が入っている
 
 ---
 
@@ -118,21 +135,30 @@ main に push
 ### 4-2. SSM で送っているコマンドの流れ
 
 - 以前は、`deploy.yml` に長いコマンド列を直接書いていました。
-- 改善後は、GitHub Actions が **[`scripts/ssm-deploy.sh`](../../scripts/ssm-deploy.sh)** を EC2 に渡して実行します。
-- これにより、処理の見通しとログの追いやすさを改善しています。
+- 改善後は、EC2 上にある bootstrap 用スクリプトで deploy に必要なファイル同期と `.env` 生成を先に行います。
+- その後、EC2 上の **[`scripts/ssm-deploy.sh`](../../scripts/ssm-deploy.sh)** を実行します。
 - EC2 側では次の順番で処理が進みます。
-  - `set -Eeuo pipefail` で、想定外の失敗を早めに検知する
-  - `/opt/app` に移動する
-  - 今動いている Django コンテナのイメージ名を表示する
-  - 今回デプロイするイメージタグを表示する
-  - `aws ecr get-login-password` で EC2 側の Docker を ECR にログインさせる
-  - `docker compose -f docker-compose.production.yml pull django` を実行する
-  - `docker compose -f docker-compose.production.yml run --rm django python manage.py migrate --noinput` を実行する
-  - `docker compose -f docker-compose.production.yml up -d django` を実行する
-  - `docker compose ps` とコンテナログを表示する
-  - 一定回数のループで、コンテナが `healthy` になるまで待つ
-  - healthy にならなければ `latest` タグで簡易ロールバックする
-  - 最後に不要な Docker イメージを `docker image prune -f` で削除する
+  - `/opt/app/bin/sync-app-files.sh` で GitHub から `docker-compose.production.yml` と deploy script 群を取得する
+  - `/opt/app/bin/render-env-from-ssm.sh` で SSM Parameter Store から `.envs/.production/*` を生成する
+  - `/opt/app/bin/ssm-deploy.sh` を実行する
+  - deploy script の中で ECR login、pull、migrate、up -d、health check、cleanup を行う
+
+補足:
+
+- 永続設定と secret は `terraform/environments/production-config` が管理する
+- ALB DNS / CloudFront / RDS endpoint のような再生成値は `terraform/environments/production` が SSM を更新する
+- そのため、`terraform destroy` を繰り返す運用でも secret を毎回入れ直さずに済む
+- EC2 bootstrap が最初に取る Git ref は `terraform/environments/production` の `github_bootstrap_ref` で、当面 `main` を前提にする
+
+### 4-2.1 bootstrap が先にやっていること
+
+GitHub Actions の deploy が始まる前に、EC2 の `user_data` は次を実行している。
+
+- GitHub raw から `scripts/bootstrap/sync-app-files.sh` を取得する
+- `sync-app-files.sh` が `docker-compose.production.yml` / `ssm-deploy.sh` / `render-env-from-ssm.sh` を取得する
+- `render-env-from-ssm.sh` が `DJANGO_SECRET_KEY` と動的 SSM 値を読んで `.envs/.production/*` を生成する
+
+つまり、GitHub Actions の成否は workflow 単体ではなく、先に完了している bootstrap と SSM の状態にも依存する。
 
 ### 4-3. pull のとき、どのイメージを取ってくるのか
 
@@ -155,7 +181,7 @@ image: ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG:-latest}
 - django コンテナは `command: /start` で起動します。
 - ただし、その前に entrypoint として **[`compose/production/django/entrypoint`](../../compose/production/django/entrypoint)** が実行されます。
 - entrypoint では次を行います。
-  - `DATABASE_URL` を組み立てる
+  - `POSTGRES_*` から `DATABASE_URL` を組み立てる
   - PostgreSQL が起動するまで待つ
   - `collectstatic --noinput` を実行する
 - その後、**[`compose/production/django/start`](../../compose/production/django/start)** が Gunicorn を起動します。
@@ -171,9 +197,8 @@ image: ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG:-latest}
 ### 4-7. コンテナが healthy にならないとき
 
 - SSM スクリプトは `Health check failed, rolling back` を表示します。
-- その後 `IMAGE_TAG=latest` に切り替えて、再度 `docker compose ... up -d django` を実行します。
-- これは**簡易ロールバック**です。
-- 厳密に「1 つ前に成功したコミット SHA へ戻す」方式ではなく、`latest` タグに依存しています。
+- その後 `.release/current` に保存してある直前成功 SHA を使って、再度 `docker compose ... up -d django` を実行します。
+- つまり rollback は `latest` ではなく、**EC2 が記録している前回成功版**に戻します。
 
 ---
 
@@ -221,7 +246,11 @@ http://<ALB_DNS>/diary/health/
   - トリガー、AWS 認証、Docker build/push、SSM デプロイ、最終確認までを定義しています。
 - **[`scripts/ssm-deploy.sh`](../../scripts/ssm-deploy.sh)**
   - EC2 上で実行するデプロイ手順の正本です。
-  - 各フェーズのログ出力、health check 待機、簡易ロールバックを持ちます。
+  - 各フェーズのログ出力、health check 待機、成功版 SHA の記録、rollback を持ちます。
+- **[`scripts/bootstrap/sync-app-files.sh`](../../scripts/bootstrap/sync-app-files.sh)**
+  - GitHub から `docker-compose.production.yml` と deploy 用スクリプトを取得します。
+- **[`scripts/bootstrap/render-env-from-ssm.sh`](../../scripts/bootstrap/render-env-from-ssm.sh)**
+  - SSM Parameter Store から `.envs/.production/.django` と `.postgres` を生成します。
 - **[`docker-compose.production.yml`](../../docker-compose.production.yml)**
   - EC2 上で django コンテナをどう起動するかを定義しています。
   - どの ECR イメージを pull するか、どの health check を使うかもここで決まります。
@@ -240,15 +269,20 @@ http://<ALB_DNS>/diary/health/
   - 自動テストや lint を通してから本番へ出す構成にはなっていません。
 - `main` への push が、そのまま本番デプロイの起点になります。
   - ブランチ保護や PR 必須運用が弱いと、誤反映のリスクがあります。
-- ロールバックは `latest` を使った簡易方式です。
-  - 「直前の成功版に厳密に戻す」仕組みではありません。
 - デプロイ先は単一 EC2 前提です。
   - Auto Scaling や複数台切り替えを前提にした構成ではありません。
+- EC2 bootstrap は GitHub と SSM Parameter Store に依存します。
+  - EC2 を再作成しても手作業は不要ですが、GitHub 到達性と Parameter Store 権限は必要です。
 
 ---
 
 ## 9. 失敗時にどこを見るか
 
+- まず次の順序で前提を切り分けます。
+  - `production-config` apply 後に永続 SSM があるか
+  - `production` apply 後に動的 SSM があるか
+  - EC2 bootstrap が完了しているか
+  - そのうえで GitHub Actions の deploy が失敗しているか
 - まず GitHub Actions の `Deploy to EC2 via SSM` ステップで、`SSM Command ID` を確認します。
 - 次に、そのステップの末尾に出る以下を確認します。
   - `SSM Standard Output`
@@ -259,6 +293,19 @@ http://<ALB_DNS>/diary/health/
   - `migrate` で止まった
   - コンテナが `healthy` にならずロールバックした
 - GitHub Actions のログだけで足りなければ、AWS Systems Manager の Run Command 履歴から同じ `Command ID` を開くと、EC2 側の詳細ログを追えます。
+- bootstrap 自体を確認したいときは、EC2 の `/var/log/user-data.log` と `/opt/app/bin` / `.envs/.production` の生成状態を確認します。
+
+### デプロイ前チェックリスト
+
+workflow を回す前に、次を 1 回確認すると詰まりにくい。
+
+1. `production-config/terraform.tfvars` を作成し、`django_secret_key` と `db_password` を設定した
+2. `production-config` を apply した
+3. `production` を apply した
+4. `terraform output` で `github_actions_role_arn` と EC2 情報を確認した
+5. GitHub Secrets に `AWS_ROLE_ARN` と `EC2_INSTANCE_ID` を入れた
+6. EC2 bootstrap が完了した
+7. 最初の 1 回は `workflow_dispatch` で手動実行して成功ログを確認した
 
 ---
 

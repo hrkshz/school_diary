@@ -13,6 +13,8 @@ on:
 env:
   AWS_REGION: ap-northeast-1
   ECR_REPOSITORY: school-diary-production-django
+  APP_DIR: /opt/app
+  PARAMETER_PREFIX: /school-diary/production
 
 permissions:
   id-token: write
@@ -59,27 +61,31 @@ jobs:
         run: |
           set -euo pipefail
 
-          DEPLOY_SCRIPT_B64=$(base64 -w 0 scripts/ssm-deploy.sh)
           COMMANDS_JSON=$(jq -nc \
-            --arg script "$DEPLOY_SCRIPT_B64" \
             --arg aws_region "${AWS_REGION}" \
             --arg ecr_registry "${ECR_REGISTRY}" \
             --arg ecr_repository "${ECR_REPOSITORY}" \
             --arg image_tag "${IMAGE_TAG}" \
-            --arg rollback_tag "latest" \
+            --arg app_dir "${APP_DIR}" \
+            --arg github_repository "${{ github.repository }}" \
+            --arg parameter_prefix "${PARAMETER_PREFIX}" \
             '[
               "set -Eeuo pipefail",
-              "echo \"[runner] preparing remote deploy script\"",
-              "printf %s \"" + $script + "\" | base64 -d > /tmp/ssm-deploy.sh",
-              "chmod +x /tmp/ssm-deploy.sh",
+              "install -d " + $app_dir + "/bin " + $app_dir + "/.envs/.production " + $app_dir + "/.release",
+              "curl -fsSL https://raw.githubusercontent.com/" + $github_repository + "/" + $image_tag + "/scripts/bootstrap/sync-app-files.sh -o " + $app_dir + "/bin/sync-app-files.sh",
+              "chmod +x " + $app_dir + "/bin/sync-app-files.sh",
               "export AWS_REGION=" + $aws_region,
               "export ECR_REGISTRY=" + $ecr_registry,
               "export ECR_REPOSITORY=" + $ecr_repository,
               "export IMAGE_TAG=" + $image_tag,
-              "export ROLLBACK_TAG=" + $rollback_tag,
+              "export APP_DIR=" + $app_dir,
+              "export GITHUB_REPOSITORY=" + $github_repository,
+              "export PARAMETER_PREFIX=" + $parameter_prefix,
               "export HEALTH_RETRIES=18",
               "export HEALTH_SLEEP_SECONDS=10",
-              "bash /tmp/ssm-deploy.sh"
+              $app_dir + "/bin/sync-app-files.sh " + $image_tag,
+              $app_dir + "/bin/render-env-from-ssm.sh",
+              "cd " + $app_dir + " && " + $app_dir + "/bin/ssm-deploy.sh"
             ]')
 
           COMMAND_ID=$(aws ssm send-command \

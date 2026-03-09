@@ -4,6 +4,10 @@ aws_region = "ap-northeast-1"
 # Project Configuration
 project_name = "school-diary"
 environment  = "production"
+github_repo  = "hrkshz/school_diary"
+
+# Bootstrap Configuration
+github_bootstrap_ref = "main" # TODO: Change only when bootstrapping from another branch/tag
 
 # Network Configuration
 vpc_cidr            = "10.0.0.0/16"
@@ -18,7 +22,6 @@ admin_ip      = "0.0.0.0/0"                # TODO: Replace with your IP address 
 # RDS Configuration
 db_name                    = "school_diary"
 db_username                = "postgres"
-db_password                = "CHANGE_ME_STRONG_PASSWORD_MIN_8_CHARS" # TODO: Set a strong password
 db_instance_class          = "db.t3.micro"
 db_allocated_storage       = 20
 db_engine_version          = "16.1"
@@ -28,3 +31,7 @@ db_backup_retention_period = 7
 # S3 Configuration
 s3_bucket_name        = "school-diary-prod-static-media-20250118" # TODO: Change to ensure global uniqueness
 s3_versioning_enabled = true
+
+# SES / Notifications
+ses_sender_email       = "hiroki0107@gmail.com"
+cloudwatch_alarm_email = "hiroki0107@gmail.com"

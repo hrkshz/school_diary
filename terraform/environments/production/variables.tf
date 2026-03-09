@@ -77,12 +77,6 @@ variable "db_username" {
   default     = "postgres"
 }
 
-variable "db_password" {
-  description = "Database master password"
-  type        = string
-  sensitive   = true
-}
-
 variable "db_instance_class" {
   description = "RDS instance class"
   type        = string
@@ -137,6 +131,12 @@ variable "github_repo" {
   description = "GitHub repository (owner/repo format)"
   type        = string
   default     = "hrkshz/school_diary"
+}
+
+variable "github_bootstrap_ref" {
+  description = "Git ref used by EC2 bootstrap to fetch deployment files from GitHub"
+  type        = string
+  default     = "main"
 }
 
 # CloudWatch Variables

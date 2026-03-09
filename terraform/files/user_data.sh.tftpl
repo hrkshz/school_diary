@@ -1,0 +1,103 @@
+#!/bin/bash
+set -Eeuo pipefail
+
+exec > >(tee -a /var/log/user-data.log) 2>&1
+
+APP_DIR="/opt/app"
+BIN_DIR="$${APP_DIR}/bin"
+PARAMETER_PREFIX="${parameter_prefix}"
+AWS_REGION="${aws_region}"
+GITHUB_REPOSITORY="${github_repository}"
+BOOTSTRAP_REF="${github_bootstrap_ref}"
+ECR_REPOSITORY_URL="${ecr_repository_url}"
+ECR_REGISTRY="${ecr_registry}"
+ECR_REPOSITORY="${ecr_repository_name}"
+
+log() {
+  printf '[user-data] %s\n' "$1"
+}
+
+retry() {
+  local retries="$1"
+  local sleep_seconds="$2"
+  shift 2
+  local attempt
+
+  for attempt in $(seq 1 "$${retries}"); do
+    if "$@"; then
+      return 0
+    fi
+
+    log "attempt $${attempt}/$${retries} failed: $*"
+    sleep "$${sleep_seconds}"
+  done
+
+  return 1
+}
+
+install_docker() {
+  apt-get install -y ca-certificates curl gnupg
+  install -m 0755 -d /etc/apt/keyrings
+  curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+  chmod a+r /etc/apt/keyrings/docker.asc
+
+  echo \
+    "deb [arch=$$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+    $$(. /etc/os-release && echo "$$VERSION_CODENAME") stable" \
+    > /etc/apt/sources.list.d/docker.list
+
+  apt-get update
+  apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+  systemctl enable docker
+  systemctl start docker
+}
+
+install_ssm_agent() {
+  apt-get install -y snapd
+  snap install amazon-ssm-agent --classic || true
+  systemctl enable snap.amazon-ssm-agent.amazon-ssm-agent.service || true
+  systemctl start snap.amazon-ssm-agent.amazon-ssm-agent.service || true
+}
+
+bootstrap_app_files() {
+  mkdir -p "$${APP_DIR}" "$${BIN_DIR}" "$${APP_DIR}/.envs/.production" "$${APP_DIR}/.release"
+
+  curl -fsSL \
+    "https://raw.githubusercontent.com/$${GITHUB_REPOSITORY}/$${BOOTSTRAP_REF}/scripts/bootstrap/sync-app-files.sh" \
+    -o "$${BIN_DIR}/sync-app-files.sh"
+  chmod +x "$${BIN_DIR}/sync-app-files.sh"
+
+  APP_DIR="$${APP_DIR}" GITHUB_REPOSITORY="$${GITHUB_REPOSITORY}" "$${BIN_DIR}/sync-app-files.sh" "$${BOOTSTRAP_REF}"
+  APP_DIR="$${APP_DIR}" PARAMETER_PREFIX="$${PARAMETER_PREFIX}" AWS_REGION="$${AWS_REGION}" "$${BIN_DIR}/render-env-from-ssm.sh"
+}
+
+attempt_initial_deploy() {
+  export AWS_REGION
+  export APP_DIR
+  export ECR_REGISTRY
+  export ECR_REPOSITORY
+  export IMAGE_TAG="latest"
+
+  cd "$${APP_DIR}"
+  "$${BIN_DIR}/ssm-deploy.sh"
+}
+
+log "starting EC2 bootstrap"
+apt-get update
+DEBIAN_FRONTEND=noninteractive apt-get install -y git jq unzip awscli
+install_docker
+install_ssm_agent
+mkdir -p "$${APP_DIR}"
+
+usermod -aG docker ubuntu || true
+chown -R ubuntu:ubuntu "$${APP_DIR}"
+
+retry 30 10 bootstrap_app_files
+
+if retry 3 15 attempt_initial_deploy; then
+  log "initial deploy completed"
+else
+  log "initial deploy failed; GitHub Actions can retry later"
+fi
+
+log "bootstrap completed at $$(date)"

@@ -93,3 +93,8 @@ output "github_actions_role_arn" {
   description = "GitHub Actions IAM role ARN (for OIDC)"
   value       = module.github_actions.role_arn
 }
+
+output "parameter_store_prefix" {
+  description = "SSM Parameter Store prefix for application configuration"
+  value       = local.parameter_prefix
+}

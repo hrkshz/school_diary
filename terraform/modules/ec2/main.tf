@@ -23,7 +23,15 @@ resource "aws_instance" "main" {
   key_name               = var.key_name
   iam_instance_profile   = var.iam_instance_profile != "" ? var.iam_instance_profile : null
 
-  user_data = file("${path.module}/../../files/user_data.sh")
+  user_data = templatefile("${path.module}/../../files/user_data.sh.tftpl", {
+    aws_region           = var.aws_region
+    github_repository    = var.github_repo
+    github_bootstrap_ref = var.github_bootstrap_ref
+    parameter_prefix     = var.parameter_prefix
+    ecr_repository_url   = var.ecr_repository_url
+    ecr_registry         = split("/", var.ecr_repository_url)[0]
+    ecr_repository_name  = split("/", var.ecr_repository_url)[1]
+  })
 
   root_block_device {
     volume_size = 20

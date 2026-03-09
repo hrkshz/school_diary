@@ -15,6 +15,7 @@
 - GitHub Actions OIDC による AWS 認証（静的クレデンシャル不要）
 - Docker build → ECR push → SSM Run Command による EC2 デプロイ
 - Terraform で OIDC プロバイダ + IAM ロール + SSM 権限を構築
+- EC2 `user_data` bootstrap と SSM Parameter Store 前提で `.env` を再生成する構成へ整理
 
 ## 変更ファイル
 
@@ -26,3 +27,9 @@
 ## 詳細手順
 
 [docs/guides/06-github-actions-cicd.md](../guides/06-github-actions-cicd.md)
+
+補足:
+
+- 実運用の apply 順序は `production-config` → `production`
+- `DJANGO_SECRET_KEY` と `POSTGRES_PASSWORD` は `production-config` 側で SSM に入れる
+- deploy 前チェックは [docs/guides/07-terraform-apply.md](../guides/07-terraform-apply.md) と [docs/guides/08-current-cd-flow.md](../guides/08-current-cd-flow.md) を正本とする

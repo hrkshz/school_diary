@@ -18,3 +18,8 @@ variable "aws_region" {
   type        = string
   default     = "ap-northeast-1"
 }
+
+variable "parameter_prefix" {
+  description = "SSM Parameter Store prefix for application configuration"
+  type        = string
+}

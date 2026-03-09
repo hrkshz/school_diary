@@ -84,6 +84,12 @@ RDS PostgreSQL 16
 
 公開デモ URL は [README.md](../README.md) を参照してください。
 
+補足:
+
+- 永続 secret / 設定は `terraform/environments/production-config` が SSM Parameter Store に保持する
+- ALB DNS、CloudFront ドメイン、RDS endpoint など再生成値は `terraform/environments/production` が SSM を更新する
+- Django と AWS CLI は EC2 IAM ロールで AWS 認証し、Access Key の環境変数は必須にしていない
+
 ---
 
 ## 4. Terraform 出力と参照方法

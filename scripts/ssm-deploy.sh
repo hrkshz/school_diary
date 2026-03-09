@@ -5,9 +5,11 @@ set -Eeuo pipefail
 APP_DIR="/opt/app"
 COMPOSE_FILE="docker-compose.production.yml"
 SERVICE_NAME="django"
-ROLLBACK_TAG="${ROLLBACK_TAG:-latest}"
 HEALTH_RETRIES="${HEALTH_RETRIES:-12}"
 HEALTH_SLEEP_SECONDS="${HEALTH_SLEEP_SECONDS:-10}"
+RELEASE_DIR="${APP_DIR}/.release"
+CURRENT_RELEASE_FILE="${RELEASE_DIR}/current"
+PREVIOUS_RELEASE_FILE="${RELEASE_DIR}/previous"
 
 log() {
   printf '[deploy] %s\n' "$1"
@@ -48,17 +50,40 @@ wait_for_service_health() {
 }
 
 rollback_to_latest() {
-  log "rolling back to tag: ${ROLLBACK_TAG}"
-  export IMAGE_TAG="${ROLLBACK_TAG}"
+  local rollback_tag=""
+
+  if [ -f "${CURRENT_RELEASE_FILE}" ]; then
+    rollback_tag="$(tr -d '\n' < "${CURRENT_RELEASE_FILE}")"
+  fi
+
+  if [ -z "${rollback_tag}" ]; then
+    log "no previously successful release recorded; skipping rollback"
+    return 1
+  fi
+
+  log "rolling back to previously successful tag: ${rollback_tag}"
+  export IMAGE_TAG="${rollback_tag}"
 
   docker compose -f "${COMPOSE_FILE}" pull "${SERVICE_NAME}"
   docker compose -f "${COMPOSE_FILE}" up -d "${SERVICE_NAME}"
   dump_service_state
 }
 
+record_successful_release() {
+  mkdir -p "${RELEASE_DIR}"
+
+  if [ -f "${CURRENT_RELEASE_FILE}" ]; then
+    cp "${CURRENT_RELEASE_FILE}" "${PREVIOUS_RELEASE_FILE}"
+  fi
+
+  printf '%s\n' "${IMAGE_TAG}" > "${CURRENT_RELEASE_FILE}"
+  log "recorded successful release: ${IMAGE_TAG}"
+}
+
 main() {
   log "starting remote deploy"
   cd "${APP_DIR}"
+  mkdir -p "${RELEASE_DIR}"
 
   : "${AWS_REGION:?AWS_REGION is required}"
   : "${ECR_REGISTRY:?ECR_REGISTRY is required}"
@@ -94,10 +119,11 @@ main() {
   log "waiting for container health"
   if wait_for_service_health; then
     log "deploy successful"
+    record_successful_release
   else
     log "health check failed before rollback"
     dump_service_state
-    rollback_to_latest
+    rollback_to_latest || true
     exit 1
   fi
 

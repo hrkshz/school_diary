@@ -33,3 +33,28 @@ variable "iam_instance_profile" {
   type        = string
   default     = ""
 }
+
+variable "aws_region" {
+  description = "AWS region"
+  type        = string
+}
+
+variable "github_repo" {
+  description = "GitHub repository used for bootstrap"
+  type        = string
+}
+
+variable "github_bootstrap_ref" {
+  description = "Git ref used for bootstrap file download"
+  type        = string
+}
+
+variable "parameter_prefix" {
+  description = "SSM Parameter Store prefix for application configuration"
+  type        = string
+}
+
+variable "ecr_repository_url" {
+  description = "ECR repository URL used by bootstrap deployment"
+  type        = string
+}

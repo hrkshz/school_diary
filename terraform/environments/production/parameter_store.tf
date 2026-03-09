@@ -1,0 +1,53 @@
+locals {
+  parameter_prefix = "/${var.project_name}/${var.environment}"
+
+  django_dynamic_parameters = {
+    DJANGO_ALLOWED_HOSTS           = join(",", [module.alb.dns_name, module.cloudfront.cloudfront_domain_name])
+    DJANGO_SITE_URL                = "https://${module.cloudfront.cloudfront_domain_name}"
+    DJANGO_AWS_STORAGE_BUCKET_NAME = module.s3.bucket_name
+    DJANGO_AWS_S3_REGION_NAME      = var.aws_region
+    AWS_REGION                     = var.aws_region
+    AWS_DEFAULT_REGION             = var.aws_region
+    AWS_SES_REGION                 = var.aws_region
+  }
+
+  postgres_parameters = {
+    POSTGRES_HOST = split(":", module.rds.db_endpoint)[0]
+    POSTGRES_PORT = tostring(module.rds.db_port)
+    POSTGRES_DB   = module.rds.db_name
+    POSTGRES_USER = var.db_username
+  }
+}
+
+data "aws_ssm_parameter" "db_password" {
+  name            = "${local.parameter_prefix}/postgres/POSTGRES_PASSWORD"
+  with_decryption = true
+}
+
+resource "aws_ssm_parameter" "django_dynamic_parameters" {
+  for_each = local.django_dynamic_parameters
+
+  name  = "${local.parameter_prefix}/django/${each.key}"
+  type  = "String"
+  value = each.value
+
+  tags = {
+    Name        = "${var.project_name}-${var.environment}-django-${lower(each.key)}"
+    Environment = var.environment
+    ManagedBy   = "terraform"
+  }
+}
+
+resource "aws_ssm_parameter" "postgres_parameters" {
+  for_each = local.postgres_parameters
+
+  name  = "${local.parameter_prefix}/postgres/${each.key}"
+  type  = "String"
+  value = each.value
+
+  tags = {
+    Name        = "${var.project_name}-${var.environment}-postgres-${lower(each.key)}"
+    Environment = var.environment
+    ManagedBy   = "terraform"
+  }
+}

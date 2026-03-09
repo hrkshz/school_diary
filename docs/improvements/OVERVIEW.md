@@ -64,6 +64,7 @@
 | # | 取り組み | ステータス | 優先度 | 詳細 |
 |---|---------|----------|--------|------|
 | 14 | リソースタグ監査 | 後段 | 低 | [resource-tagging-governance.md](./resource-tagging-governance.md) |
+| 25 | 設定値管理の整理（SSM / settings / constants の責務分離） | 予定 | 中 | [configuration-management-refactor.md](./configuration-management-refactor.md) |
 
 ---
 
@@ -80,5 +81,5 @@
   ↓
 #21 構造化ログ + #22 SLI/SLO
   ↓
-#10 メンテナンスページ + #5〜8, #14, #23〜24 は必要に応じて
+#10 メンテナンスページ + #5〜8, #14, #23〜25 は必要に応じて
 ```

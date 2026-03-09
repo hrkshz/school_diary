@@ -1,13 +1,13 @@
 module "vpc" {
   source = "../../modules/vpc"
 
-  project_name           = var.project_name
-  environment            = var.environment
-  vpc_cidr               = var.vpc_cidr
-  public_subnet_cidr     = var.public_subnet_cidr
-  public_subnet_cidr_2   = var.public_subnet_cidr_2
-  private_subnet_cidr    = var.private_subnet_cidr
-  private_subnet_cidr_2  = var.private_subnet_cidr_2
+  project_name          = var.project_name
+  environment           = var.environment
+  vpc_cidr              = var.vpc_cidr
+  public_subnet_cidr    = var.public_subnet_cidr
+  public_subnet_cidr_2  = var.public_subnet_cidr_2
+  private_subnet_cidr   = var.private_subnet_cidr
+  private_subnet_cidr_2 = var.private_subnet_cidr_2
 }
 
 module "security_groups" {
@@ -31,10 +31,11 @@ module "s3" {
 module "iam" {
   source = "../../modules/iam"
 
-  project_name  = var.project_name
-  environment   = var.environment
-  s3_bucket_arn = module.s3.bucket_arn
-  aws_region    = var.aws_region
+  project_name     = var.project_name
+  environment      = var.environment
+  s3_bucket_arn    = module.s3.bucket_arn
+  aws_region       = var.aws_region
+  parameter_prefix = local.parameter_prefix
 }
 
 module "ecr" {
@@ -55,7 +56,7 @@ module "rds" {
 
   db_name                    = var.db_name
   db_username                = var.db_username
-  db_password                = var.db_password
+  db_password                = data.aws_ssm_parameter.db_password.value
   db_instance_class          = var.db_instance_class
   db_allocated_storage       = var.db_allocated_storage
   db_engine_version          = var.db_engine_version
@@ -73,6 +74,11 @@ module "ec2" {
   instance_type        = var.instance_type
   key_name             = var.key_name
   iam_instance_profile = module.iam.instance_profile_name
+  aws_region           = var.aws_region
+  github_repo          = var.github_repo
+  github_bootstrap_ref = var.github_bootstrap_ref
+  parameter_prefix     = local.parameter_prefix
+  ecr_repository_url   = module.ecr.repository_url
 }
 
 module "alb" {
@@ -107,13 +113,13 @@ module "ses" {
 module "cloudwatch" {
   source = "../../modules/cloudwatch"
 
-  project_name                  = var.project_name
-  environment                   = var.environment
-  alarm_email                   = var.cloudwatch_alarm_email
-  alb_arn_suffix                = module.alb.alb_arn_suffix
-  alb_target_group_arn_suffix   = module.alb.target_group_arn_suffix
-  ec2_instance_id               = module.ec2.instance_id
-  rds_instance_id               = module.rds.db_instance_identifier
+  project_name                = var.project_name
+  environment                 = var.environment
+  alarm_email                 = var.cloudwatch_alarm_email
+  alb_arn_suffix              = module.alb.alb_arn_suffix
+  alb_target_group_arn_suffix = module.alb.target_group_arn_suffix
+  ec2_instance_id             = module.ec2.instance_id
+  rds_instance_id             = module.rds.db_instance_identifier
 }
 
 module "cloudwatch_logs" {

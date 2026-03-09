@@ -29,6 +29,8 @@
 | 6 | [GitHub Actions CI/CD の構築](./06-github-actions-cicd.md) | OIDC 認証 + ECR + SSM によるモダンなデプロイパイプライン |
 | 7 | [Terraform による全環境構築](./07-terraform-apply.md) | terraform apply で AWS 環境を一括構築する手順と注意点 |
 | 8 | [現状の GitHub Actions CD フロー](./08-current-cd-flow.md) | 現在の本番デプロイが GitHub Actions から AWS までどう流れるかを時系列で整理 |
+| 9 | [SSM Parameter Store の全体像](./09-ssm-overview.md) | SSM に何があり、誰がいつ取得して Django 起動までどうつながるかを初心者向けに整理 |
+| 10 | [このアプリの設定値マップ](./10-configuration-map.md) | 設定値がどこにあり、何のためにあり、誰が読むかを本番中心に俯瞰する入口ガイド |
 
 ---
 
