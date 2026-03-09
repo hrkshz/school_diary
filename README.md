@@ -143,11 +143,11 @@ flowchart LR
 | カテゴリ | 取り組み | ステータス |
 |---------|---------|----------|
 | 監視基盤 | アラーム重大度分類（P1/P2/P3） + CloudWatch ダッシュボード整備 | 完了 |
+| CI/CD | GitHub Actions + OIDC + SSM によるデプロイパイプライン | 完了 |
 | イベント管理 | EventBridge → Lambda によるイベント正規化 | 予定 |
 | ITSM 連携 | 正規化イベントを ServiceNow PDI へ自動起票 | 予定 |
-| コスト最適化 | タグベース EC2 夜間自動停止 | 予定 |
-| コスト最適化 | コスト異常検知 → ServiceNow 起票 | 予定 |
-| 可用性制御 | CloudFront オリジン切替によるメンテナンスページ | 予定 |
+| SRE | SLI/SLO 定義 + 構造化ログ + 外形監視 | 予定 |
+| コスト最適化 | タグベース EC2 夜間自動停止 / コスト異常検知 | 予定 |
 
 詳細: [Continuous Improvement](docs/improvements/OVERVIEW.md)
 

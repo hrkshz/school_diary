@@ -21,13 +21,33 @@
 | # | 取り組み | ステータス | 優先度 | 詳細 |
 |---|---------|----------|--------|------|
 | 1 | アラーム重大度分類 + ダッシュボード整備 | 完了 | - | [monitoring-severity-dashboard.md](./monitoring-severity-dashboard.md) |
-| 2 | インフラ再構築（terraform apply） | **次** | 高 | [infrastructure-rebuild.md](./infrastructure-rebuild.md) |
+| 2 | インフラ再構築（terraform apply） | 完了 | - | [infrastructure-rebuild.md](./infrastructure-rebuild.md) |
 | 3 | イベント正規化（Lambda） | 予定 | 高 | [event-normalization.md](./event-normalization.md) |
 | 4 | ServiceNow PDI 連携 | 予定 | 高 | [servicenow-integration.md](./servicenow-integration.md) |
 | 5 | 障害対応自動化（Systems Manager） | 後段 | 低 | [incident-response-automation.md](./incident-response-automation.md) |
 | 6 | バックアップ・復旧検証 | 後段 | 低 | [backup-restore-testing.md](./backup-restore-testing.md) |
 | 7 | 構成変更追跡（AWS Config） | 後段 | 低 | [configuration-tracking.md](./configuration-tracking.md) |
 | 8 | ITIL プロセス整理 | 後段 | 低 | [itil-process-alignment.md](./itil-process-alignment.md) |
+
+## DevOps / CI/CD
+
+| # | 取り組み | ステータス | 優先度 | 詳細 |
+|---|---------|----------|--------|------|
+| 15 | GitHub Actions デプロイパイプライン（OIDC + ECR + SSM） | 完了 | - | [cicd-pipeline.md](./cicd-pipeline.md) |
+| 16 | 環境変数自動生成（Terraform output → .env） | 完了 | - | [env-automation.md](./env-automation.md) |
+| 17 | CI テスト自動化（pytest + Ruff + mypy） | 予定 | 高 | [ci-testing.md](./ci-testing.md) |
+| 18 | ブランチ保護 + PR レビューフロー | 予定 | 中 | [branch-protection.md](./branch-protection.md) |
+| 19 | Docker イメージのセキュリティスキャン | 予定 | 中 | [container-security.md](./container-security.md) |
+| 20 | Terraform CI（plan の自動実行 + PR コメント） | 予定 | 中 | [terraform-ci.md](./terraform-ci.md) |
+
+## SRE / 可観測性
+
+| # | 取り組み | ステータス | 優先度 | 詳細 |
+|---|---------|----------|--------|------|
+| 21 | 構造化ログ + ログ集約（CloudWatch Logs Insights） | 予定 | 中 | [structured-logging.md](./structured-logging.md) |
+| 22 | SLI/SLO の定義とエラーバジェット | 予定 | 中 | [sli-slo.md](./sli-slo.md) |
+| 23 | 合成監視（外形監視） | 予定 | 低 | [synthetic-monitoring.md](./synthetic-monitoring.md) |
+| 24 | インシデント対応の振り返り（Postmortem テンプレート） | 後段 | 低 | [postmortem-process.md](./postmortem-process.md) |
 
 ## コスト最適化
 
@@ -50,13 +70,15 @@
 ## 実施順序
 
 ```
-#2 インフラ再構築
+完了: #1 監視基盤 → #2 インフラ構築 → #15 CI/CD → #16 環境変数自動化
   ↓
-#3 イベント正規化 + #9 EC2 夜間停止（Lambda 実装が共通）
+次: #17 CI テスト + #3 イベント正規化
   ↓
-#4 ServiceNow 連携 + #11 コスト異常検知
+#4 ServiceNow 連携 + #9 EC2 夜間停止 + #11 コスト異常検知
   ↓
-#10 メンテナンスページ切替
+#18 ブランチ保護 + #19 コンテナセキュリティ + #20 Terraform CI
   ↓
-#5〜8, #14 は必要に応じて
+#21 構造化ログ + #22 SLI/SLO
+  ↓
+#10 メンテナンスページ + #5〜8, #14, #23〜24 は必要に応じて
 ```
