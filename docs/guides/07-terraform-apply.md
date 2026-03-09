@@ -1,14 +1,16 @@
-# Terraform による全環境構築
+# Terraform による shared/app 環境構築
 
 ## なぜやるか
 
-「Terraform でインフラをコード管理している」だけでなく、「destroy して apply すれば再構築できる」状態にすることが IaC の本質。コスト削減のために一時的に環境を落とし、必要なときに再構築するフローを確立する。
+「残すもの」と「止めるもの」を state でも分離し、`app` だけを `terraform destroy` / `terraform apply` しても、公開入口と固定値を維持できる運用にする。
 
 ## 全体の流れ
 
-```
-terraform apply（production-config: 永続設定 / secret 登録）
-  → terraform apply（production: インフラ構築 + 動的 SSM 更新）
+```text
+terraform apply（backend-bootstrap: remote state bucket 作成）
+  → terraform apply（shared: CloudFront + maintenance S3 + 永続 SSM）
+  → terraform apply（app: アプリ基盤 + 動的 SSM）
+  → terraform apply（shared: service_mode=active へ切替）
   → user_data bootstrap（EC2 初期化 + env 生成 + 初回 deploy 試行）
   → GitHub Secrets 設定
   → git push（GitHub Actions でデプロイ）
@@ -16,18 +18,32 @@ terraform apply（production-config: 永続設定 / secret 登録）
 
 ## 手順
 
-### 手順 1: production-config を apply
+### 手順 1: backend-bootstrap を apply
 
 ```bash
-cd terraform/environments/production-config
+cd terraform/environments/backend-bootstrap
 cp terraform.tfvars.example terraform.tfvars
 terraform init
 terraform plan
 terraform apply
 ```
 
-ここでは `terraform destroy` しても残したい値を SSM Parameter Store に登録する。
+ここでは Terraform remote state 用の S3 bucket を作成する。
 
+### 手順 2: shared を apply
+
+```bash
+cd terraform/environments/shared
+cp terraform.tfvars.example terraform.tfvars
+terraform init
+terraform plan
+terraform apply
+```
+
+ここでは通常 destroy しない共有リソースを作成する。
+
+- CloudFront distribution
+- maintenance page 用 S3 bucket
 - `DJANGO_SECRET_KEY`
 - `POSTGRES_PASSWORD`
 - `DJANGO_ADMIN_URL`
@@ -35,60 +51,64 @@ terraform apply
 
 重要:
 
-- `django_secret_key` と `db_password` は `terraform/environments/production-config/terraform.tfvars` に設定する
-- `terraform/environments/production/terraform.tfvars` に `django_secret_key` は入れない
+- 初回は `service_mode = "maintenance"` のままでよい
+- `django_secret_key` と `db_password` は `terraform/environments/shared/terraform.tfvars` に設定する
+- CloudFront のドメイン名は `shared` が SSM に保存する
 
-### 手順 2: production を apply
+### 手順 3: app を apply
 
 ```bash
-cd terraform/environments/production
+cd terraform/environments/app
 cp terraform.tfvars.example terraform.tfvars
 terraform init
-terraform plan    # 変更内容を確認
-terraform apply   # 実行（確認プロンプトで yes）
+terraform plan
+terraform apply
 ```
 
-今回の場合、61 リソースが新規作成された（全環境再構築）。
-所要時間: 約 15 分（RDS と CloudFront の作成が長い）。
+`app` は `shared` に保存済みの `POSTGRES_PASSWORD` と CloudFront ドメインを参照し、ALB DNS / RDS endpoint など再生成値を SSM に更新する。
 
-`production` は `production-config` に保存済みの `POSTGRES_PASSWORD` を参照し、
-ALB DNS / CloudFront / RDS endpoint など再生成値だけを SSM に更新する。
-
-`production/terraform.tfvars` では、インフラ値に加えて次も確認しておく。
+確認項目:
 
 - `github_repo`
 - `github_bootstrap_ref`
 - `ses_sender_email`
 - `cloudwatch_alarm_email`
 
-### 手順 3: 出力値の確認
+### 手順 4: shared を active に切り替える
+
+CloudFront のオリジンを maintenance から ALB に切り替える。
 
 ```bash
+cd terraform/environments/shared
+terraform apply -var='service_mode=active'
+```
+
+### 手順 5: 出力値の確認
+
+```bash
+cd terraform/environments/app
+terraform output
+
+cd ../shared
 terraform output
 ```
 
 重要な出力:
-- `ec2_public_ip`: EC2 のパブリック IP
-- `alb_dns_name`: ALB の DNS 名
-- `cloudfront_domain_name`: CloudFront のドメイン
-- `github_actions_role_arn`: GitHub Actions 用 IAM ロール ARN
 
-### 手順 4: セキュリティグループの IP 更新
+- `ec2_public_ip`
+- `alb_dns_name`
+- `cloudfront_domain_name`
+- `github_actions_role_arn`
 
-SSH 接続元の IP が変わっている場合、`terraform.tfvars` の `admin_ip` を更新:
+### 手順 6: セキュリティグループの IP 更新
+
+SSH 接続元の IP が変わっている場合は `terraform/environments/app/terraform.tfvars` の `admin_ip` を更新する。
 
 ```bash
-# 現在の IP を確認
 curl -s https://checkip.amazonaws.com
-
-# terraform.tfvars を更新
-admin_ip = "xxx.xxx.xxx.xxx/32"
-
-# セキュリティグループだけ更新
-terraform apply -target=module.security_groups
 ```
 
-### 手順 5: EC2 bootstrap の完了を待つ
+### 手順 7: EC2 bootstrap の完了を待つ
 
 EC2 は `user_data` で次を自動実行する。
 
@@ -98,75 +118,70 @@ EC2 は `user_data` で次を自動実行する。
 - SSM Parameter Store から `.envs/.production/*` を生成
 - `latest` タグで初回 deploy を試行
 
-### 手順 6: GitHub Secrets の設定
+### 手順 8: GitHub Secrets の設定
 
 GitHub リポジトリ → Settings → Secrets → Actions:
-- `AWS_ROLE_ARN`: terraform output の `github_actions_role_arn`
-- `EC2_INSTANCE_ID`: EC2 インスタンス ID
 
-### 手順 7: デプロイ
+- `AWS_ROLE_ARN`: `terraform/environments/app` の `github_actions_role_arn`
+- `EC2_INSTANCE_ID`: `terraform/environments/app` の EC2 インスタンス ID
+
+### 手順 9: デプロイ
 
 ```bash
 # まずは手動実行で 1 回成功ログを確認
 # GitHub Actions > Deploy to Production > Run workflow
 
-# 問題なければ通常運用は push でよい
 git push github main
 ```
 
-手動実行で確認したいこと:
+## app 停止時の運用
 
-- Docker build / ECR push が成功する
-- SSM Run Command が `Success` になる
-- ALB の `/diary/health/` が `200` になる
+```text
+1. shared を maintenance に切り替える
+2. app を destroy する
+3. 再開時は app apply
+4. shared を active に戻す
+```
+
+```bash
+cd terraform/environments/shared
+terraform apply -var='service_mode=maintenance'
+
+cd ../app
+terraform destroy
+```
+
+この運用なら CloudFront URL と永続 SSM は残る。
 
 ## 注意事項
 
-### CloudFront のドメイン名が変わる
+### CloudFront の URL
 
-CloudFront distribution を削除・再作成すると、ドメイン名（`dXXXXXXXXXX.cloudfront.net`）が変わる。
-ブックマークやドキュメントの URL を更新する必要がある。
+CloudFront distribution は `shared` 管理に移したため、通常の `app destroy` では `dXXXXXXXXXX.cloudfront.net` は変わらない。
 
-### 永続設定と動的設定は分かれている
+### 永続設定と動的設定
 
-- `production-config`: secret / 長寿命設定を SSM に保持
-- `production`: destroy/apply 対象の AWS リソースと、再生成される SSM 値を管理
-
-そのため、再構築時は `production-config` を消さずに `production` だけを destroy/apply できる。
+- `shared`: CloudFront、maintenance S3、secret / 長寿命設定、共有システム値
+- `app`: destroy/apply 対象の AWS リソースと、再生成される SSM 値
 
 ### bootstrap の依存関係
 
 EC2 bootstrap は次に依存する。
 
-- GitHub raw から `scripts/bootstrap/sync-app-files.sh` を取得できること
-- `sync-app-files.sh` が `docker-compose.production.yml` / `ssm-deploy.sh` / `render-env-from-ssm.sh` を取得できること
-- SSM に `DJANGO_SECRET_KEY` と動的接続情報がそろっていること
+- `shared` 側に `DJANGO_SECRET_KEY` と CloudFront ドメインがあること
+- `app` 側に DB 接続先などの動的 SSM があること
+- GitHub raw から bootstrap スクリプトを取得できること
 
-そのため、手順の順番は必ず次にする。
+順番は必ず次にする。
 
-1. `production-config` apply
-2. `production` apply
-3. EC2 bootstrap 確認
-4. GitHub Secrets 設定
-5. workflow 実行
-
-### 失敗時の確認順
-
-1. `production-config` apply 後に永続 SSM が入っているか
-2. `production` apply 後に動的 SSM が更新されているか
-3. EC2 の `/var/log/user-data.log`
-4. GitHub Actions の `SSM Standard Output` / `SSM Standard Error`
-5. 必要なら `/opt/app/bin` と `.envs/.production` の生成状態
+1. `backend-bootstrap` apply
+2. `shared` apply
+3. `app` apply
+4. `shared` を `active` に切り替え
+5. EC2 bootstrap 確認
+6. GitHub Secrets 設定
+7. workflow 実行
 
 ### State の管理
 
-現在は local state。`terraform.tfstate` を失うと、既存リソースとの対応が取れなくなる。
-本番運用では S3 backend + DynamoDB lock を推奨。
-
-## ブログで深掘りできるポイント
-
-- terraform apply の実行計画（Plan）の読み方
-- State ファイルの役割と管理方法
-- `terraform destroy` → `terraform apply` のサイクルとコスト最適化
-- モジュール間の依存関係（module.alb が module.ec2.instance_id を参照する等）
-- `-target` オプションの使いどころと注意点
+初回は local state で backend bucket を作り、その後は S3 backend に移行する。`shared` と `app` は別 key に分離し、`use_lockfile = true` で lock を有効化する。

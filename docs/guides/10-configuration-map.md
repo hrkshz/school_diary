@@ -120,16 +120,16 @@ flowchart TD
 
 | 設定名 | カテゴリ | 現在の置き場所 | 実際の定義場所 | 誰が読むか | 何に使うか | 外だし方針 |
 |---|---|---|---|---|---|---|
-| `DJANGO_SECRET_KEY` | セキュリティ | SSM | `terraform/environments/production-config/main.tf` | EC2 → Django settings | Django の secret key | SSM で良い |
+| `DJANGO_SECRET_KEY` | セキュリティ | SSM | `terraform/environments/shared/main.tf` | EC2 → Django settings | Django の secret key | SSM で良い |
 | `SECRET_KEY` | セキュリティ | Django settings | `config/settings/production.py` | Django | 実際に Django が使う secret key | settings 入口で良い |
-| `DJANGO_ALLOWED_HOSTS` | セキュリティ | SSM | `terraform/environments/production/parameter_store.tf` | EC2 → Django settings | 許可ホスト | SSM で良い |
+| `DJANGO_ALLOWED_HOSTS` | セキュリティ | SSM | `terraform/environments/app/parameter_store.tf` | EC2 → Django settings | 許可ホスト | SSM で良い |
 | `ALLOWED_HOSTS` | セキュリティ | Django settings | `config/settings/production.py` | Django | Host header 制御 | settings 入口で良い |
-| `DJANGO_SECURE_SSL_REDIRECT` | セキュリティ | SSM | `terraform/environments/production-config/main.tf` | EC2 → Django settings | HTTPS リダイレクト | SSM で良い |
+| `DJANGO_SECURE_SSL_REDIRECT` | セキュリティ | SSM | `terraform/environments/shared/main.tf` | EC2 → Django settings | HTTPS リダイレクト | SSM で良い |
 | `SECURE_SSL_REDIRECT` | セキュリティ | Django settings | `config/settings/production.py` | Django | HTTP→HTTPS 強制 | settings 入口で良い |
 | `DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS` | セキュリティ | env default | `config/settings/production.py` | Django | HSTS サブドメイン適用 | 本番で調整したいなら env/SSM 候補 |
 | `DJANGO_SECURE_HSTS_PRELOAD` | セキュリティ | env default | `config/settings/production.py` | Django | HSTS preload | 本番で調整したいなら env/SSM 候補 |
 | `DJANGO_SECURE_CONTENT_TYPE_NOSNIFF` | セキュリティ | env default | `config/settings/production.py` | Django | MIME sniff 防止 | 本番で調整したいなら env/SSM 候補 |
-| `DJANGO_ADMIN_URL` | セキュリティ/管理 | SSM | `terraform/environments/production-config/main.tf` | EC2 → Django settings | 管理画面 URL | SSM で良い |
+| `DJANGO_ADMIN_URL` | セキュリティ/管理 | SSM | `terraform/environments/shared/main.tf` | EC2 → Django settings | 管理画面 URL | SSM で良い |
 | `ADMIN_URL` | セキュリティ/管理 | Django settings | `config/settings/production.py`, `config/urls.py` | Django | 実際の管理画面 path | settings 入口で良い |
 
 ### 4-2. DB 接続
@@ -138,11 +138,11 @@ flowchart TD
 
 | 設定名 | カテゴリ | 現在の置き場所 | 実際の定義場所 | 誰が読むか | 何に使うか | 外だし方針 |
 |---|---|---|---|---|---|---|
-| `POSTGRES_PASSWORD` | DB接続 | SSM | `terraform/environments/production-config/main.tf` | Terraform, EC2 | DB パスワード | SSM で良い |
-| `POSTGRES_HOST` | DB接続 | SSM | `terraform/environments/production/parameter_store.tf` | EC2, entrypoint | DB ホスト | SSM で良い |
-| `POSTGRES_PORT` | DB接続 | SSM | `terraform/environments/production/parameter_store.tf` | EC2, entrypoint | DB ポート | SSM で良い |
-| `POSTGRES_DB` | DB接続 | SSM | `terraform/environments/production/parameter_store.tf` | EC2, entrypoint | DB 名 | SSM で良い |
-| `POSTGRES_USER` | DB接続 | SSM | `terraform/environments/production/parameter_store.tf` | EC2, entrypoint | DB ユーザー | SSM で良い |
+| `POSTGRES_PASSWORD` | DB接続 | SSM | `terraform/environments/shared/main.tf` | Terraform, EC2 | DB パスワード | SSM で良い |
+| `POSTGRES_HOST` | DB接続 | SSM | `terraform/environments/app/parameter_store.tf` | EC2, entrypoint | DB ホスト | SSM で良い |
+| `POSTGRES_PORT` | DB接続 | SSM | `terraform/environments/app/parameter_store.tf` | EC2, entrypoint | DB ポート | SSM で良い |
+| `POSTGRES_DB` | DB接続 | SSM | `terraform/environments/app/parameter_store.tf` | EC2, entrypoint | DB 名 | SSM で良い |
+| `POSTGRES_USER` | DB接続 | SSM | `terraform/environments/app/parameter_store.tf` | EC2, entrypoint | DB ユーザー | SSM で良い |
 | `DATABASE_URL` | DB接続 | entrypoint で生成 | `compose/production/django/entrypoint` | Django settings | Django の DB 接続文字列 | SSM に持たない方針で良い |
 | `DATABASES["default"]` | DB接続 | Django settings | `config/settings/base.py` | Django | 実際の DB 設定 | settings 入口で良い |
 | `CONN_MAX_AGE` | DB接続 | env default | `config/settings/production.py` | Django | DB コネクション再利用 | 本番調整候補 |
@@ -153,13 +153,13 @@ flowchart TD
 
 | 設定名 | カテゴリ | 現在の置き場所 | 実際の定義場所 | 誰が読むか | 何に使うか | 外だし方針 |
 |---|---|---|---|---|---|---|
-| `DJANGO_DEFAULT_FROM_EMAIL` | メール | SSM | `terraform/environments/production-config/main.tf` | EC2 → Django settings | 送信元メール | SSM で良い |
-| `DJANGO_SERVER_EMAIL` | メール | SSM | `terraform/environments/production-config/main.tf` | EC2 → Django settings | エラー通知送信元 | SSM で良い |
+| `DJANGO_DEFAULT_FROM_EMAIL` | メール | SSM | `terraform/environments/shared/main.tf` | EC2 → Django settings | 送信元メール | SSM で良い |
+| `DJANGO_SERVER_EMAIL` | メール | SSM | `terraform/environments/shared/main.tf` | EC2 → Django settings | エラー通知送信元 | SSM で良い |
 | `DEFAULT_FROM_EMAIL` | メール | Django settings | `config/settings/production.py` | Django | 実際の送信元 | settings 入口で良い |
 | `SERVER_EMAIL` | メール | Django settings | `config/settings/production.py` | Django | 管理者通知送信元 | settings 入口で良い |
 | `DJANGO_EMAIL_SUBJECT_PREFIX` | メール | env default | `config/settings/production.py` | Django | 件名 prefix | 調整候補 |
 | `EMAIL_BACKEND` | メール | Django settings | `config/settings/base.py`, `config/settings/production.py` | Django | メール送信 backend | settings で良い |
-| `AWS_SES_REGION` | メール/AWS | SSM | `terraform/environments/production/parameter_store.tf` | EC2 → Django settings | SES リージョン | SSM で良い |
+| `AWS_SES_REGION` | メール/AWS | SSM | `terraform/environments/app/parameter_store.tf` | EC2 → Django settings | SES リージョン | SSM で良い |
 | `EMAIL_TIMEOUT` | メール | code | `config/settings/base.py` | Django | メール送信タイムアウト | settings 化候補 |
 | `ADMINS` | メール/運用 | code | `config/settings/base.py` | Django | 500 エラー通知先 | env/SSM 候補 |
 
@@ -169,10 +169,10 @@ flowchart TD
 
 | 設定名 | カテゴリ | 現在の置き場所 | 実際の定義場所 | 誰が読むか | 何に使うか | 外だし方針 |
 |---|---|---|---|---|---|---|
-| `DJANGO_AWS_STORAGE_BUCKET_NAME` | AWS/S3 | SSM | `terraform/environments/production/parameter_store.tf` | EC2 → Django settings | S3 バケット名 | SSM で良い |
-| `DJANGO_AWS_S3_REGION_NAME` | AWS/S3 | SSM | `terraform/environments/production/parameter_store.tf` | EC2 → Django settings | S3 リージョン | SSM で良い |
-| `AWS_REGION` | AWS | SSM | `terraform/environments/production/parameter_store.tf` | EC2, scripts | AWS リージョン | SSM で良い |
-| `AWS_DEFAULT_REGION` | AWS | SSM | `terraform/environments/production/parameter_store.tf` | EC2, scripts | AWS CLI 標準リージョン | SSM で良い |
+| `DJANGO_AWS_STORAGE_BUCKET_NAME` | AWS/S3 | SSM | `terraform/environments/app/parameter_store.tf` | EC2 → Django settings | S3 バケット名 | SSM で良い |
+| `DJANGO_AWS_S3_REGION_NAME` | AWS/S3 | SSM | `terraform/environments/app/parameter_store.tf` | EC2 → Django settings | S3 リージョン | SSM で良い |
+| `AWS_REGION` | AWS | SSM | `terraform/environments/app/parameter_store.tf` | EC2, scripts | AWS リージョン | SSM で良い |
+| `AWS_DEFAULT_REGION` | AWS | SSM | `terraform/environments/app/parameter_store.tf` | EC2, scripts | AWS CLI 標準リージョン | SSM で良い |
 | `AWS_STORAGE_BUCKET_NAME` | AWS/S3 | Django settings | `config/settings/production.py` | Django | 実際に storages が使うバケット | settings 入口で良い |
 | `AWS_S3_REGION_NAME` | AWS/S3 | Django settings | `config/settings/production.py` | Django | S3 region | settings 入口で良い |
 | `AWS_S3_CUSTOM_DOMAIN` | AWS/S3 | env default | `config/settings/production.py` | Django | CloudFront/S3 カスタムドメイン | 将来 env/SSM 候補 |
@@ -184,12 +184,12 @@ flowchart TD
 
 | 設定名 | カテゴリ | 現在の置き場所 | 実際の定義場所 | 誰が読むか | 何に使うか | 外だし方針 |
 |---|---|---|---|---|---|---|
-| `DJANGO_SETTINGS_MODULE` | アプリ運用 | SSM | `terraform/environments/production-config/main.tf` | EC2 / Django 起動 | 使用 settings module | SSM で良い |
-| `DJANGO_ACCOUNT_ALLOW_REGISTRATION` | アプリ運用 | SSM | `terraform/environments/production-config/main.tf` | EC2 → Django settings | 自己登録許可 | SSM で良い |
+| `DJANGO_SETTINGS_MODULE` | アプリ運用 | SSM | `terraform/environments/shared/main.tf` | EC2 / Django 起動 | 使用 settings module | SSM で良い |
+| `DJANGO_ACCOUNT_ALLOW_REGISTRATION` | アプリ運用 | SSM | `terraform/environments/shared/main.tf` | EC2 → Django settings | 自己登録許可 | SSM で良い |
 | `ACCOUNT_ALLOW_REGISTRATION` | アプリ運用 | Django settings | `config/settings/base.py` | Django / templates | 画面と認証フロー制御 | settings 入口で良い |
 | `DJANGO_ADMIN_FORCE_ALLAUTH` | アプリ運用 | env default | `config/settings/base.py` | Django | 管理画面ログインフロー | env 候補 |
 | `ACCOUNT_EMAIL_VERIFICATION` | アプリ運用 | code | `config/settings/base.py` | Django / signals | メール認証方式 | settings 化候補 |
-| `WEB_CONCURRENCY` | アプリ運用 | SSM | `terraform/environments/production-config/main.tf` | EC2 / Gunicorn | worker 数 | SSM で良い |
+| `WEB_CONCURRENCY` | アプリ運用 | SSM | `terraform/environments/shared/main.tf` | EC2 / Gunicorn | worker 数 | SSM で良い |
 | `DEBUG` | アプリ運用 | env | `config/settings/base.py` | Django | デバッグモード | env で良い |
 | `SITE_URL` | アプリ運用 | env | `config/settings/base.py` | Django / メール URL 生成 | 外部公開 URL | SSM 経由で良い |
 | `TIME_ZONE` | アプリ基本 | code | `config/settings/base.py` | Django | タイムゾーン | code 固定で良い |

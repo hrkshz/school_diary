@@ -86,8 +86,8 @@ RDS PostgreSQL 16
 
 補足:
 
-- 永続 secret / 設定は `terraform/environments/production-config` が SSM Parameter Store に保持する
-- ALB DNS、CloudFront ドメイン、RDS endpoint など再生成値は `terraform/environments/production` が SSM を更新する
+- 永続 secret / 設定と CloudFront ドメインは `terraform/environments/shared` が SSM Parameter Store に保持する
+- ALB DNS、RDS endpoint など再生成値は `terraform/environments/app` が SSM を更新する
 - Django と AWS CLI は EC2 IAM ロールで AWS 認証し、Access Key の環境変数は必須にしていない
 
 ---
@@ -97,7 +97,7 @@ RDS PostgreSQL 16
 本番環境構築後は以下を確認します。
 
 ```bash
-cd terraform/environments/production
+cd terraform/environments/shared
 terraform output
 ```
 

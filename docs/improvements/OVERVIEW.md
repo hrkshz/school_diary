@@ -66,6 +66,7 @@
 |---|---------|----------|--------|------|
 | 14 | リソースタグ監査 | 後段 | 低 | [resource-tagging-governance.md](./resource-tagging-governance.md) |
 | 25 | 設定値管理の整理（SSM / settings / constants の責務分離） | 予定 | 中 | [configuration-management-refactor.md](./configuration-management-refactor.md) |
+| 27 | Terraform 残存性監査（destroy/apply 時に残るもの・消えるものの整理） | 完了 | - | [terraform-retention-audit.md](./terraform-retention-audit.md) |
 
 ---
 
