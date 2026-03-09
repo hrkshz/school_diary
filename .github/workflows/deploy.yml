@@ -37,18 +37,20 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Build and push Docker image
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          IMAGE_TAG: ${{ github.sha }}
-        run: |
-          docker build \
-            -f compose/production/django/Dockerfile \
-            -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
-            -t $ECR_REGISTRY/$ECR_REPOSITORY:latest \
-            .
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: compose/production/django/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Deploy to EC2 via SSM
         env:
@@ -60,13 +62,19 @@ jobs:
             --document-name "AWS-RunShellScript" \
             --timeout-seconds 600 \
             --parameters commands='[
+              "set -e",
               "cd /opt/app",
+              "CURRENT_IMAGE=$(docker ps --format \"{{.Image}}\" --filter name=app-django 2>/dev/null || echo none)",
+              "echo \"Current image: $CURRENT_IMAGE\"",
               "aws ecr get-login-password --region ap-northeast-1 | docker login --username AWS --password-stdin '"$ECR_REGISTRY"'",
               "export ECR_REGISTRY='"$ECR_REGISTRY"'",
               "export ECR_REPOSITORY='"$ECR_REPOSITORY"'",
               "export IMAGE_TAG='"$IMAGE_TAG"'",
               "docker compose -f docker-compose.production.yml pull django",
+              "docker compose -f docker-compose.production.yml run --rm django python manage.py migrate --noinput",
               "docker compose -f docker-compose.production.yml up -d django",
+              "sleep 10",
+              "if docker compose -f docker-compose.production.yml ps django | grep -q healthy; then echo \"Deploy successful\"; else echo \"Health check failed, rolling back\"; export IMAGE_TAG=latest; docker compose -f docker-compose.production.yml up -d django; exit 1; fi",
               "docker image prune -f"
             ]' \
             --query "Command.CommandId" \
@@ -106,16 +114,29 @@ jobs:
       - name: Verify deployment
         run: |
           sleep 15
-          HEALTH_URL="http://$(aws ec2 describe-instances \
-            --instance-ids "${{ secrets.EC2_INSTANCE_ID }}" \
-            --query "Reservations[0].Instances[0].PublicIpAddress" \
-            --output text):8000/diary/health/"
+          ALB_DNS=$(aws elbv2 describe-load-balancers \
+            --names "school-diary-production-alb" \
+            --query "LoadBalancers[0].DNSName" \
+            --output text 2>/dev/null || echo "")
 
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$HEALTH_URL" || echo "000")
-          echo "Health check: $STATUS"
-
-          if [ "$STATUS" = "200" ]; then
-            echo "Deployment verified successfully"
-          else
-            echo "Warning: Health check returned $STATUS (may need time to start)"
+          if [ -z "$ALB_DNS" ]; then
+            echo "Warning: Could not get ALB DNS"
+            exit 0
           fi
+
+          HEALTH_URL="http://${ALB_DNS}/diary/health/"
+          echo "Checking: $HEALTH_URL"
+
+          for i in $(seq 1 6); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$HEALTH_URL" || echo "000")
+            echo "Attempt $i: HTTP $STATUS"
+
+            if [ "$STATUS" = "200" ]; then
+              echo "Deployment verified successfully"
+              exit 0
+            fi
+            sleep 10
+          done
+
+          echo "Health check failed after all retries"
+          exit 1
