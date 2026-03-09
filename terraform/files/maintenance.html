@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>School Diary - Maintenance</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f4f1ea;
+      --panel: #fffaf2;
+      --text: #1f2933;
+      --accent: #9a3412;
+      --border: #e7d7c5;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(circle at top, rgba(154, 52, 18, 0.12), transparent 35%),
+        linear-gradient(180deg, var(--bg), #efe7db);
+      color: var(--text);
+      font-family: Georgia, "Times New Roman", serif;
+    }
+
+    main {
+      width: min(560px, calc(100vw - 32px));
+      padding: 40px 32px;
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      background: var(--panel);
+      box-shadow: 0 24px 60px rgba(31, 41, 51, 0.12);
+    }
+
+    h1 {
+      margin: 0 0 12px;
+      font-size: clamp(2rem, 5vw, 3rem);
+      line-height: 1.05;
+    }
+
+    p {
+      margin: 0;
+      font-size: 1rem;
+      line-height: 1.7;
+    }
+
+    strong {
+      color: var(--accent);
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Maintenance Mode</h1>
+    <p><strong>School Diary</strong> is temporarily unavailable while infrastructure is being rebuilt. Please try again later.</p>
+  </main>
+</body>
+</html>

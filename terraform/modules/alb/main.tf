@@ -6,7 +6,7 @@ resource "aws_lb" "main" {
   security_groups    = [var.security_group_id]
   subnets            = var.subnet_ids
 
-  enable_deletion_protection = false
+  enable_deletion_protection = var.enable_deletion_protection
 
   tags = {
     Name        = "${var.project_name}-${var.environment}-alb"

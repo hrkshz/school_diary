@@ -21,8 +21,8 @@ resource "aws_cloudwatch_dashboard" "availability" {
             ["AWS/ApplicationELB", "HealthyHostCount", "TargetGroup", var.alb_target_group_arn_suffix, "LoadBalancer", var.alb_arn_suffix, { stat = "Average", label = "Healthy Hosts" }],
             ["AWS/ApplicationELB", "UnHealthyHostCount", "TargetGroup", var.alb_target_group_arn_suffix, "LoadBalancer", var.alb_arn_suffix, { stat = "Average", label = "Unhealthy Hosts" }]
           ]
-          period = 60
-          view   = "timeSeries"
+          period  = 60
+          view    = "timeSeries"
           stacked = true
         }
       },

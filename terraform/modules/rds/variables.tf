@@ -68,3 +68,9 @@ variable "db_backup_retention_period" {
   type        = number
   default     = 7
 }
+
+variable "deletion_protection" {
+  description = "Enable deletion protection for the RDS instance"
+  type        = bool
+  default     = false
+}

@@ -42,7 +42,7 @@ resource "aws_db_instance" "main" {
   # Deletion Protection (false for development, true for production recommended)
   skip_final_snapshot       = true
   final_snapshot_identifier = "${var.project_name}-${var.environment}-final-snapshot"
-  deletion_protection       = false
+  deletion_protection       = var.deletion_protection
 
   # Performance Insights (Optional, Free Tier: 7 days retention)
   enabled_cloudwatch_logs_exports = ["postgresql", "upgrade"]

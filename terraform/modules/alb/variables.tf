@@ -27,3 +27,9 @@ variable "ec2_instance_id" {
   description = "EC2 instance ID to attach to target group"
   type        = string
 }
+
+variable "enable_deletion_protection" {
+  description = "Enable deletion protection for the ALB"
+  type        = bool
+  default     = false
+}

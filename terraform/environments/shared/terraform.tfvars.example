@@ -1,0 +1,16 @@
+aws_region              = "ap-northeast-1"
+project_name            = "school-diary"
+environment             = "production"
+service_mode            = "maintenance"
+maintenance_bucket_name = "school-diary-production-maintenance-example"
+
+db_password       = "CHANGE_ME_STRONG_PASSWORD_MIN_8_CHARS"
+django_secret_key = "CHANGE_ME_DJANGO_SECRET_KEY"
+
+django_settings_module            = "config.settings.production"
+django_admin_url                  = "admin/"
+django_secure_ssl_redirect        = false
+django_account_allow_registration = true
+django_default_from_email         = "hiroki0107@gmail.com"
+django_server_email               = "hiroki0107@gmail.com"
+web_concurrency                   = 4

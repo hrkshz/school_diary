@@ -1,0 +1,32 @@
+aws_region   = "ap-northeast-1"
+project_name = "school-diary"
+environment  = "production"
+github_repo  = "hrkshz/school_diary"
+
+github_bootstrap_ref = "main"
+
+vpc_cidr              = "10.0.0.0/16"
+public_subnet_cidr    = "10.0.1.0/24"
+private_subnet_cidr   = "10.0.2.0/24"
+public_subnet_cidr_2  = "10.0.4.0/24"
+private_subnet_cidr_2 = "10.0.3.0/24"
+
+instance_type = "t3.micro"
+key_name      = "your-ec2-key-pair-name"
+admin_ip      = "0.0.0.0/0"
+
+db_name                    = "school_diary"
+db_username                = "postgres"
+db_instance_class          = "db.t3.micro"
+db_allocated_storage       = 20
+db_engine_version          = "16.10"
+db_multi_az                = false
+db_backup_retention_period = 7
+db_deletion_protection     = false
+
+s3_bucket_name        = "school-diary-prod-static-media-20250118"
+s3_versioning_enabled = true
+
+ses_sender_email        = "hiroki0107@gmail.com"
+cloudwatch_alarm_email  = "hiroki0107@gmail.com"
+alb_deletion_protection = false

@@ -1,0 +1,4 @@
+aws_region          = "ap-northeast-1"
+project_name        = "school-diary"
+environment         = "production"
+backend_bucket_name = "school-diary-terraform-state-example"
