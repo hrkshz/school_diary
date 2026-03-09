@@ -95,13 +95,19 @@ resource "aws_iam_role_policy" "ssm_deploy" {
       {
         Effect = "Allow"
         Action = [
-          "ssm:SendCommand",
-          "ssm:GetCommandInvocation"
+          "ssm:SendCommand"
         ]
         Resource = [
           "arn:aws:ssm:${var.aws_region}:*:document/AWS-RunShellScript",
           "arn:aws:ec2:${var.aws_region}:${data.aws_caller_identity.current.account_id}:instance/${var.ec2_instance_id}"
         ]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "ssm:GetCommandInvocation"
+        ]
+        Resource = "*"
       }
     ]
   })
