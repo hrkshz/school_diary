@@ -2,7 +2,7 @@ locals {
   parameter_prefix = "/${var.project_name}/${var.environment}"
 
   django_dynamic_parameters = {
-    DJANGO_ALLOWED_HOSTS           = join(",", [module.alb.dns_name, module.cloudfront.cloudfront_domain_name])
+    DJANGO_ALLOWED_HOSTS           = join(",", [module.alb.dns_name, module.cloudfront.cloudfront_domain_name, module.ec2.private_ip])
     DJANGO_SITE_URL                = "https://${module.cloudfront.cloudfront_domain_name}"
     DJANGO_AWS_STORAGE_BUCKET_NAME = module.s3.bucket_name
     DJANGO_AWS_S3_REGION_NAME      = var.aws_region
