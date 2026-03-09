@@ -62,3 +62,9 @@ production-config
 - GitHub Actions の verify step は `run id / sha / command id` をまとめて表示する
 - EC2 は `.release/current`、`.release/previous`、`.release/last-run-id`、`.release/last-deploy-sha` を更新する
 - 観測順は `GitHub run -> SSM command -> EC2 deploy log -> container health -> ALB health`
+
+---
+
+## 実例を見たいとき
+
+- 実戦の復旧記録は [13-cd-recovery-log.md](./13-cd-recovery-log.md) を参照してください。

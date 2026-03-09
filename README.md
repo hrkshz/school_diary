@@ -109,6 +109,22 @@ Inbox Pattern による優先度分類と、既読・タスク化をまとめた
 
 ---
 
+## デモ環境
+
+**URL**: https://d38tsdyews51a2.cloudfront.net
+
+テストデータが投入済みです。以下のアカウントでログインして各ロールの画面を確認できます。
+
+| ロール | メールアドレス | パスワード |
+|-------|--------------|-----------|
+| 生徒 | `student_1_a_01@example.com` | `password123` |
+| 担任 | `teacher_1_a@example.com` | `password123` |
+| 学年主任 | `grade_leader_1@example.com` | `password123` |
+| 校長 | `principal@example.com` | `password123` |
+| 管理者 | `admin@example.com` | `password123` |
+
+---
+
 ## アーキテクチャ
 
 現在のインフラ構成は Terraform 定義を正本としています。

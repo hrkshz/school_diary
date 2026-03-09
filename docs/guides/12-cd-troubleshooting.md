@@ -56,3 +56,4 @@
 - direct SSM deploy や secret 回収は、この表の通常運用には含めません。
 - 迷ったら、先に [11-cd-canonical-flow.md](./11-cd-canonical-flow.md) で正規フローを確認してください。
 - EC2 側では `.release/current`、`.release/previous`、`.release/last-run-id`、`.release/last-deploy-sha` が trace の起点になります。
+- 実戦の切り分け例は [13-cd-recovery-log.md](./13-cd-recovery-log.md) を参照してください。

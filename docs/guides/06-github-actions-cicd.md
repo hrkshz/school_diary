@@ -1,5 +1,8 @@
 # GitHub Actions CI/CD の構築
 
+このドキュメントは、**CD をどう構築したか**を説明する導入ガイドです。
+「今どう動いているか」の正本は [08-current-cd-flow.md](./08-current-cd-flow.md)、最短入口は [11-cd-canonical-flow.md](./11-cd-canonical-flow.md) を参照してください。
+
 ## なぜやるか
 
 手動デプロイは:
@@ -8,7 +11,7 @@
 - ローカルに Docker が必要（WSL2 環境では動かないこともある）
 
 GitHub Actions で自動化すると:
-- `git push` だけでデプロイが完了
+- 対象ファイルの `git push` で本番 deploy を起動できる
 - ビルドは GitHub のサーバーで行われる（ローカル環境不要）
 - 履歴が残る（誰が、いつ、何をデプロイしたか）
 
@@ -76,7 +79,10 @@ resource "aws_iam_role" "github_actions" {
       Action = "sts:AssumeRoleWithWebIdentity"
       Condition = {
         StringLike = {
-          "token.actions.githubusercontent.com:sub" = "repo:hrkshz/school_diary:*"
+          "token.actions.githubusercontent.com:sub" = [
+            "repo:hrkshz/school_diary:ref:refs/heads/main",
+            "repo:hrkshz/school_diary:environment:production"
+          ]
         }
       }
     }]
@@ -84,11 +90,12 @@ resource "aws_iam_role" "github_actions" {
 }
 ```
 
-**Condition の意味:** `hrkshz/school_diary` リポジトリからの Actions だけがこのロールを使える。他のリポジトリからは使えない。
+**Condition の意味:** `hrkshz/school_diary` リポジトリの中でも、`main` ブランチ実行と `production` environment 実行だけがこのロールを使える。他のリポジトリや他ブランチの実行からは使えない。
 
 **付与した権限:**
 - ECR: イメージの push
 - SSM: EC2 へのコマンド送信
+- SSM: コマンド結果の取得
 
 ### 手順 2: EC2 に SSM 権限を追加
 
@@ -147,12 +154,21 @@ terraform apply   # OIDC プロバイダ + IAM ロール + SSM 権限を作成
 git add .
 git commit -m "fix: something"
 
-# 2. push するだけ
+# 2. 対象ファイルを push
 git push github main
 
 # 3. GitHub Actions が自動でデプロイ
 # → Actions タブで進捗を確認
 ```
+
+補足:
+
+- `docs/**`
+- ルート直下の `*.md`
+- `terraform/**`
+
+だけの変更では deploy は起動しません。
+- 最初の 1 回は `workflow_dispatch` で手動実行して成功ログを確認する運用が安全です。
 
 ## 確認方法
 
