@@ -74,7 +74,7 @@ USER django
 
 RUN DATABASE_URL="" \
   DJANGO_SETTINGS_MODULE="config.settings.test" \
-  python manage.py compilemessages
+  python manage.py compilemessages --ignore=.venv
 
 # Collect static files during build (prevents 500 errors on container startup)
 RUN DATABASE_URL="" \
