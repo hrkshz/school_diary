@@ -70,7 +70,7 @@ jobs:
             --arg github_repository "${{ github.repository }}" \
             --arg parameter_prefix "${PARAMETER_PREFIX}" \
             '[
-              "set -Eeuo pipefail",
+              "set -eu",
               "install -d " + $app_dir + "/bin " + $app_dir + "/.envs/.production " + $app_dir + "/.release",
               "curl -fsSL https://raw.githubusercontent.com/" + $github_repository + "/" + $image_tag + "/scripts/bootstrap/sync-app-files.sh -o " + $app_dir + "/bin/sync-app-files.sh",
               "chmod +x " + $app_dir + "/bin/sync-app-files.sh",
