@@ -28,11 +28,15 @@ echo "--- ファイル転送 ---"
 scp $SSH_OPTS docker-compose.production.yml ubuntu@$EC2_IP:/opt/app/
 scp -r $SSH_OPTS .envs ubuntu@$EC2_IP:/opt/app/
 
-# 3. SSM Agent の起動確認
+# 3. AWS CLI インストール（ECR ログインに必要）
+echo "--- AWS CLI インストール ---"
+ssh $SSH_OPTS ubuntu@$EC2_IP "which aws > /dev/null 2>&1 && echo 'AWS CLI already installed' || (sudo apt-get update -qq && sudo apt-get install -y -qq awscli && echo 'AWS CLI installed')"
+
+# 4. SSM Agent の起動確認
 echo "--- SSM Agent 確認 ---"
 ssh $SSH_OPTS ubuntu@$EC2_IP "sudo snap install amazon-ssm-agent 2>/dev/null || true && sudo systemctl enable snap.amazon-ssm-agent.amazon-ssm-agent.service && sudo systemctl start snap.amazon-ssm-agent.amazon-ssm-agent.service && sudo systemctl status snap.amazon-ssm-agent.amazon-ssm-agent.service --no-pager | head -5"
 
-# 4. swap 設定（メモリ対策）
+# 5. swap 設定（メモリ対策）
 echo "--- Swap 設定 ---"
 ssh $SSH_OPTS ubuntu@$EC2_IP "if [ ! -f /swapfile ]; then sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile && echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab; echo 'Swap created'; else echo 'Swap already exists'; fi"
 
