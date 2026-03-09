@@ -131,3 +131,14 @@ module "eventbridge" {
   environment   = var.environment
   sns_topic_arn = module.cloudwatch.sns_topic_arn
 }
+
+module "github_actions" {
+  source = "../../modules/github_actions"
+
+  project_name       = var.project_name
+  environment        = var.environment
+  github_repo        = var.github_repo
+  ecr_repository_arn = module.ecr.repository_arn
+  ec2_instance_id    = module.ec2.instance_id
+  aws_region         = var.aws_region
+}

@@ -132,6 +132,13 @@ variable "ses_sender_email" {
   default     = "hiroki0107@gmail.com"
 }
 
+# GitHub Actions
+variable "github_repo" {
+  description = "GitHub repository (owner/repo format)"
+  type        = string
+  default     = "hrkshz/school_diary"
+}
+
 # CloudWatch Variables
 variable "cloudwatch_alarm_email" {
   description = "Email address to receive CloudWatch alarms"

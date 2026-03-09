@@ -87,3 +87,9 @@ output "eventbridge_rule_arn" {
   description = "EventBridge alarm state change rule ARN"
   value       = module.eventbridge.event_rule_arn
 }
+
+# GitHub Actions outputs
+output "github_actions_role_arn" {
+  description = "GitHub Actions IAM role ARN (for OIDC)"
+  value       = module.github_actions.role_arn
+}

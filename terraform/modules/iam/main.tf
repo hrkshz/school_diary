@@ -90,11 +90,14 @@ resource "aws_iam_role_policy" "cloudwatch_policy" {
 
 # ECR Read権限をEC2に付与
 resource "aws_iam_role_policy_attachment" "ecr_read" {
-  # どのIAM roleに権限を付与するか
-  role = aws_iam_role.ec2_role.name
-
-  # どの権限を付与するか（AWS管理ポリシー）
+  role       = aws_iam_role.ec2_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+}
+
+# SSM Managed Instance Core（SSM Agent + Run Command 用）
+resource "aws_iam_role_policy_attachment" "ssm_core" {
+  role       = aws_iam_role.ec2_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
 # EC2 Instance Profile

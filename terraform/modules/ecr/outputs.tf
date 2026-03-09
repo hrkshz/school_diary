@@ -8,5 +8,9 @@ output "repository_url" {
 output "repository_name" {
   description = "ECRリポジトリ名"
   value       = aws_ecr_repository.django.name
-  # 例: school-diary-production-django
+}
+
+output "repository_arn" {
+  description = "ECRリポジトリARN"
+  value       = aws_ecr_repository.django.arn
 }

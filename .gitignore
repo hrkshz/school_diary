@@ -370,7 +370,8 @@ gitlab-ci-ecr-policy.json
 # E2Eテスト関連（一時ファイル、Git管理外）
 /tests/
 playwright.config.js
-scripts/
+# scripts/ はデプロイ用スクリプトを含むため Git 管理対象
+# scripts/
 
 # Playwright実行結果（一時ファイル）
 playwright-report/
