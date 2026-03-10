@@ -155,6 +155,61 @@ def get_previous_school_day(date):
     return previous_day
 
 
+def get_next_school_day(date):
+    """翌登校日を取得（土日を除外）
+
+    Args:
+        date: 基準日
+
+    Returns:
+        翌登校日の日付
+
+    例:
+        - 金曜日 → 月曜日（3日後）
+        - 月〜木曜日 → 翌日
+        - 土曜日 → 月曜日（2日後）
+        - 日曜日 → 月曜日（1日後）
+    """
+    from datetime import timedelta
+
+    next_day = date + timedelta(days=1)
+
+    # 土曜日（5）の場合 → 月曜日
+    if next_day.weekday() == 5:
+        return next_day + timedelta(days=2)
+
+    # 日曜日（6）の場合 → 月曜日
+    if next_day.weekday() == 6:
+        return next_day + timedelta(days=1)
+
+    return next_day
+
+
+def are_consecutive_school_days(dates):
+    """日付リストが連続登校日かチェック
+
+    Args:
+        dates: 日付のリスト（古い順にソート済み）
+
+    Returns:
+        bool: すべて連続登校日であればTrue
+
+    例:
+        - [月, 火, 水] → True
+        - [木, 金, 月] → True（土日スキップ）
+        - [月, 水, 金] → False（火木が抜けている）
+    """
+    if len(dates) < 2:
+        return True
+
+    for i in range(len(dates) - 1):
+        expected_next = get_next_school_day(dates[i])
+        if dates[i + 1] != expected_next:
+            return False
+
+    return True
+
+
 def check_consecutive_decline(student, field_name="health_condition", days=3):
     """3日連続低下パターンを検出
 

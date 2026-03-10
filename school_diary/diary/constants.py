@@ -35,6 +35,21 @@ GRADE_CHOICES_WITH_EMPTY = [("", "---"), *GRADE_CHOICES]
 # ========================================
 
 
+class AlertThresholds:
+    """Inbox View 優先度分類の閾値定数"""
+
+    # P0: 即対応が必要な値（mental/health がこの値の場合P0）
+    CRITICAL_CONDITION = 1
+
+    # P1: 連続低下の判定条件
+    DECLINE_MIN_DROP = 2  # 合計低下ポイント（day1 - day3 >= この値）
+    DECLINE_MAX_FINAL = 3  # 最終値がこの値以下で発動（3=「普通」）
+    DECLINE_CONSECUTIVE_DAYS = 3  # 連続登校日数
+
+    # P0: 過去エントリーのスキャン範囲（日数）
+    P0_LOOKBACK_DAYS = 7
+
+
 class HealthThresholds:
     """体調・メンタル関連の閾値定数"""
 

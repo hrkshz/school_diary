@@ -142,7 +142,7 @@
         <div class="card border-danger mb-3" id="important">
             <div class="card-header bg-danger text-white">
                 <h5 class="mb-0">🔴 重要（{{ classified_students.important|length }}名）</h5>
-                <small>P0: メンタル★1 - 即座の対応が必要です</small>
+                <small>P0: メンタル/体調★1 - 即座の対応が必要です</small>
             </div>
             <div class="card-body">
                 <div class="row">
@@ -151,6 +151,15 @@
                         <div class="card border-danger shadow-sm hover-lift">
                             <div class="card-body">
                                 <h6 class="card-title text-danger fw-bold">{{ student|full_name_ja }}</h6>
+                                <p class="card-text small mb-1">
+                                    {% if student.trigger_mental == 1 %}
+                                    <span class="badge bg-danger">メンタル★1</span>
+                                    {% endif %}
+                                    {% if student.trigger_health == 1 %}
+                                    <span class="badge bg-danger">体調★1</span>
+                                    {% endif %}
+                                    <span class="badge bg-secondary">{{ student.trigger_date|date:"m/d" }}</span>
+                                </p>
                                 {% if student.inline_history %}
                                 <p class="card-text small mb-1">
                                     <span class="badge bg-secondary">📊 {{ student.inline_history }}</span>
@@ -163,13 +172,13 @@
                                 <!-- ボタンセット -->
                                 <div class="card-actions">
                                     <button class="btn btn-sm btn-success"
-                                            onclick="markAsReadQuick({{ student.latest_entry_id }}, '{{ student|full_name_ja }}', this)">
+                                            onclick="markAsReadQuick({{ student.triggering_entry.id }}, '{{ student|full_name_ja }}', this)">
                                         ✓ 既読
                                     </button>
                                     <button class="btn btn-sm btn-warning"
                                             data-bs-toggle="modal"
                                             data-bs-target="#taskModal"
-                                            data-entry-id="{{ student.latest_entry_id }}"
+                                            data-entry-id="{{ student.triggering_entry.id }}"
                                             data-student-name="{{ student|full_name_ja }}">
                                         📋 タスク
                                     </button>
@@ -196,7 +205,7 @@
         <div class="card border-warning mb-3 mobile-collapsible" id="needs_attention">
             <div class="card-header bg-warning text-dark">
                 <h5 class="mb-0">🟡 要注意（{{ classified_students.needs_attention|length }}名）</h5>
-                <small>P1: 3日連続メンタル低下 - 注意して見守ってください</small>
+                <small>P1: 連続登校日3日間で体調/メンタルが低下 - 注意して見守ってください</small>
             </div>
             <div class="card-body">
                 <div class="row">

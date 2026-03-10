@@ -3,8 +3,8 @@
 This module provides backend logic for classifying students into 5 tiers + subsections:
 
 Main tiers:
-- Important (P0): Mental★1, immediate action required
-- Needs Attention (P1): 3-day consecutive mental decline, early detection
+- Important (P0): Mental/Health ★1（未対応の過去エントリーも含む）
+- Needs Attention (P1): 連続登校日3日間でmental/healthが2ポイント以上低下、最終値3以下
 - Needs Action (P1.5): internal_action set and pending/in-progress
 - Needs Response (P2): Daily tasks
   - P2-1: Not submitted (yesterday's diary missing)
@@ -23,8 +23,10 @@ from datetime import timedelta
 
 from django.utils import timezone
 
+from ..constants import AlertThresholds
 from ..models import ActionStatus
 from ..models import DiaryEntry
+from ..utils import are_consecutive_school_days
 from ..utils import get_previous_school_day
 
 
@@ -36,12 +38,12 @@ def classify_students(classroom):
 
     Returns:
         dict: {
-            'important': [student1, ...],              # P0: メンタル★1（重要）
-            'needs_attention': [student2, ...],         # P1: 3日連続低下（要注意）
-            'needs_action': [(student3, entry3), ...],  # P1.5: 要対応タスク（internal_action設定済み）
-            'not_submitted': [student4, ...],           # P2-1: 未提出
-            'unread': [student5, ...],                  # P2-2: 未読
-            'completed': [(student6, date), ...]        # P3: 対応済み（日付付き）
+            'important': [(student, entry), ...],          # P0: 重要（トリガーエントリー付き）
+            'needs_attention': [student, ...],              # P1: 3日連続低下（要注意）
+            'needs_action': [(student, entry), ...],        # P1.5: 要対応タスク
+            'not_submitted': [student, ...],                # P2-1: 未提出
+            'unread': [student, ...],                       # P2-2: 未読
+            'completed': [(student, date), ...]             # P3: 対応済み（日付付き）
         }
 
     Performance:
@@ -55,7 +57,7 @@ def classify_students(classroom):
     all_recent_entries = (
         DiaryEntry.objects.filter(
             student__classes=classroom,
-            entry_date__gte=today - timedelta(days=7),
+            entry_date__gte=today - timedelta(days=AlertThresholds.P0_LOOKBACK_DAYS),
         )
         .select_related("student")
         .order_by("student", "-entry_date")
@@ -78,16 +80,16 @@ def classify_students(classroom):
         recent_entries = entries_by_student.get(student.id, [])
         latest_entry = recent_entries[0] if recent_entries else None
 
-        # P0: 重要（メンタル★1、最優先）
-        if _is_critical(latest_entry):
-            important.append(student)
+        # P0: 重要（mental/health ★1、過去の未対応エントリーも含む）
+        critical_entry = _find_critical_entry(recent_entries, today, yesterday)
+        if critical_entry:
+            important.append((student, critical_entry))
             continue
 
-        # P1: 要注意（3日連続メンタル低下、未トリアージのみ）
-        if latest_entry and latest_entry.action_status == ActionStatus.PENDING:
-            if _check_consecutive_decline(recent_entries):
-                needs_attention.append(student)
-                continue
+        # P1: 要注意（連続登校日3日間で2ポイント以上低下、最終値3以下）
+        if _check_consecutive_decline(recent_entries):
+            needs_attention.append(student)
+            continue
 
         # P1.5: 要対応タスク（internal_actionが設定され、対応待ち）
         if _needs_action(latest_entry):
@@ -118,48 +120,135 @@ def classify_students(classroom):
     }
 
 
-def _check_consecutive_decline(recent_entries):
-    """3日連続でメンタルが低下しているかチェック
+def _find_critical_entry(recent_entries, today, yesterday):
+    """過去7日の未対応エントリーからP0対象を検索
 
-    定義: day1 ≥ day2 ≥ day3 AND day3 < day1
-    例: ★★★★★ → ★★★★ → ★★★ は True
+    条件:
+    - mental_condition == 1 OR health_condition == 1
+    - 除外: is_read=True AND action_status in [COMPLETED, NOT_REQUIRED]
+
+    Args:
+        recent_entries: DiaryEntryのリスト（最新順）
+        today: 今日の日付
+        yesterday: 前登校日の日付
+
+    Returns:
+        DiaryEntry or None: P0対象エントリー（最新のもの）
+    """
+    critical_value = AlertThresholds.CRITICAL_CONDITION
+
+    for entry in recent_entries:
+        # mental/health どちらかが★1
+        is_critical = (
+            entry.mental_condition == critical_value
+            or entry.health_condition == critical_value
+        )
+        if not is_critical:
+            continue
+
+        # 対応完了済みは除外
+        is_resolved = entry.is_read and entry.action_status in (
+            ActionStatus.COMPLETED,
+            ActionStatus.NOT_REQUIRED,
+        )
+        if is_resolved:
+            continue
+
+        return entry
+
+    return None
+
+
+def _check_consecutive_decline(recent_entries):
+    """連続登校日3日間でmental/healthが低下しているかチェック
+
+    条件:
+    - 3件が連続登校日であること
+    - day1 >= day2 >= day3（単調非増加）
+    - day1 - day3 >= 2（合計2ポイント以上低下）
+    - day3 <= 3（最終値が「普通」以下）
+    - 3件すべて既読の場合は除外
 
     Args:
         recent_entries: DiaryEntryのリスト（最新順）
 
     Returns:
-        bool: 3日連続低下の場合True
+        bool: 連続低下パターンが検出された場合True
     """
-    if len(recent_entries) < 3:
+    if len(recent_entries) < AlertThresholds.DECLINE_CONSECUTIVE_DAYS:
         return False
 
     # 最新3件を古い順に取得
     entries = sorted(recent_entries[:3], key=lambda e: e.entry_date)
 
-    day1_mental = entries[0].mental_condition
-    day2_mental = entries[1].mental_condition
-    day3_mental = entries[2].mental_condition
+    # 連続登校日かチェック
+    dates = [e.entry_date for e in entries]
+    if not are_consecutive_school_days(dates):
+        return False
 
-    # 連続低下: day1 >= day2 >= day3 AND day3 < day1
-    return bool(day1_mental >= day2_mental >= day3_mental and day3_mental < day1_mental)
+    # 3件すべて既読なら除外（対応済みとみなす）
+    if all(e.is_read for e in entries):
+        return False
+
+    min_drop = AlertThresholds.DECLINE_MIN_DROP
+    max_final = AlertThresholds.DECLINE_MAX_FINAL
+
+    # mental_condition チェック
+    if _is_declining(
+        entries[0].mental_condition,
+        entries[1].mental_condition,
+        entries[2].mental_condition,
+        min_drop,
+        max_final,
+    ):
+        return True
+
+    # health_condition チェック
+    if _is_declining(
+        entries[0].health_condition,
+        entries[1].health_condition,
+        entries[2].health_condition,
+        min_drop,
+        max_final,
+    ):
+        return True
+
+    return False
 
 
-def _is_critical(latest_entry):
-    """Criticalに分類されるかチェック
+def _is_declining(day1, day2, day3, min_drop, max_final):
+    """3日間の値が低下パターンに一致するかチェック
 
-    条件:
-    - メンタル★1（最優先）
-    - action_status=PENDING（未トリアージのみ）
+    Args:
+        day1, day2, day3: 各日の値（古い順）
+        min_drop: 最小低下ポイント
+        max_final: 最終値の上限
+
+    Returns:
+        bool: 低下パターンの場合True
     """
+    return bool(
+        day1 >= day2 >= day3
+        and (day1 - day3) >= min_drop
+        and day3 <= max_final
+    )
+
+
+def _is_critical(latest_entry, recent_entries=None, today=None, yesterday=None):
+    """Criticalに分類されるかチェック（後方互換性のためのラッパー）
+
+    新しいロジックは _find_critical_entry() を使用。
+    テストとの互換性のために残す。
+    """
+    if recent_entries is not None and today is not None and yesterday is not None:
+        return _find_critical_entry(recent_entries, today, yesterday) is not None
+
+    # レガシー: 引数1つの場合
     if not latest_entry:
         return False
-
-    # トリアージ済みは除外（既読・対応不要・対応完了など）
     if latest_entry.action_status != ActionStatus.PENDING:
         return False
-
-    # メンタル★1
-    return latest_entry.mental_condition == 1
+    return latest_entry.mental_condition == AlertThresholds.CRITICAL_CONDITION
 
 
 def _needs_action(latest_entry):

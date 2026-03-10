@@ -282,7 +282,7 @@ class TeacherDashboardService:
         """Build classified dashboard cards with recent history attached."""
         classified_students = alert_service.classify_students(classroom)
         student_ids = set()
-        tuple_tiers = ("completed", "needs_action")
+        tuple_tiers = ("completed", "needs_action", "important")
 
         for tier, values in classified_students.items():
             if tier in tuple_tiers:
@@ -314,7 +314,18 @@ class TeacherDashboardService:
                 target.latest_entry_id = None
             return target
 
-        for tier in ("important", "needs_attention", "not_submitted", "unread"):
+        # P0: important — (student, triggering_entry) タプル
+        important_students = []
+        for student, triggering_entry in classified_students["important"]:
+            target = decorate(student)
+            target.triggering_entry = triggering_entry
+            target.trigger_date = triggering_entry.entry_date
+            target.trigger_mental = triggering_entry.mental_condition
+            target.trigger_health = triggering_entry.health_condition
+            important_students.append(target)
+        classified_students["important"] = important_students
+
+        for tier in ("needs_attention", "not_submitted", "unread"):
             classified_students[tier] = [decorate(student) for student in classified_students[tier]]
 
         completed_students = []
