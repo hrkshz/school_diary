@@ -17,7 +17,7 @@
 
 ## デモ環境
 
-**URL**: https://d38tsdyews51a2.cloudfront.net
+**URL**: https://d32ouy29llzyb9.cloudfront.net
 
 テストデータが投入済みです。以下のアカウントでログインして各ロールの画面を確認できます。
 

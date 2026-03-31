@@ -114,6 +114,7 @@ data "aws_iam_policy_document" "maintenance_bucket_access" {
 }
 
 resource "aws_s3_bucket_policy" "maintenance" {
+  count  = var.maintenance_bucket_name != "dummy" ? 1 : 0
   bucket = var.maintenance_bucket_name
   policy = data.aws_iam_policy_document.maintenance_bucket_access.json
 }
